@@ -1,0 +1,39 @@
+[package]
+name = "kcal"
+version = "0.1.0"
+description = "macOS menu bar app that shows what your AI coding agent loads at startup and how much usage limit is left"
+edition = "2024"
+rust-version = "1.90"
+publish = false
+
+[lib]
+# main.rs와 이름이 겹치지 않게 _lib 접미사를 붙인다(Windows에서 bin/lib 이름 충돌 방지).
+name = "kcal_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.4", features = [] }
+
+[dependencies]
+tauri = { version = "~2.12.5", features = ["tray-icon", "image-png", "macos-private-api"] }
+serde = { version = "1", features = ["derive"] }
+# preserve_order: 5층 코칭이 JSON 설정을 다시 쓸 때 키 순서를 지킨다(0014 "IPC"). indexmap은 이미 Cargo.lock에 있다.
+serde_json = { version = "1", features = ["preserve_order"] }
+thiserror = "2"
+# 한도 조회(docs/decisions/0004 "의존성"). 모두 이미 Cargo.lock에 있던 crate다.
+reqwest = { version = "0.13", default-features = false, features = ["native-tls"] }
+tokio = { version = "1", features = ["process", "time", "sync"] }
+time = { version = "0.3", features = ["parsing", "formatting", "serde", "macros"] }
+regex = "1"
+# 개발 전용 MCP bridge. `--features mcp`일 때만 컴파일된다(docs/decisions/0001).
+tauri-plugin-mcp-bridge = { version = "0.13.2", optional = true }
+
+[features]
+mcp = ["dep:tauri-plugin-mcp-bridge"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "s"
+strip = true
+panic = "abort"

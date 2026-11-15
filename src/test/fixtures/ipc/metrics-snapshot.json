@@ -1,0 +1,63 @@
+{
+  "agents": [
+    {
+      "agent": "claude",
+      "barUnit": "percent",
+      "bars": [],
+      "cacheHitRatio": null,
+      "hourly": [],
+      "recentRequests": null
+    },
+    {
+      "agent": "codex",
+      "barUnit": "percent",
+      "bars": [
+        {
+          "isCurrent": false,
+          "startsAt": "2026-11-04T10:00:00Z",
+          "value": 31.0
+        },
+        {
+          "isCurrent": true,
+          "startsAt": "2026-11-04T10:00:00Z",
+          "value": 12.0
+        }
+      ],
+      "cacheHitRatio": 0.92,
+      "hourly": [
+        {
+          "requests": 0,
+          "startsAt": "2026-11-04T11:00:00Z",
+          "used": 0.0
+        },
+        {
+          "requests": 17,
+          "startsAt": "2026-11-04T11:00:00Z",
+          "used": 1.5
+        }
+      ],
+      "recentRequests": 42
+    },
+    {
+      "agent": "kiro",
+      "barUnit": "credits",
+      "bars": [
+        {
+          "isCurrent": true,
+          "startsAt": "2026-11-04T10:00:00Z",
+          "value": 1.25
+        }
+      ],
+      "cacheHitRatio": null,
+      "hourly": [
+        {
+          "requests": 2,
+          "startsAt": "2026-11-04T11:00:00Z",
+          "used": 0.25
+        }
+      ],
+      "recentRequests": 3
+    }
+  ],
+  "computedAt": "2026-11-04T12:00:00Z"
+}

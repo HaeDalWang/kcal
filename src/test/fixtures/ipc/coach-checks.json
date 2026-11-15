@@ -1,0 +1,356 @@
+[
+  {
+    "agent": "claude",
+    "docs": ["https://code.claude.com/docs/en/settings-reference#effortlevel"],
+    "facts": {
+      "current": "claude-opus-5-5",
+      "days": 30,
+      "ignoredBy": ["claude-opus-5-5"],
+      "models": [
+        {
+          "defaultEffort": "medium",
+          "isIgnored": true,
+          "model": "claude-opus-5-5",
+          "ownEffort": "xhigh",
+          "requests": 9
+        }
+      ],
+      "movedTo": [],
+      "type": "effortLevel",
+      "unknownModels": [
+        {
+          "model": "synthetic-model",
+          "requests": 1
+        }
+      ],
+      "value": "high"
+    },
+    "file": "/synthetic/.claude/settings.json",
+    "id": "D-claude-effort-level",
+    "isDismissed": false,
+    "kind": "D",
+    "options": [
+      {
+        "changes": [
+          {
+            "after": null,
+            "before": "\"high\"",
+            "location": "effortLevel"
+          }
+        ],
+        "id": "remove",
+        "instruction": null,
+        "isRecommended": true,
+        "isWritable": true
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
+  },
+  {
+    "agent": "claude",
+    "docs": ["https://code.claude.com/docs/en/settings-reference#effortlevel"],
+    "facts": {
+      "affected": [],
+      "days": 30,
+      "ignoredBy": ["claude-opus-5-5"],
+      "models": [
+        {
+          "defaultEffort": "medium",
+          "isIgnored": true,
+          "model": "claude-opus-5-5",
+          "ownEffort": "xhigh",
+          "requests": 9
+        }
+      ],
+      "type": "alwaysThinking",
+      "unknownModels": []
+    },
+    "file": "/synthetic/.claude/settings.json",
+    "id": "D-claude-always-thinking",
+    "isDismissed": false,
+    "kind": "D",
+    "options": [
+      {
+        "changes": [
+          {
+            "after": null,
+            "before": "\"high\"",
+            "location": "effortLevel"
+          }
+        ],
+        "id": "remove",
+        "instruction": null,
+        "isRecommended": true,
+        "isWritable": true
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
+  },
+  {
+    "agent": "claude",
+    "docs": ["https://code.claude.com/docs/en/settings-reference#effortlevel"],
+    "facts": {
+      "affected": [],
+      "days": 30,
+      "ignoredBy": ["claude-opus-5-5"],
+      "models": [
+        {
+          "defaultEffort": "medium",
+          "isIgnored": true,
+          "model": "claude-opus-5-5",
+          "ownEffort": "xhigh",
+          "requests": 9
+        }
+      ],
+      "type": "maxThinkingTokens",
+      "unknownModels": [],
+      "value": 8000
+    },
+    "file": "/synthetic/.claude/settings.json",
+    "id": "D-claude-max-thinking-tokens",
+    "isDismissed": false,
+    "kind": "D",
+    "options": [
+      {
+        "changes": [
+          {
+            "after": null,
+            "before": "\"high\"",
+            "location": "effortLevel"
+          }
+        ],
+        "id": "remove",
+        "instruction": null,
+        "isRecommended": true,
+        "isWritable": true
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
+  },
+  {
+    "agent": "claude",
+    "docs": ["https://code.claude.com/docs/en/settings-reference#effortlevel"],
+    "facts": {
+      "hasOwnTrailer": false,
+      "matches": [
+        {
+          "file": "/synthetic/.claude/rules/git.md",
+          "line": 3,
+          "text": "## Commit Message Format"
+        }
+      ],
+      "preCommitSkills": ["verify"],
+      "type": "gitInstructions"
+    },
+    "file": "/synthetic/.claude/settings.json",
+    "id": "C-claude-git-instructions",
+    "isDismissed": false,
+    "kind": "C",
+    "options": [
+      {
+        "changes": [
+          {
+            "after": null,
+            "before": "\"high\"",
+            "location": "effortLevel"
+          }
+        ],
+        "id": "remove",
+        "instruction": null,
+        "isRecommended": true,
+        "isWritable": true
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
+  },
+  {
+    "agent": "claude",
+    "docs": ["https://code.claude.com/docs/en/settings-reference#effortlevel"],
+    "facts": {
+      "agentsMd": "/synthetic/w/AGENTS.md",
+      "command": "cat AGENTS.md",
+      "scope": "project",
+      "settingsFile": "/synthetic/w/.claude/settings.json",
+      "type": "agentsMdHook",
+      "workspace": "/synthetic/w"
+    },
+    "file": "/synthetic/.claude/settings.json",
+    "id": "B-claude-agents-md-hook:0",
+    "isDismissed": false,
+    "kind": "B",
+    "options": [
+      {
+        "changes": [
+          {
+            "after": null,
+            "before": "\"high\"",
+            "location": "effortLevel"
+          }
+        ],
+        "id": "remove",
+        "instruction": null,
+        "isRecommended": true,
+        "isWritable": true
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": 1200
+  },
+  {
+    "agent": "claude",
+    "docs": ["https://code.claude.com/docs/en/settings-reference#effortlevel"],
+    "facts": {
+      "isSameContent": true,
+      "name": "synthetic",
+      "personalPath": "/synthetic/.claude/skills/synthetic/SKILL.md",
+      "pluginId": "synthetic@m",
+      "pluginPath": "/synthetic/.claude/plugins/cache/m/synthetic/1/skills/synthetic/SKILL.md",
+      "type": "sameSkill"
+    },
+    "file": "/synthetic/.claude/settings.json",
+    "id": "B-claude-same-skill:synthetic",
+    "isDismissed": false,
+    "kind": "B",
+    "options": [
+      {
+        "changes": [
+          {
+            "after": null,
+            "before": "\"high\"",
+            "location": "effortLevel"
+          }
+        ],
+        "id": "remove",
+        "instruction": null,
+        "isRecommended": true,
+        "isWritable": true
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": 40
+  },
+  {
+    "agent": "claude",
+    "docs": ["https://code.claude.com/docs/en/settings-reference#effortlevel"],
+    "facts": {
+      "imports": ["AGENTS.md"],
+      "limit": 200,
+      "lines": 340,
+      "name": "CLAUDE.md",
+      "type": "longInstructions"
+    },
+    "file": "/synthetic/.claude/settings.json",
+    "id": "B-claude-long-instructions:/synthetic/w/CLAUDE.md",
+    "isDismissed": false,
+    "kind": "B",
+    "options": [
+      {
+        "changes": [
+          {
+            "after": null,
+            "before": "\"high\"",
+            "location": "effortLevel"
+          }
+        ],
+        "id": "remove",
+        "instruction": null,
+        "isRecommended": true,
+        "isWritable": true
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
+  },
+  {
+    "agent": "claude",
+    "docs": ["https://code.claude.com/docs/en/settings-reference#effortlevel"],
+    "facts": {
+      "chars": 3100,
+      "folder": "/synthetic",
+      "limit": 40000,
+      "rules": [
+        {
+          "chars": 3100,
+          "hasFrontMatter": false,
+          "name": "common/testing.md",
+          "referencedBy": 1
+        }
+      ],
+      "scope": "user",
+      "type": "rulesPaths"
+    },
+    "file": "/synthetic/.claude/settings.json",
+    "id": "A2-claude-rules-paths:/synthetic/.claude/rules",
+    "isDismissed": false,
+    "kind": "A",
+    "options": [
+      {
+        "changes": [
+          {
+            "after": null,
+            "before": "\"high\"",
+            "location": "effortLevel"
+          }
+        ],
+        "id": "remove",
+        "instruction": null,
+        "isRecommended": true,
+        "isWritable": true
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
+  }
+]

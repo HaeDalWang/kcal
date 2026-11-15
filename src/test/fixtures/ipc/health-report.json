@@ -1,0 +1,155 @@
+{
+  "compareDays": 7,
+  "computedAt": "2026-11-06T12:00:00Z",
+  "prescriptions": [
+    {
+      "after": {
+        "avgCredits": null,
+        "avgInputTokens": null,
+        "compactions": 0,
+        "coverage": 1.0,
+        "dailyUsed": 0.0,
+        "elapsedDays": 1.0,
+        "from": "2026-11-04T00:00:00Z",
+        "requests": 0,
+        "to": "2026-11-05T00:00:00Z",
+        "usedUnit": "percent"
+      },
+      "agent": "codex",
+      "at": "2026-11-04T00:00:00Z",
+      "before": {
+        "avgCredits": null,
+        "avgInputTokens": 60000.0,
+        "compactions": 3,
+        "coverage": 1.0,
+        "dailyUsed": 3.0,
+        "elapsedDays": 7.0,
+        "from": "2026-10-28T00:00:00Z",
+        "requests": 2,
+        "to": "2026-11-04T00:00:00Z",
+        "usedUnit": "percent"
+      },
+      "enabled": false,
+      "id": "2",
+      "name": "synthetic@m",
+      "target": "codex/plugin:synthetic@m",
+      "undoneAt": "2026-11-05T00:00:00Z"
+    },
+    {
+      "after": {
+        "avgCredits": null,
+        "avgInputTokens": 40000.0,
+        "compactions": 1,
+        "coverage": 1.0,
+        "dailyUsed": 1.0,
+        "elapsedDays": 7.0,
+        "from": "2026-10-30T12:00:00Z",
+        "requests": 1,
+        "to": "2026-11-06T12:00:00Z",
+        "usedUnit": "percent"
+      },
+      "agent": "codex",
+      "at": "2026-10-30T12:00:00Z",
+      "before": {
+        "avgCredits": null,
+        "avgInputTokens": 80000.0,
+        "compactions": 2,
+        "coverage": 1.0,
+        "dailyUsed": 2.0,
+        "elapsedDays": 7.0,
+        "from": "2026-10-23T12:00:00Z",
+        "requests": 1,
+        "to": "2026-10-30T12:00:00Z",
+        "usedUnit": "percent"
+      },
+      "enabled": false,
+      "id": "1",
+      "name": "synthetic@m",
+      "target": "codex/plugin:synthetic@m",
+      "undoneAt": null
+    }
+  ],
+  "weekly": [
+    {
+      "after": {
+        "avgCredits": null,
+        "avgInputTokens": 60000.0,
+        "compactions": null,
+        "coverage": 1.0,
+        "dailyUsed": 0.5,
+        "elapsedDays": 7.0,
+        "from": "2026-10-30T12:00:00Z",
+        "requests": 1,
+        "to": "2026-11-06T12:00:00Z",
+        "usedUnit": "percent"
+      },
+      "agent": "claude",
+      "before": {
+        "avgCredits": null,
+        "avgInputTokens": 120000.0,
+        "compactions": null,
+        "coverage": 0.5,
+        "dailyUsed": 2.0,
+        "elapsedDays": 7.0,
+        "from": "2026-10-23T12:00:00Z",
+        "requests": 1,
+        "to": "2026-10-30T12:00:00Z",
+        "usedUnit": "percent"
+      }
+    },
+    {
+      "after": {
+        "avgCredits": null,
+        "avgInputTokens": 40000.0,
+        "compactions": 1,
+        "coverage": 1.0,
+        "dailyUsed": 1.0,
+        "elapsedDays": 7.0,
+        "from": "2026-10-30T12:00:00Z",
+        "requests": 1,
+        "to": "2026-11-06T12:00:00Z",
+        "usedUnit": "percent"
+      },
+      "agent": "codex",
+      "before": {
+        "avgCredits": null,
+        "avgInputTokens": 80000.0,
+        "compactions": 2,
+        "coverage": 1.0,
+        "dailyUsed": 2.0,
+        "elapsedDays": 7.0,
+        "from": "2026-10-23T12:00:00Z",
+        "requests": 1,
+        "to": "2026-10-30T12:00:00Z",
+        "usedUnit": "percent"
+      }
+    },
+    {
+      "after": {
+        "avgCredits": null,
+        "avgInputTokens": null,
+        "compactions": null,
+        "coverage": null,
+        "dailyUsed": null,
+        "elapsedDays": 7.0,
+        "from": "2026-10-30T12:00:00Z",
+        "requests": null,
+        "to": "2026-11-06T12:00:00Z",
+        "usedUnit": "credits"
+      },
+      "agent": "kiro",
+      "before": {
+        "avgCredits": null,
+        "avgInputTokens": null,
+        "compactions": null,
+        "coverage": null,
+        "dailyUsed": null,
+        "elapsedDays": 7.0,
+        "from": "2026-10-23T12:00:00Z",
+        "requests": null,
+        "to": "2026-10-30T12:00:00Z",
+        "usedUnit": "credits"
+      }
+    }
+  ]
+}

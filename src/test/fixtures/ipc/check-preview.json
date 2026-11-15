@@ -1,0 +1,18 @@
+{
+  "beforeHash": "cbf29ce484222325",
+  "changes": [
+    {
+      "after": null,
+      "before": "\"high\"",
+      "location": "effortLevel"
+    },
+    {
+      "after": "\"high\"",
+      "before": null,
+      "location": "modelSettings.\"claude-opus-5\".effortLevel"
+    }
+  ],
+  "file": "/synthetic/.claude/settings.json",
+  "id": "D-claude-effort-level",
+  "option": "remove"
+}

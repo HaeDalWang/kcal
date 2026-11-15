@@ -1,0 +1,4 @@
+# Codex는 신뢰된 프로젝트에서만 이 파일을 읽는다. 버전 고정 이유는 docs/decisions/0001.
+[mcp_servers.tauri]
+command = "npx"
+args = ["-y", "@hypothesi/tauri-mcp-server@0.13.2"]

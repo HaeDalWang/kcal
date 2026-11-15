@@ -1,0 +1,474 @@
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { emit } from "@tauri-apps/api/event";
+import { mockIPC } from "@tauri-apps/api/mocks";
+import { describe, expect, it, vi } from "vitest";
+
+import { isLow, remainingPercent, UsagePopover } from "@/components/usage-popover";
+import {
+  AGENTS,
+  USAGE_UPDATED_EVENT,
+  type ContextItem,
+  type ContextSnapshot,
+  type LimitWindow,
+  type UsageSnapshot,
+} from "@/lib/ipc";
+import { ratesStore } from "@/lib/snapshot-store";
+import rateFixture from "@/test/fixtures/ipc/rate-snapshot.json";
+
+const HOUR_MS = 3_600_000;
+
+function snapshot(claudePercent: number): UsageSnapshot {
+  const now = Date.now();
+  return {
+    agents: [
+      {
+        agent: "claude",
+        source: "log",
+        observedAt: new Date(now - 5 * 60_000).toISOString(),
+        windows: [
+          {
+            id: "5h",
+            usedPercent: claudePercent,
+            resetsAt: new Date(now + 2 * HOUR_MS).toISOString(),
+            resetPassed: false,
+          },
+        ],
+        reason: "HTTP 401",
+        reasonKind: "failure",
+        checkedAt: new Date(now).toISOString(),
+      },
+      {
+        agent: "codex",
+        source: null,
+        observedAt: null,
+        windows: [],
+        reason: "네트워크 오류",
+        reasonKind: "failure",
+        checkedAt: new Date(now).toISOString(),
+      },
+      {
+        agent: "kiro",
+        source: null,
+        observedAt: null,
+        windows: [],
+        reason: null,
+        reasonKind: null,
+        checkedAt: null,
+      },
+    ],
+  };
+}
+
+const BAR_START = "2026-11-05T05:00:00Z";
+
+/** 에이전트 탭은 지표 3줄에 쓰는 세션 시작 토큰(`get_context`)·환율(`get_rates`)·지표(`get_metrics`)도 부른다. */
+function mockCommands(cmd: string) {
+  if (cmd === "get_usage") return snapshot(42);
+  if (cmd === "get_context") return { computedAt: new Date().toISOString(), agents: [] };
+  if (cmd === "get_metrics") {
+    return {
+      computedAt: new Date().toISOString(),
+      agents: [
+        {
+          agent: "claude",
+          recentRequests: 42,
+          cacheHitRatio: 0.92,
+          barUnit: "percent",
+          bars: [
+            { startsAt: "2026-11-05T00:00:00Z", value: 31, isCurrent: false },
+            { startsAt: BAR_START, value: 12, isCurrent: true },
+          ],
+        },
+        { agent: "kiro", recentRequests: 3, cacheHitRatio: null, barUnit: "credits", bars: [] },
+      ],
+    };
+  }
+  if (cmd === "get_rates") {
+    return {
+      computedAt: new Date().toISOString(),
+      codex: {
+        status: "no_data",
+        r2: null,
+        windows: 0,
+        excludedWindows: 0,
+        perPercent: null,
+        foldRange: null,
+        pattern: null,
+        composition: null,
+        sessions: [],
+      },
+      kiro: [],
+      claude: {
+        status: "no_data",
+        r2: null,
+        windows: 0,
+        excludedWindows: 0,
+        perPercent: null,
+        foldRange: null,
+        pattern: null,
+        composition: null,
+        sessions: [],
+      },
+    };
+  }
+  return undefined;
+}
+
+const startupItem = (
+  kind: ContextItem["kind"],
+  tokens: number,
+  source: ContextItem["source"] = "measured",
+): ContextItem => ({ kind, name: kind, bytes: tokens * 4, tokens, source, loading: "startup" });
+
+/** 이 Mac 2026-11-11 Claude 실측과 같은 크기(합 34,173). 지시 파일은 예상 표시를 보려고 estimated. */
+const startupContexts: ContextSnapshot = {
+  computedAt: new Date().toISOString(),
+  agents: [
+    {
+      agent: "claude",
+      items: [
+        startupItem("system", 3_325),
+        startupItem("tools", 17_132),
+        startupItem("mcpInstructions", 2_352),
+        startupItem("agents", 342),
+        startupItem("rules", 2_301, "estimated"),
+        startupItem("instructions", 1_545),
+        startupItem("skills", 6_125),
+        startupItem("plugins", 1_051),
+        { ...startupItem("agents", 1_692), loading: "conditional" },
+      ],
+      totalStartupTokens: 34_173,
+      firstRequestTokens: null,
+      firstRequestChars: null,
+      model: "claude-opus-5-5",
+      contextWindow: 400_000,
+      warnings: [],
+    },
+    {
+      agent: "kiro",
+      items: [startupItem("skills", 4_107, "estimated")],
+      totalStartupTokens: 4_107,
+      firstRequestTokens: null,
+      firstRequestChars: null,
+      model: null,
+      contextWindow: null,
+      warnings: [],
+    },
+  ],
+};
+
+describe("UsagePopover", () => {
+  it("shows only the selected agent as remaining percent and updates on usage-updated", async () => {
+    mockIPC(mockCommands, { shouldMockEvents: true });
+    const onSelect = vi.fn();
+    render(
+      <UsagePopover
+        agents={[...AGENTS]}
+        selected="claude"
+        onSelect={onSelect}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+
+    const claude = await screen.findByRole("group", { name: "Claude" });
+    expect(within(claude).getByText("5시간 58% 남음")).toBeTruthy();
+    expect(within(claude).getByText("5m 전 업데이트 · 기록 파일")).toBeTruthy();
+    expect(within(claude).getByText(/(1h 59m|2h 0m) 후 초기화/)).toBeTruthy();
+    expect(within(claude).getByText("HTTP 401")).toBeTruthy();
+    expect(screen.queryByText("네트워크 오류")).toBeNull();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Codex" }));
+    expect(onSelect).toHaveBeenCalledWith("codex");
+
+    await act(() => emit(USAGE_UPDATED_EVENT, snapshot(90)));
+    expect(await within(claude).findByText("5시간 10% 남음")).toBeTruthy();
+  });
+
+  it("shows a setup step in muted text without an alert and a real failure as a red alert", async () => {
+    mockIPC(mockCommands, { shouldMockEvents: true });
+    render(
+      <UsagePopover
+        agents={[...AGENTS]}
+        selected="codex"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+    const codex = await screen.findByRole("group", { name: "Codex" });
+    const failure = within(codex).getByRole("alert");
+    expect(failure.textContent).toBe("네트워크 오류");
+    expect(failure.className).toContain("text-destructive");
+
+    const sign = "Codex isn't installed.";
+    const withCodex = (reason: string, reasonKind: "setup" | "failure"): UsageSnapshot => {
+      const base = snapshot(42);
+      return {
+        agents: base.agents.map((a) => (a.agent === "codex" ? { ...a, reason, reasonKind } : a)),
+      };
+    };
+    await act(() => emit(USAGE_UPDATED_EVENT, withCodex(sign, "setup")));
+    const setup = await within(codex).findByText(sign);
+    expect(within(codex).queryByRole("alert")).toBeNull();
+    expect(setup.closest("p")?.className).toContain("text-muted-foreground");
+    expect(setup.closest("p")?.className).not.toContain("text-destructive");
+    expect(setup.closest("p")?.querySelector("svg")).not.toBeNull();
+
+    await act(() => emit(USAGE_UPDATED_EVENT, withCodex("Can't reach Codex.", "failure")));
+    expect((await within(codex).findByRole("alert")).textContent).toBe("Can't reach Codex.");
+  });
+
+  it("shows tabs only for overview and the enabled agents", async () => {
+    mockIPC(mockCommands, { shouldMockEvents: true });
+    render(
+      <UsagePopover
+        agents={["claude", "kiro"]}
+        selected="overview"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+
+    const tabs = await screen.findAllByRole("tab");
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["개요", "Claude", "Kiro"]);
+    expect(screen.getByRole("tab", { name: "개요" }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("renders an overview summary for each enabled agent", async () => {
+    mockIPC(mockCommands, { shouldMockEvents: true });
+    render(
+      <UsagePopover
+        agents={["claude", "kiro"]}
+        selected="overview"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+
+    const claude = await screen.findByRole("group", { name: "Claude" });
+    expect(within(claude).getByText("5m 전 · 기록 파일")).toBeTruthy();
+    const dial = within(claude).getByRole("img", { name: "58% 남음" });
+    expect(dial.textContent).toBe("58%남음");
+    const limit = within(claude).getByText("5시간 한도");
+    expect(limit.className).toContain("text-foreground");
+    expect(limit.parentElement?.textContent).toMatch(/^5시간 한도 · (1h 59m|2h 0m) 후 초기화$/);
+    expect(
+      within(screen.getByRole("group", { name: "Kiro" })).getByText("불러오는 중…"),
+    ).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "Codex" })).toBeNull();
+  });
+
+  it("names the weekly limit when the dial shows the weekly window", async () => {
+    const now = Date.now();
+    const weeklyFirst = snapshot(10);
+    weeklyFirst.agents[0].windows.push({
+      id: "7d",
+      usedPercent: 43,
+      resetsAt: new Date(now + 82 * HOUR_MS).toISOString(),
+      resetPassed: false,
+    });
+    mockIPC((cmd) => (cmd === "get_usage" ? weeklyFirst : mockCommands(cmd)), {
+      shouldMockEvents: true,
+    });
+    render(
+      <UsagePopover
+        agents={["claude"]}
+        selected="overview"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+
+    const claude = await screen.findByRole("group", { name: "Claude" });
+    expect(within(claude).getByRole("img", { name: "57% 남음" }).textContent).toBe("57%남음");
+    expect(within(claude).getByText("7일 한도").parentElement?.textContent).toMatch(
+      /^7일 한도 · 3d (9h 59m|10h) 후 초기화$/,
+    );
+    // 다른 창(5시간)은 막대 줄 그대로.
+    expect(within(claude).getByText("5시간 90%")).toBeTruthy();
+  });
+
+  it("shows startup context as a share of the window on the overview, tokens only when the window is unknown", async () => {
+    mockIPC((cmd) => (cmd === "get_context" ? startupContexts : mockCommands(cmd)), {
+      shouldMockEvents: true,
+    });
+    render(
+      <UsagePopover
+        agents={["claude", "kiro"]}
+        selected="overview"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+
+    const claude = await screen.findByRole("group", { name: "Claude" });
+    const line = await within(claude).findByTitle(/바이트 ÷ 4/);
+    expect(line.textContent).toBe("시작 컨텍스트 ~8.5% (~34.2K / 400K 토큰)");
+    expect(line.getAttribute("title")).toBe(
+      "첫 메시지 전에 기본으로 실리는 지시문·도구 설명이에요.\n예상: 기록으로 계산한 값 · 토큰 = 바이트 ÷ 4 · claude-opus-5-5 컨텍스트 창 400K 토큰",
+    );
+    const kiro = screen.getByRole("group", { name: "Kiro" });
+    expect(within(kiro).getByTitle(/바이트 ÷ 4/).textContent).toBe("시작 컨텍스트 ~4.1K 토큰");
+    expect(within(kiro).queryByText(/%/)).toBeNull();
+  });
+
+  it("breaks startup context down by /context category in the agent tab", async () => {
+    mockIPC((cmd) => (cmd === "get_context" ? startupContexts : mockCommands(cmd)), {
+      shouldMockEvents: true,
+    });
+    render(
+      <UsagePopover
+        agents={[...AGENTS]}
+        selected="claude"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+
+    const groups = await screen.findByRole("list", { name: "시작 컨텍스트 구성" });
+    const rows = within(groups).getAllByRole("listitem");
+    expect(rows.map((li) => li.textContent)).toEqual([
+      "시스템 프롬프트3.3K",
+      "기본 도구17.1K",
+      "MCP 서버 안내2.4K",
+      "에이전트342",
+      "지시 파일~3.8K",
+      "스킬7.2K",
+    ]);
+    expect(rows[4].getAttribute("title")).toBe("예상: 기록으로 계산한 값 · /context Memory files");
+    expect(rows[0].getAttribute("title")).toBe("정확: 측정한 값 · /context System prompt");
+  });
+
+  it("shows only metric lines and recent window bars under the usage, without details", async () => {
+    mockIPC(mockCommands, { shouldMockEvents: true });
+    const props = {
+      agents: [...AGENTS],
+      onSelect: () => {},
+      lowPercent: 20,
+      onOpenDashboard: () => {},
+    };
+    const { rerender } = render(<UsagePopover {...props} selected="claude" />);
+
+    const lines = await screen.findByRole("list", { name: "지표" });
+    expect([...lines.querySelectorAll("li")].map((li) => li.textContent)).toEqual([
+      "최근 5시간 요청42회",
+      "캐시 적중률92%",
+    ]);
+    const bars = screen.getByRole("list", { name: "최근 5시간 구간 사용량" });
+    const items = within(bars).getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items[1].getAttribute("aria-current")).toBe("true");
+    expect(items[1].getAttribute("title")).toMatch(/^정확: \d\d\/\d\d \d\d:\d\d 시작 · 12%$/);
+    expect(document.querySelector("details")).toBeNull();
+    expect(screen.queryByRole("group", { name: "1%당 토큰" })).toBeNull();
+
+    // Kiro: 5시간 한도가 없어 "질문", 캐시 적중률은 몰라서 줄이 없다.
+    rerender(<UsagePopover {...props} selected="kiro" />);
+    const kiro = await screen.findByRole("list", { name: "지표" });
+    expect(
+      within(kiro)
+        .getAllByRole("listitem")
+        .map((li) => li.textContent),
+    ).toEqual(["최근 5시간 질문3회"]);
+  });
+
+  it("keeps behavior lists off the tray even when sessions and Kiro credits are known", async () => {
+    mockIPC((cmd) => (cmd === "get_rates" ? rateFixture : mockCommands(cmd)), {
+      shouldMockEvents: true,
+    });
+    ratesStore.refresh();
+    await vi.waitFor(() => expect(ratesStore.getSnapshot().value?.codex.sessions).toHaveLength(1));
+    const props = {
+      agents: [...AGENTS],
+      onSelect: () => {},
+      lowPercent: 20,
+      onOpenDashboard: () => {},
+    };
+    const { rerender } = render(<UsagePopover {...props} selected="codex" />);
+    await screen.findByRole("group", { name: "Codex" });
+    expect(screen.queryByRole("list", { name: "많이 쓴 세션" })).toBeNull();
+    expect(screen.queryByText("5시간 한도는 보통 무엇으로 찼나")).toBeNull();
+    rerender(<UsagePopover {...props} selected="kiro" />);
+    await screen.findByRole("group", { name: "Kiro" });
+    expect(screen.queryByText("질문당 크레딧")).toBeNull();
+  });
+
+  it("hides the metric lines when no value is known", async () => {
+    mockIPC(mockCommands, { shouldMockEvents: true });
+    render(
+      <UsagePopover
+        agents={[...AGENTS]}
+        selected="codex"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+    await screen.findByRole("group", { name: "Codex" });
+    expect(screen.queryByRole("list", { name: "지표" })).toBeNull();
+    expect(screen.queryByRole("list", { name: "최근 5시간 구간 사용량" })).toBeNull();
+  });
+
+  it("colors a bar as low when remaining is at or below lowPercent", async () => {
+    mockIPC(mockCommands, { shouldMockEvents: true });
+    const props = { agents: [...AGENTS], onSelect: () => {}, onOpenDashboard: () => {} };
+    // Claude: 42% 사용 → 58% 남음.
+    const { rerender } = render(
+      <UsagePopover {...props} selected="claude" lowPercent={20} onOpenDashboard={() => {}} />,
+    );
+    const claude = await screen.findByRole("group", { name: "Claude" });
+    const bar = () => within(claude).getByRole("progressbar");
+    expect(bar().querySelector(".bg-destructive")).toBeNull();
+
+    rerender(<UsagePopover {...props} selected="claude" lowPercent={60} />);
+    expect(bar().querySelector(".bg-destructive")).not.toBeNull();
+  });
+
+  it("opens the dashboard from the chevron button in the agent header", async () => {
+    mockIPC(mockCommands, { shouldMockEvents: true });
+    const onOpenDashboard = vi.fn();
+    render(
+      <UsagePopover
+        agents={[...AGENTS]}
+        selected="claude"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={onOpenDashboard}
+      />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "대시보드 열기" }));
+    expect(onOpenDashboard).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("remainingPercent", () => {
+  const now = Date.parse("2026-11-04T12:00:00Z");
+  const window = (usedPercent: number, resetsAt: string | null): LimitWindow => ({
+    id: "5h",
+    usedPercent,
+    resetsAt,
+    resetPassed: false,
+  });
+
+  it("returns 100 minus used, clamped to 0..100", () => {
+    expect(remainingPercent(window(2, "2026-11-04T13:00:00Z"), now)).toBe(98);
+    expect(remainingPercent(window(130, null), now)).toBe(0);
+  });
+
+  it("returns 100 when the reset time has passed", () => {
+    expect(remainingPercent(window(80, "2026-11-04T11:59:00Z"), now)).toBe(100);
+    expect(remainingPercent({ ...window(80, null), resetPassed: true }, now)).toBe(100);
+  });
+
+  it("warns at lowPercent remaining or less", () => {
+    expect(isLow(20, 20)).toBe(true);
+    expect(isLow(21, 20)).toBe(false);
+    expect(isLow(40, 50)).toBe(true);
+  });
+});

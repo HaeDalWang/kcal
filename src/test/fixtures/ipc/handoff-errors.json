@@ -1,0 +1,34 @@
+[
+  {
+    "kind": "busy"
+  },
+  {
+    "kind": "limitUnknown"
+  },
+  {
+    "kind": "limitTooLow",
+    "minRemaining": 20,
+    "remaining": 12.0
+  },
+  {
+    "kind": "cliMissing"
+  },
+  {
+    "kind": "opusUnavailable"
+  },
+  {
+    "kind": "timeout",
+    "secs": 300
+  },
+  {
+    "kind": "failed",
+    "reason": "exit 1, api_error"
+  },
+  {
+    "kind": "refused",
+    "message": "synthetic message"
+  },
+  {
+    "kind": "internal"
+  }
+]

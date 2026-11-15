@@ -1,0 +1,43 @@
+name: Bug report
+description: Something in kcal looks wrong or broken
+labels: [bug]
+body:
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "15.1, Apple Silicon"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: kcal version
+      description: Settings → bottom line (e.g. kcal 0.1.0)
+    validations:
+      required: true
+  - type: checkboxes
+    id: agents
+    attributes:
+      label: Agents enabled in kcal
+      options:
+        - label: Claude Code
+        - label: Codex
+        - label: Kiro
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot (optional)
+      description: Drag an image here. Hide anything personal (paths, account names).

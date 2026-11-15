@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#171A21"/>
+      <stop offset="1" stop-color="#0B0D11"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#FFC75A"/>
+      <stop offset="0.55" stop-color="#FF7A3D"/>
+      <stop offset="1" stop-color="#FF3D6E"/>
+    </linearGradient>
+    <linearGradient id="word" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFB24D"/>
+      <stop offset="1" stop-color="#FF4F6A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FF7A3D" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#FF7A3D" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="fc"><path d="M256 70 C 300 146, 388 196, 388 314 C 388 392, 328 446, 256 446
+             C 184 446, 124 392, 124 314 C 124 244, 168 204, 196 154
+             C 204 204, 224 230, 248 240 C 240 184, 236 126, 256 70 Z"/></clipPath>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+
+  <!-- faint ECG line running across the background -->
+  <polyline points="0,520 360,520 392,470 428,580 460,490 482,520 1280,520"
+            fill="none" stroke="#FF7A3D" stroke-opacity="0.12" stroke-width="4"
+            stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- icon -->
+  <circle cx="300" cy="290" r="230" fill="url(#glow)"/>
+  <g transform="translate(150,140) scale(0.586)">
+    <rect width="512" height="512" rx="112" fill="#1A1D24" stroke="#2A2F39" stroke-width="3"/>
+    <path d="M256 70 C 300 146, 388 196, 388 314 C 388 392, 328 446, 256 446
+             C 184 446, 124 392, 124 314 C 124 244, 168 204, 196 154
+             C 204 204, 224 230, 248 240 C 240 184, 236 126, 256 70 Z" fill="url(#flame)"/>
+    <polyline clip-path="url(#fc)" points="96,334 196,334 222,286 254,386 282,300 300,334 416,334"
+              fill="none" stroke="#12151B" stroke-width="22"
+              stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="540" y="290" fill="url(#word)"
+        font-family="'JetBrains Mono','SF Mono',Menlo,'DejaVu Sans Mono',monospace"
+        font-size="150" font-weight="700" letter-spacing="-4">kcal</text>
+
+  <text x="545" y="352" fill="#E8EAF0"
+        font-family="Inter,'Helvetica Neue',Arial,sans-serif"
+        font-size="34" font-weight="600">
+    <tspan x="545" dy="0">See what your AI agent loads</tspan>
+    <tspan x="545" dy="44">before you type, and how much</tspan>
+    <tspan x="545" dy="44">limit is left.</tspan>
+  </text>
+
+  <!-- supported agents chip -->
+  <g transform="translate(545,462)">
+    <rect width="600" height="52" rx="12" fill="#11141A" stroke="#2A2F39" stroke-width="2"/>
+    <text x="300" y="34" text-anchor="middle" fill="#C7CBD6"
+          font-family="Inter,'Helvetica Neue',Arial,sans-serif" font-size="22" font-weight="500">Claude Code · Codex · Kiro · macOS · local only</text>
+  </g>
+</svg>

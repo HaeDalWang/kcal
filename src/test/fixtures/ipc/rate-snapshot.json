@@ -1,0 +1,107 @@
+{
+  "claude": {
+    "composition": null,
+    "excludedWindows": 1,
+    "foldRange": {
+      "cachedInput": {
+        "max": 1100.0,
+        "min": 900.0
+      },
+      "output": {
+        "max": null,
+        "min": null
+      },
+      "uncachedInput": {
+        "max": null,
+        "min": 100.0
+      }
+    },
+    "pattern": {
+      "days": 14,
+      "misses": {
+        "median": 2.0,
+        "p90": 5.0
+      },
+      "requests": {
+        "median": 139.0,
+        "p90": 213.5
+      },
+      "windows": 5
+    },
+    "perPercent": {
+      "cachedInput": 1000.0,
+      "output": null,
+      "uncachedInput": 200.0
+    },
+    "r2": 0.8,
+    "sessions": [],
+    "status": "estimated",
+    "windows": 12
+  },
+  "codex": {
+    "composition": {
+      "inputShare": 40.5,
+      "misses": 2,
+      "outputShare": 8.25,
+      "requests": 139,
+      "usedPercent": 52.0,
+      "windows": 5
+    },
+    "excludedWindows": 1,
+    "foldRange": {
+      "cachedInput": {
+        "max": 1100.0,
+        "min": 900.0
+      },
+      "output": {
+        "max": null,
+        "min": null
+      },
+      "uncachedInput": {
+        "max": null,
+        "min": 100.0
+      }
+    },
+    "pattern": {
+      "days": 14,
+      "misses": {
+        "median": 2.0,
+        "p90": 5.0
+      },
+      "requests": {
+        "median": 139.0,
+        "p90": 213.5
+      },
+      "windows": 5
+    },
+    "perPercent": {
+      "cachedInput": 1000.0,
+      "output": null,
+      "uncachedInput": 200.0
+    },
+    "r2": 0.8,
+    "sessions": [
+      {
+        "avgInputTokens": 120000.5,
+        "cwd": "/synthetic/synthetic-project",
+        "isLargeContext": false,
+        "isMarathon": true,
+        "misses": 3,
+        "name": "synthetic-project",
+        "requests": 240,
+        "share": 61.5,
+        "startedAt": "2026-11-04T09:00:00Z"
+      }
+    ],
+    "status": "estimated",
+    "windows": 12
+  },
+  "computedAt": "2026-11-04T12:00:00Z",
+  "kiro": [
+    {
+      "creditsPerTurn": 0.25,
+      "model": "synthetic-model",
+      "turns": 7
+    }
+  ]
+}

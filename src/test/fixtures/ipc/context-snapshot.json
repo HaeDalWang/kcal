@@ -1,0 +1,199 @@
+{
+  "agents": [
+    {
+      "agent": "claude",
+      "contextWindow": 200000,
+      "firstRequestChars": null,
+      "firstRequestTokens": 2048,
+      "items": [
+        {
+          "bytes": 400,
+          "kind": "instructions",
+          "loading": "startup",
+          "name": "synthetic",
+          "path": "/synthetic/AGENTS.md",
+          "source": "measured",
+          "tokens": 100
+        },
+        {
+          "bytes": 40,
+          "kind": "rules",
+          "loading": "startup",
+          "name": "synthetic",
+          "source": "estimated",
+          "tokens": 10
+        },
+        {
+          "bytes": 80,
+          "kind": "skills",
+          "loading": "conditional",
+          "name": "synthetic",
+          "source": "estimated",
+          "tokens": 20
+        },
+        {
+          "bytes": null,
+          "kind": "agents",
+          "loading": "conditional",
+          "name": "synthetic",
+          "source": "estimated",
+          "tokens": null
+        },
+        {
+          "bytes": null,
+          "kind": "hooks",
+          "loading": "deferred",
+          "name": "synthetic",
+          "source": "estimated",
+          "tokens": null
+        },
+        {
+          "bytes": null,
+          "kind": "mcp",
+          "loading": "deferred",
+          "name": "synthetic",
+          "source": "estimated",
+          "tokens": null
+        },
+        {
+          "bytes": 40,
+          "kind": "mcpInstructions",
+          "loading": "startup",
+          "name": "synthetic",
+          "source": "measured",
+          "tokens": 10
+        },
+        {
+          "bytes": null,
+          "kind": "plugins",
+          "loading": "deferred",
+          "name": "synthetic",
+          "source": "estimated",
+          "tokens": null
+        },
+        {
+          "bytes": 4000,
+          "kind": "system",
+          "loading": "startup",
+          "name": "synthetic",
+          "source": "measured",
+          "tokens": 1000
+        },
+        {
+          "bytes": 400,
+          "kind": "tools",
+          "loading": "startup",
+          "name": "synthetic",
+          "source": "measured",
+          "tokens": 100
+        }
+      ],
+      "model": "synthetic-model",
+      "totalStartupTokens": 1110,
+      "warnings": ["synthetic warning"]
+    },
+    {
+      "agent": "kiro",
+      "contextWindow": null,
+      "firstRequestChars": 9000,
+      "firstRequestTokens": null,
+      "items": [
+        {
+          "bytes": 400,
+          "kind": "instructions",
+          "loading": "startup",
+          "name": "synthetic",
+          "path": "/synthetic/AGENTS.md",
+          "source": "measured",
+          "tokens": 100
+        },
+        {
+          "bytes": 40,
+          "kind": "rules",
+          "loading": "startup",
+          "name": "synthetic",
+          "source": "estimated",
+          "tokens": 10
+        },
+        {
+          "bytes": 80,
+          "kind": "skills",
+          "loading": "conditional",
+          "name": "synthetic",
+          "source": "estimated",
+          "tokens": 20
+        },
+        {
+          "bytes": null,
+          "kind": "agents",
+          "loading": "conditional",
+          "name": "synthetic",
+          "source": "estimated",
+          "tokens": null
+        },
+        {
+          "bytes": null,
+          "kind": "hooks",
+          "loading": "deferred",
+          "name": "synthetic",
+          "source": "estimated",
+          "tokens": null
+        },
+        {
+          "bytes": null,
+          "kind": "mcp",
+          "loading": "deferred",
+          "name": "synthetic",
+          "source": "estimated",
+          "tokens": null
+        },
+        {
+          "bytes": 40,
+          "kind": "mcpInstructions",
+          "loading": "startup",
+          "name": "synthetic",
+          "source": "measured",
+          "tokens": 10
+        },
+        {
+          "bytes": null,
+          "kind": "plugins",
+          "loading": "deferred",
+          "name": "synthetic",
+          "source": "estimated",
+          "tokens": null
+        },
+        {
+          "bytes": 4000,
+          "kind": "system",
+          "loading": "startup",
+          "name": "synthetic",
+          "source": "measured",
+          "tokens": 1000
+        },
+        {
+          "bytes": 400,
+          "kind": "tools",
+          "loading": "startup",
+          "name": "synthetic",
+          "source": "measured",
+          "tokens": 100
+        }
+      ],
+      "model": null,
+      "totalStartupTokens": 1110,
+      "warnings": []
+    },
+    {
+      "agent": "codex",
+      "contextWindow": 200000,
+      "firstRequestChars": null,
+      "firstRequestTokens": 2048,
+      "items": [],
+      "model": "synthetic-model",
+      "totalStartupTokens": 1110,
+      "warnings": ["synthetic warning"]
+    }
+  ],
+  "computedAt": "2026-11-04T12:00:00Z"
+}

@@ -1,0 +1,69 @@
+{
+  "agents": [
+    {
+      "agent": "claude",
+      "checkedAt": "2026-11-04T12:00:00Z",
+      "observedAt": "2026-11-04T12:00:00Z",
+      "reason": null,
+      "reasonKind": null,
+      "source": "api",
+      "windows": [
+        {
+          "id": "5h",
+          "resetPassed": false,
+          "resetsAt": "2026-11-04T15:00:00Z",
+          "usedPercent": 12.5
+        },
+        {
+          "id": "7d",
+          "resetPassed": true,
+          "resetsAt": "2026-11-04T15:00:00Z",
+          "usedPercent": 0.0
+        }
+      ]
+    },
+    {
+      "agent": "codex",
+      "checkedAt": "2026-11-04T12:00:00Z",
+      "observedAt": "2026-11-04T12:00:00Z",
+      "reason": "synthetic reason",
+      "reasonKind": "failure",
+      "source": "log",
+      "windows": [
+        {
+          "id": "5h",
+          "resetPassed": false,
+          "resetsAt": null,
+          "usedPercent": 3.0
+        }
+      ]
+    },
+    {
+      "agent": "kiro",
+      "checkedAt": "2026-11-04T12:00:00Z",
+      "observedAt": "2026-11-04T12:00:00Z",
+      "reason": "synthetic setup",
+      "reasonKind": "setup",
+      "source": "cli",
+      "windows": [
+        {
+          "id": "month",
+          "limit": 1000.0,
+          "resetPassed": false,
+          "resetsAt": "2026-11-04T15:00:00Z",
+          "used": 100.5,
+          "usedPercent": 10.05
+        }
+      ]
+    },
+    {
+      "agent": "claude",
+      "checkedAt": null,
+      "observedAt": null,
+      "reason": null,
+      "reasonKind": null,
+      "source": null,
+      "windows": []
+    }
+  ]
+}

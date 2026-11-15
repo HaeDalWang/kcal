@@ -1,0 +1,68 @@
+{
+  "folder": "/synthetic",
+  "id": "A2-claude-rules-paths:/synthetic/.claude/rules",
+  "rules": [
+    {
+      "beforeHash": "cbf29ce484222325",
+      "canApply": true,
+      "chars": 900,
+      "hasFrontMatter": false,
+      "key": "r1",
+      "name": "a.md",
+      "proposal": {
+        "choice": "paths",
+        "paths": ["src/**/*.ts"]
+      },
+      "reason": "합성 이유예요.",
+      "referencedBy": 0,
+      "skillExists": false
+    },
+    {
+      "beforeHash": "cbf29ce484222325",
+      "canApply": true,
+      "chars": 900,
+      "hasFrontMatter": false,
+      "key": "r2",
+      "name": "b.md",
+      "proposal": {
+        "choice": "skill",
+        "description": "Use when synthetic.",
+        "name": "synthetic-skill"
+      },
+      "reason": "합성 이유예요.",
+      "referencedBy": 0,
+      "skillExists": false
+    },
+    {
+      "beforeHash": "cbf29ce484222325",
+      "canApply": false,
+      "chars": 900,
+      "hasFrontMatter": false,
+      "key": "r3",
+      "name": "c.md",
+      "proposal": {
+        "choice": "keep"
+      },
+      "reason": "합성 이유예요.",
+      "referencedBy": 2,
+      "skillExists": false
+    },
+    {
+      "beforeHash": "cbf29ce484222325",
+      "canApply": false,
+      "chars": 900,
+      "hasFrontMatter": false,
+      "key": "r4",
+      "name": "d.md",
+      "proposal": {
+        "choice": "unusable",
+        "problem": "skillName"
+      },
+      "reason": "",
+      "referencedBy": 0,
+      "skillExists": false
+    }
+  ],
+  "scope": "user",
+  "unknownKeys": 1
+}

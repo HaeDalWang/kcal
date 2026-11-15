@@ -1,0 +1,19 @@
+<!-- macOS 메뉴바 template 이미지: kcal 불꽃(icon.svg)을 단색으로, 심박선을 뚫었다.
+     재생성: pnpm tauri icon docs/assets/tray.svg -o <tmp> -p 36 → <tmp>/36x36.png를 src-tauri/icons/tray.png로 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="62 64 388 388" width="388" height="388">
+  <defs>
+    <mask id="cut">
+      <rect x="0" y="0" width="512" height="512" fill="#fff"/>
+      <polyline points="96,334 196,334 222,286 254,386 282,300 300,334 416,334"
+                fill="none" stroke="#000" stroke-width="30"
+                stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <path mask="url(#cut)" fill="#000" d="M256 70
+           C 300 146, 388 196, 388 314
+           C 388 392, 328 446, 256 446
+           C 184 446, 124 392, 124 314
+           C 124 244, 168 204, 196 154
+           C 204 204, 224 230, 248 240
+           C 240 184, 236 126, 256 70 Z"/>
+</svg>

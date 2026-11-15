@@ -1,0 +1,348 @@
+{
+  "enabledAgents": ["claude", "kiro"],
+  "language": "auto",
+  "reason": "synthetic reason",
+  "resolvedLanguage": "en",
+  "tuning": {
+    "advanced": {
+      "cacheMissRatio": 0.5,
+      "goodR2": 0.7,
+      "holdoutTrain": 0.7,
+      "minSamplesPerVar": 3,
+      "rangeR2": 0.3,
+      "resetTolSecs": 600
+    },
+    "apiIntervalSecs": 300,
+    "barDays": 7,
+    "breakdownDays": 14,
+    "bytesPerToken": 4,
+    "checkAlertMin": 1,
+    "checkModelDays": 30,
+    "claudeHandoffMinRemaining": 20,
+    "claudeHandoffTimeoutSecs": 300,
+    "claudeLogFiles": 50,
+    "claudeLogTailBytes": 65536,
+    "codexRolloutsChecked": 3,
+    "codexSessionsToSearch": 50,
+    "compareDays": 7,
+    "contextTtlSecs": 600,
+    "dailyGoalPercent": 14,
+    "diagnoseMinSessions": 10,
+    "diagnoseUsageDays": 30,
+    "diagnoseUsageFiles": 1000,
+    "diagnoseUsageMaxMib": 2048,
+    "httpTimeoutSecs": 15,
+    "keychainTimeoutSecs": 10,
+    "kiroDailyCredits": 0,
+    "kiroIntervalSecs": 600,
+    "kiroSessionsToSearch": 50,
+    "kiroTimeoutSecs": 30,
+    "largeContextTokens": 130000,
+    "lowPercent": 20,
+    "marathonRequests": 150,
+    "maxBackoffSecs": 3600,
+    "metricsTtlSecs": 300,
+    "ratesTtlSecs": 1800,
+    "recentBars": 8,
+    "refreshMinGapSecs": 30,
+    "scopeMinUses": 3,
+    "shapeSessionsToSearch": 5,
+    "topSessions": 3
+  },
+  "tuningSpec": [
+    {
+      "default": 300.0,
+      "isInteger": true,
+      "key": "apiIntervalSecs",
+      "max": 86400.0,
+      "min": 60.0
+    },
+    {
+      "default": 600.0,
+      "isInteger": true,
+      "key": "kiroIntervalSecs",
+      "max": 86400.0,
+      "min": 60.0
+    },
+    {
+      "default": 30.0,
+      "isInteger": true,
+      "key": "refreshMinGapSecs",
+      "max": 600.0,
+      "min": 5.0
+    },
+    {
+      "default": 3600.0,
+      "isInteger": true,
+      "key": "maxBackoffSecs",
+      "max": 86400.0,
+      "min": 60.0
+    },
+    {
+      "default": 1800.0,
+      "isInteger": true,
+      "key": "ratesTtlSecs",
+      "max": 86400.0,
+      "min": 60.0
+    },
+    {
+      "default": 600.0,
+      "isInteger": true,
+      "key": "contextTtlSecs",
+      "max": 86400.0,
+      "min": 60.0
+    },
+    {
+      "default": 300.0,
+      "isInteger": true,
+      "key": "metricsTtlSecs",
+      "max": 86400.0,
+      "min": 60.0
+    },
+    {
+      "default": 15.0,
+      "isInteger": true,
+      "key": "httpTimeoutSecs",
+      "max": 300.0,
+      "min": 1.0
+    },
+    {
+      "default": 10.0,
+      "isInteger": true,
+      "key": "keychainTimeoutSecs",
+      "max": 300.0,
+      "min": 1.0
+    },
+    {
+      "default": 30.0,
+      "isInteger": true,
+      "key": "kiroTimeoutSecs",
+      "max": 300.0,
+      "min": 1.0
+    },
+    {
+      "default": 50.0,
+      "isInteger": true,
+      "key": "codexSessionsToSearch",
+      "max": 500.0,
+      "min": 1.0
+    },
+    {
+      "default": 50.0,
+      "isInteger": true,
+      "key": "kiroSessionsToSearch",
+      "max": 500.0,
+      "min": 1.0
+    },
+    {
+      "default": 5.0,
+      "isInteger": true,
+      "key": "shapeSessionsToSearch",
+      "max": 500.0,
+      "min": 1.0
+    },
+    {
+      "default": 3.0,
+      "isInteger": true,
+      "key": "codexRolloutsChecked",
+      "max": 500.0,
+      "min": 1.0
+    },
+    {
+      "default": 65536.0,
+      "isInteger": true,
+      "key": "claudeLogTailBytes",
+      "max": 16777216.0,
+      "min": 4096.0
+    },
+    {
+      "default": 4.0,
+      "isInteger": true,
+      "key": "bytesPerToken",
+      "max": 16.0,
+      "min": 1.0
+    },
+    {
+      "default": 14.0,
+      "isInteger": true,
+      "key": "breakdownDays",
+      "max": 90.0,
+      "min": 1.0
+    },
+    {
+      "default": 20.0,
+      "isInteger": true,
+      "key": "lowPercent",
+      "max": 99.0,
+      "min": 1.0
+    },
+    {
+      "default": 8.0,
+      "isInteger": true,
+      "key": "recentBars",
+      "max": 48.0,
+      "min": 1.0
+    },
+    {
+      "default": 7.0,
+      "isInteger": true,
+      "key": "barDays",
+      "max": 90.0,
+      "min": 1.0
+    },
+    {
+      "default": 50.0,
+      "isInteger": true,
+      "key": "claudeLogFiles",
+      "max": 1000.0,
+      "min": 1.0
+    },
+    {
+      "default": 3.0,
+      "isInteger": true,
+      "key": "topSessions",
+      "max": 20.0,
+      "min": 1.0
+    },
+    {
+      "default": 150.0,
+      "isInteger": true,
+      "key": "marathonRequests",
+      "max": 10000.0,
+      "min": 10.0
+    },
+    {
+      "default": 130000.0,
+      "isInteger": true,
+      "key": "largeContextTokens",
+      "max": 2000000.0,
+      "min": 1000.0
+    },
+    {
+      "default": 14.0,
+      "isInteger": true,
+      "key": "dailyGoalPercent",
+      "max": 100.0,
+      "min": 1.0
+    },
+    {
+      "default": 0.0,
+      "isInteger": true,
+      "key": "kiroDailyCredits",
+      "max": 100000.0,
+      "min": 0.0
+    },
+    {
+      "default": 7.0,
+      "isInteger": true,
+      "key": "compareDays",
+      "max": 30.0,
+      "min": 1.0
+    },
+    {
+      "default": 30.0,
+      "isInteger": true,
+      "key": "checkModelDays",
+      "max": 180.0,
+      "min": 1.0
+    },
+    {
+      "default": 1.0,
+      "isInteger": true,
+      "key": "checkAlertMin",
+      "max": 20.0,
+      "min": 1.0
+    },
+    {
+      "default": 300.0,
+      "isInteger": true,
+      "key": "claudeHandoffTimeoutSecs",
+      "max": 1800.0,
+      "min": 60.0
+    },
+    {
+      "default": 20.0,
+      "isInteger": true,
+      "key": "claudeHandoffMinRemaining",
+      "max": 90.0,
+      "min": 0.0
+    },
+    {
+      "default": 30.0,
+      "isInteger": true,
+      "key": "diagnoseUsageDays",
+      "max": 365.0,
+      "min": 1.0
+    },
+    {
+      "default": 1000.0,
+      "isInteger": true,
+      "key": "diagnoseUsageFiles",
+      "max": 10000.0,
+      "min": 1.0
+    },
+    {
+      "default": 2048.0,
+      "isInteger": true,
+      "key": "diagnoseUsageMaxMib",
+      "max": 65536.0,
+      "min": 16.0
+    },
+    {
+      "default": 10.0,
+      "isInteger": true,
+      "key": "diagnoseMinSessions",
+      "max": 1000.0,
+      "min": 0.0
+    },
+    {
+      "default": 3.0,
+      "isInteger": true,
+      "key": "scopeMinUses",
+      "max": 1000.0,
+      "min": 1.0
+    },
+    {
+      "default": 0.7,
+      "isInteger": false,
+      "key": "advanced.goodR2",
+      "max": 1.0,
+      "min": 0.0
+    },
+    {
+      "default": 0.3,
+      "isInteger": false,
+      "key": "advanced.rangeR2",
+      "max": 1.0,
+      "min": 0.0
+    },
+    {
+      "default": 600.0,
+      "isInteger": true,
+      "key": "advanced.resetTolSecs",
+      "max": 3600.0,
+      "min": 1.0
+    },
+    {
+      "default": 0.7,
+      "isInteger": false,
+      "key": "advanced.holdoutTrain",
+      "max": 0.9,
+      "min": 0.1
+    },
+    {
+      "default": 3.0,
+      "isInteger": true,
+      "key": "advanced.minSamplesPerVar",
+      "max": 20.0,
+      "min": 1.0
+    },
+    {
+      "default": 0.5,
+      "isInteger": false,
+      "key": "advanced.cacheMissRatio",
+      "max": 0.95,
+      "min": 0.05
+    }
+  ]
+}

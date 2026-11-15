@@ -1,0 +1,29 @@
+# 0012. 메뉴바 아이콘은 에이전트별 남은 % 막대
+
+- 상태: 채택(구현함, 2026-11-05). 메뉴바 실제 모습은 아직 사람이 못 봤다.
+- 날짜: 2026-11-05
+- 앞선 결정: [0004](0004-usage-and-tray.md)(트레이 아이콘·숫자 title), [0011](0011-visual-design.md)(에이전트 색). 이 결정이 0004의 macOS 숫자 title을 대체한다.
+
+## 결정
+
+| 항목         | 결정                                                                                                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 막대 구성    | 켠 에이전트(`settings.is_enabled`)마다 가로 막대 1개를 위에서 아래로 Claude·Codex·Kiro 순서로 쌓는다. 값은 `min_remaining`(가장 급한 창의 남은 %). 값을 모르면 트랙만 그린다.   |
+| macOS 색     | template 이미지(검정 + alpha). 채움 alpha 255, 트랙 alpha 90. 라이트·다크는 macOS가 맞춘다.                                                                                     |
+| Windows·기타 | 에이전트 색 채움 + 회색(128) 트랙. 색은 `src/index.css` 다크 모드 `--agent-*`(oklch)를 sRGB 상수로 옮겼다(`icon.rs`). 작업표시줄이 대체로 어두워 밝은 쪽 값을 쓴다.             |
+| 크기         | macOS 48×36px, Windows 32×32px. 아래 근거. 크기·간격·alpha는 사용자가 조절할 값이 아니라 플랫폼에 맞춘 상수다(0007 tuning 대상 아님).                                           |
+| 불꽃 대체    | 켠 에이전트가 없거나 값이 전부 없으면 기존 불꽃 아이콘(macOS `tray.png` template, 기타 `default_window_icon`).                                                                  |
+| title 제거   | macOS 숫자 `set_title`을 없앤다(사용자 선택: 막대만). `tray_title`은 삭제. tooltip은 그대로.                                                                                    |
+| 같은 이미지  | 마지막으로 그린 (에이전트, 채움 픽셀 수) 목록을 `Mutex`에 두고 같으면 `set_icon`을 건너뛴다. 에이전트가 키에 들어가는 이유는 Windows에서 같은 폭이라도 색이 다르기 때문이다.    |
+| 갱신 경로    | 기존 `tray::update`(이벤트)뿐. 타이머·polling 없음. 새 crate 없음(`Image::new_owned`로 RGBA 직접).                                                                              |
+| macOS 호출   | `set_icon`은 template 플래그를 false로 덮어쓴다(`tray-icon-0.25.1/src/platform_impl/macos/mod.rs:106-109`). 그래서 `set_icon_with_as_template`로 이미지와 플래그를 함께 바꾼다. |
+
+## 크기 근거(tray-icon 0.25.1)
+
+- macOS: `platform_impl/macos/mod.rs:281-291`. 높이를 18pt로 고정하고 `width / (height / 18)`로 가로를 비율대로 계산해 `NSImage` 크기를 정한다. 그래서 높이 36px(@2x)로 그리면 18pt에 1:1로 선명하고, 가로는 자유다. 48px = 24pt로 잡았다.
+- Windows: `platform_impl/windows/icon.rs:39-47`. 받은 RGBA 크기 그대로 `CreateIcon`을 부르고 자체 크기 조정은 없다. 셸이 트레이 크기(16px, 200%에서 32px)로 줄이므로 비율이 깨지지 않게 정사각 32px로 그린다.
+
+## 열린 것
+
+- Windows 실기에서 16px로 줄었을 때 막대 3개(7px, 간격 3px)가 읽히는지.
+- macOS 메뉴바에서 막대 3개가 읽히는지(막대 높이 8px = 4pt, 간격 2pt). 안 읽히면 `icon.rs`의 `SPEC` 상수만 고친다.

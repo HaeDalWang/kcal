@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "popover·dashboard 창 기본 권한. core:default(앱·창·이벤트 등 Tauri 코어 기본값)만 허용한다.",
+  "windows": ["popover", "dashboard"],
+  "permissions": ["core:default"]
+}

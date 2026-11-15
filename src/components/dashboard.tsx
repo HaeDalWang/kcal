@@ -1,0 +1,224 @@
+// 대시보드 창(docs/decisions/0010, 0015, 0016). 머리 아래 탭 두 개(0017 "화면 자리").
+// 사용량 탭 — 위: 고른 날(최근 7일)의 링·숫자 칸·시간대 막대. 가운데: 처방 효과(주간 요약·처방별 전후). 아래: 에이전트별 상세(지금 값).
+// 점검 탭 — 에이전트별 최적화·진단하기(`checks-tab.tsx`).
+import { useEffect, useRef, useState } from "react";
+
+import { MetricLines, UsageBars } from "@/components/agent-metrics";
+import { AgentIcon } from "@/components/agent-icon";
+import { CodexBehaviorDetails } from "@/components/behavior-section";
+import { ContextList } from "@/components/context-list";
+import { ChecksTab } from "@/components/checks-tab";
+import { CARD, DailyActivity, DayPicker } from "@/components/daily-activity";
+import { HEALTH_TITLE_ID, HealthCompare } from "@/components/health-compare";
+import { RateLine } from "@/components/rate-line";
+import { reasonStateKind, StateText } from "@/components/state-text";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AGENT_LABEL, AgentSection, useUsageSnapshot } from "@/components/usage-popover";
+import { kiroMonthlyLimit } from "@/lib/breakdown";
+import { recentDays } from "@/lib/daily";
+import {
+  errorMessage,
+  initialDashboardTab,
+  onDashboardTab,
+  refreshAll,
+  type AgentUsage,
+  type DashboardTab,
+  type Settings,
+  type UsageSnapshot,
+} from "@/lib/ipc";
+import { t } from "@/lib/i18n";
+import { useSettings } from "@/lib/use-settings";
+
+/** 요일 줄에 보이는 날 수(오늘 포함). */
+const WEEK_DAYS = 7;
+
+type UsageState = { snapshot: UsageSnapshot | null; error: string | null; now: number };
+
+/** 값이 하나도 없고 이유만 있다(로그인 필요·설치 안 됨). 사용자가 할 일이라 첫 화면 맨 위에 둔다. */
+const isUnreadable = (usage: AgentUsage | undefined): usage is AgentUsage & { reason: string } =>
+  !!usage?.reason && usage.windows.length === 0;
+
+/** 읽지 못한 에이전트의 이유. 빈 링 아래 스크롤 밖에 묻히지 않게 사용량 탭 맨 위에 한 번만 보인다. */
+function UnreadableNotices({ settings, usage: state }: { settings: Settings; usage: UsageState }) {
+  const unreadable = settings.enabledAgents
+    .map((agent) => state.snapshot?.agents.find((a) => a.agent === agent))
+    .filter(isUnreadable);
+  if (unreadable.length === 0) return null;
+  return (
+    <section className={`${CARD} flex flex-col gap-2 p-3`}>
+      {unreadable.map((usage) => (
+        <div key={usage.agent} className="flex items-start gap-1.5 px-1">
+          <AgentIcon agent={usage.agent} className="size-5 shrink-0" />
+          <StateText kind={reasonStateKind(usage)} className="pt-0.5">
+            {`${AGENT_LABEL[usage.agent]}: ${usage.reason}`}
+          </StateText>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function AgentPanels({ settings, usage: state }: { settings: Settings; usage: UsageState }) {
+  const { snapshot, error, now } = state;
+  const { lowPercent, bytesPerToken, breakdownDays } = settings.tuning;
+  return settings.enabledAgents.map((agent) => {
+    const usage = snapshot?.agents.find((a) => a.agent === agent);
+    return (
+      <section
+        key={agent}
+        aria-labelledby={`dashboard-${agent}`}
+        className={`${CARD} flex flex-col gap-2 p-3`}
+      >
+        <h2 id={`dashboard-${agent}`} className="flex items-center gap-1.5 px-1 font-medium">
+          <AgentIcon agent={agent} className="size-5" />
+          {AGENT_LABEL[agent]}
+        </h2>
+        <div className="grid grid-cols-1 gap-3 min-[900px]:grid-cols-2">
+          <div className="flex min-w-0 flex-col gap-3">
+            {error && (
+              <p role="alert" className="px-3 text-sm text-destructive">
+                {error}
+              </p>
+            )}
+            {usage && !isUnreadable(usage) && (
+              <AgentSection usage={usage} now={now} lowPercent={lowPercent} />
+            )}
+            {/* 시작 컨텍스트는 오른쪽 `ContextList` 하나로 보인다(같은 값·구성이 두 번 나오지 않게). */}
+            <MetricLines agent={agent} hasStartup={false} />
+            <UsageBars agent={agent} className="h-24" />
+            <RateLine
+              agent={agent}
+              breakdownDays={breakdownDays}
+              kiroLimit={kiroMonthlyLimit(usage)}
+            />
+            {agent === "codex" && <CodexBehaviorDetails />}
+          </div>
+          <div className="min-w-0">
+            <ContextList agent={agent} charsPerToken={bytesPerToken} maxItems={Infinity} />
+          </div>
+        </div>
+      </section>
+    );
+  });
+}
+
+/** 지금 탭과 점검 탭 스크롤 요청. `focusKey`는 팝오버 "점검"으로 열릴 때마다 늘고, 사용자가 탭을 누르면 0이다. */
+type View = { tab: DashboardTab; focusKey: number };
+
+function initialView(): View {
+  const tab = initialDashboardTab(location.search) ?? "usage";
+  return { tab, focusKey: tab === "checks" ? 1 : 0 };
+}
+
+/** 지금 탭. 새 창은 `?tab=`으로 시작하고, 이미 열린 창은 `openDashboard(tab)`이 보낸 event로 바꾼다.
+ * 점검으로 바뀌면 `focusKey`를 늘려 다시 읽고 알림 칸으로 스크롤하게 한다. */
+function useDashboardView() {
+  const [view, setView] = useState<View>(initialView);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let isCancelled = false;
+    let unlisten: (() => void) | undefined;
+    onDashboardTab((tab) =>
+      setView((prev) => ({ tab, focusKey: tab === "checks" ? prev.focusKey + 1 : 0 })),
+    ).then(
+      (stop) => (isCancelled ? stop() : (unlisten = stop)),
+      (reason: unknown) => !isCancelled && setError(errorMessage(reason)),
+    );
+    return () => {
+      isCancelled = true;
+      unlisten?.();
+    };
+  }, []);
+  return { view, setView, error };
+}
+
+export function Dashboard() {
+  const { settings, error } = useSettings();
+  const usage = useUsageSnapshot();
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+  const { view, setView, error: tabError } = useDashboardView();
+  // "효과 보기"로 사용량 탭에 왔을 때 처방 효과로 스크롤한다.
+  const isEffectPending = useRef(false);
+  // 오늘에서 며칠 전인가(0 = 오늘). 자정이 지나도 "오늘"을 가리키도록 날짜 대신 거리로 둔다.
+  const [daysAgo, setDaysAgo] = useState(0);
+  // `now`는 usage 수신·창 포커스 때만 바뀐다(타이머 없음).
+  const days = recentDays(usage.now, WEEK_DAYS);
+  const selected = WEEK_DAYS - 1 - daysAgo;
+  const select = (index: number) => setDaysAgo(WEEK_DAYS - 1 - index);
+  const refresh = () => {
+    setRefreshError(null);
+    refreshAll().catch((reason: unknown) => setRefreshError(errorMessage(reason)));
+  };
+  const showEffect = () => {
+    isEffectPending.current = true;
+    setView({ tab: "usage", focusKey: 0 });
+  };
+  useEffect(() => {
+    if (!isEffectPending.current || view.tab !== "usage") return;
+    isEffectPending.current = false;
+    document.getElementById(HEALTH_TITLE_ID)?.scrollIntoView({ block: "start" });
+  }, [view.tab]);
+  const shownError = error ?? refreshError ?? tabError;
+  return (
+    <div className="h-full overflow-y-auto bg-background">
+      <main className="mx-auto flex max-w-5xl flex-col gap-3 p-4">
+        <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <h1 className="text-base font-semibold">{t.dashboard.title}</h1>
+          {view.tab === "usage" ? (
+            <DayPicker days={days} selected={selected} onSelect={select} />
+          ) : (
+            <span />
+          )}
+          <Button variant="outline" size="sm" onClick={refresh} className="justify-self-end">
+            {t.app.refresh}
+          </Button>
+        </header>
+        {shownError && (
+          <p role="alert" className="text-sm text-destructive">
+            {shownError}
+          </p>
+        )}
+        {!error && !settings && <StateText kind="loading" />}
+        {settings && (
+          <Tabs
+            value={view.tab}
+            onValueChange={(tab: DashboardTab) => setView({ tab, focusKey: 0 })}
+            className="gap-3"
+          >
+            <TabsList>
+              <TabsTrigger value="usage" className="px-3">
+                {t.dashboard.usage}
+              </TabsTrigger>
+              <TabsTrigger value="checks" className="px-3">
+                {t.app.checks}
+              </TabsTrigger>
+            </TabsList>
+            {/* 사용량은 숨겨도 그대로 둔다(다시 와도 다시 읽지 않는다). 점검은 열 때마다 새로 읽는다. */}
+            <TabsContent value="usage" keepMounted className="flex flex-col gap-3">
+              <UnreadableNotices settings={settings} usage={usage} />
+              <DailyActivity
+                days={days}
+                selected={selected}
+                onSelect={select}
+                settings={settings}
+                kiroUsage={usage.snapshot?.agents.find((a) => a.agent === "kiro")}
+              />
+              <HealthCompare
+                refreshKey={`${settings.tuning.compareDays}:${settings.enabledAgents.join(",")}`}
+              />
+              <AgentPanels settings={settings} usage={usage} />
+            </TabsContent>
+            <TabsContent value="checks">
+              <ChecksTab
+                agents={settings.enabledAgents}
+                focusKey={view.focusKey}
+                onShowEffect={showEffect}
+              />
+            </TabsContent>
+          </Tabs>
+        )}
+      </main>
+    </div>
+  );
+}

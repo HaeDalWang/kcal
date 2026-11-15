@@ -1,0 +1,16 @@
+{
+  "action": "apply",
+  "afterHash": "af63dc4c8601ec8c",
+  "agent": "claude",
+  "at": "2026-11-05T12:00:00Z",
+  "backup": "/synthetic/.claude/rules/b.md.kcal-20261105T120000000Z.bak",
+  "created": "/synthetic/.claude/skills/synthetic-skill/SKILL.md",
+  "enabled": false,
+  "file": "/synthetic/.claude/rules/b.md",
+  "id": "1762344000000000000",
+  "name": "b.md 스킬로 옮기기",
+  "target": "claude/check:A2-claude-rules-paths:/synthetic/.claude/rules:skill",
+  "tokens": null,
+  "undoCommand": "mv 'a' 'b' && rm 'c' && rmdir 'd'",
+  "undoOf": null
+}

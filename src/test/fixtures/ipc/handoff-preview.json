@@ -1,0 +1,24 @@
+{
+  "afterLines": 180,
+  "beforeHash": "cbf29ce484222325",
+  "beforeLines": 340,
+  "canApply": true,
+  "diff": [
+    {
+      "kind": "same",
+      "text": "same"
+    },
+    {
+      "kind": "removed",
+      "text": "old"
+    },
+    {
+      "kind": "added",
+      "text": "new"
+    }
+  ],
+  "file": "/synthetic/w/CLAUDE.md",
+  "id": "B-claude-long-instructions:/synthetic/w/CLAUDE.md",
+  "missingImports": ["docs/style.md"],
+  "removed": ["겹치는 커밋 규칙 두 줄을 합쳤어요"]
+}

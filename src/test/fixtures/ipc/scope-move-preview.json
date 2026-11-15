@@ -1,0 +1,21 @@
+{
+  "beforeHash": "cbf29ce484222325",
+  "changes": [
+    {
+      "after": "true",
+      "before": null,
+      "file": "/synthetic/alpha/.claude/settings.local.json",
+      "isNewFile": true,
+      "location": "enabledPlugins.\"synthetic@m\""
+    },
+    {
+      "after": "\"synthetic@m\": false",
+      "before": "\"synthetic@m\": true",
+      "file": "/synthetic/.claude/settings.json",
+      "isNewFile": false,
+      "location": "enabledPlugins.\"synthetic@m\""
+    }
+  ],
+  "skipped": ["gone"],
+  "target": "claude/plugin:synthetic@m"
+}

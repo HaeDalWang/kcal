@@ -1,0 +1,55 @@
+[
+  {
+    "action": "apply",
+    "afterHash": "af63dc4c8601ec8c",
+    "agent": "claude",
+    "at": "2026-11-05T12:00:00Z",
+    "backup": "/synthetic/.claude/settings.json.kcal-20261105T120200000Z.bak",
+    "enabled": false,
+    "file": "/synthetic/.claude/settings.json",
+    "files": [
+      {
+        "afterHash": "af63dc4c8601ec8c",
+        "backup": null,
+        "createdDir": true,
+        "file": "/synthetic/alpha/.claude/settings.local.json"
+      }
+    ],
+    "id": "1762344120000000000",
+    "name": "synthetic@m: on only in alpha",
+    "target": "claude/plugin-scope:synthetic@m",
+    "tokens": 900,
+    "undoCommand": "cp 'a' 'b' && rm 'c' && rmdir 'd'",
+    "undoOf": null
+  },
+  {
+    "action": "undo",
+    "afterHash": "af63dc4c8601ec8c",
+    "agent": "codex",
+    "at": "2026-11-05T12:00:00Z",
+    "backup": "/synthetic/.codex/config.toml.kcal-20261105T120000000Z.bak",
+    "enabled": true,
+    "file": "/synthetic/.codex/config.toml",
+    "id": "1762344060000000000",
+    "name": "synthetic@m",
+    "target": "codex/plugin:synthetic@m",
+    "tokens": null,
+    "undoCommand": "cp 'a' 'b'",
+    "undoOf": "1762344000000000000"
+  },
+  {
+    "action": "apply",
+    "afterHash": "af63dc4c8601ec8c",
+    "agent": "codex",
+    "at": "2026-11-05T12:00:00Z",
+    "backup": "/synthetic/.codex/config.toml.kcal-20261105T120000000Z.bak",
+    "enabled": false,
+    "file": "/synthetic/.codex/config.toml",
+    "id": "1762344000000000000",
+    "name": "synthetic@m",
+    "target": "codex/plugin:synthetic@m",
+    "tokens": 900,
+    "undoCommand": "cp 'a' 'b'",
+    "undoOf": null
+  }
+]

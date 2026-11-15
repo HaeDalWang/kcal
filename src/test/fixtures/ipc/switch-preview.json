@@ -1,0 +1,10 @@
+{
+  "after": "enabled = false",
+  "before": "enabled = true",
+  "beforeHash": "cbf29ce484222325",
+  "changed": true,
+  "enabled": false,
+  "file": "/synthetic/.codex/config.toml",
+  "location": "[plugins.\"synthetic@m\"] 안 2번째 줄",
+  "target": "codex/plugin:synthetic@m"
+}

@@ -1,0 +1,135 @@
+[
+  {
+    "agent": "codex",
+    "contents": null,
+    "enabled": true,
+    "file": "/synthetic/.codex/config.toml",
+    "format": "toml",
+    "instruction": null,
+    "isProposed": true,
+    "kind": "plugin",
+    "loading": "startup",
+    "name": "synthetic@m",
+    "scope": null,
+    "scopeMove": null,
+    "target": "codex/plugin:synthetic@m",
+    "tokens": 900,
+    "usage": null
+  },
+  {
+    "agent": "claude",
+    "contents": null,
+    "enabled": true,
+    "file": null,
+    "format": "manual",
+    "instruction": "synthetic instruction",
+    "isProposed": false,
+    "kind": "mcp",
+    "loading": null,
+    "name": "synthetic",
+    "scope": null,
+    "scopeMove": null,
+    "target": "claude/mcp:synthetic",
+    "tokens": null,
+    "usage": null
+  },
+  {
+    "agent": "kiro",
+    "contents": null,
+    "enabled": false,
+    "file": null,
+    "format": "json",
+    "instruction": "synthetic instruction",
+    "isProposed": false,
+    "kind": "mcp",
+    "loading": null,
+    "name": "synthetic",
+    "scope": null,
+    "scopeMove": null,
+    "target": "kiro/mcp:synthetic",
+    "tokens": null,
+    "usage": null
+  },
+  {
+    "agent": "claude",
+    "contents": {
+      "agents": {
+        "count": 1,
+        "names": ["helper"]
+      },
+      "commands": {
+        "count": 0,
+        "names": []
+      },
+      "mcpServers": {
+        "count": 1,
+        "names": ["synthetic-server"]
+      },
+      "skills": {
+        "count": 5,
+        "names": ["alpha-skill", "beta-skill", "gamma-skill"]
+      }
+    },
+    "enabled": true,
+    "file": "/synthetic/.claude/settings.json",
+    "format": "json",
+    "instruction": null,
+    "isProposed": false,
+    "kind": "plugin",
+    "loading": "startup",
+    "name": "synthetic@m",
+    "scope": {
+      "projects": [
+        {
+          "enabled": false,
+          "file": "local",
+          "name": "beta",
+          "path": "/synthetic/beta"
+        },
+        {
+          "enabled": true,
+          "file": "project",
+          "name": "gamma",
+          "path": "/synthetic/gamma"
+        }
+      ],
+      "user": true
+    },
+    "scopeMove": {
+      "projects": [
+        {
+          "name": "alpha",
+          "path": "/synthetic/alpha"
+        }
+      ],
+      "skipped": ["gone"]
+    },
+    "target": "claude/plugin:synthetic@m",
+    "tokens": 900,
+    "usage": {
+      "days": 30,
+      "isPartial": false,
+      "lastProject": "alpha",
+      "lastUsed": 1793000000,
+      "minSessions": 10,
+      "projectCount": 2,
+      "projects": [
+        {
+          "count": 12,
+          "exists": true,
+          "name": "alpha",
+          "path": "/synthetic/alpha"
+        },
+        {
+          "count": 3,
+          "exists": false,
+          "name": "gone",
+          "path": "/synthetic/gone"
+        }
+      ],
+      "scopeMinUses": 3,
+      "sessions": 24,
+      "total": 15
+    }
+  }
+]
