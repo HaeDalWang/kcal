@@ -194,7 +194,12 @@ fn apply_writes_all_files_once_and_undo_restores_every_byte() {
     );
     assert!(applied.target.starts_with(SCOPE_TARGET_PREFIX));
     assert_eq!(applied.files.len(), 2);
-    assert!(applied.undo_command.contains("rm ") && applied.undo_command.contains("cp "));
+    let (rm, cp) = if cfg!(windows) {
+        ("del ", "copy ")
+    } else {
+        ("rm ", "cp ")
+    };
+    assert!(applied.undo_command.contains(rm) && applied.undo_command.contains(cp));
     assert_eq!(log::read(&f.log), std::slice::from_ref(&applied));
     // 옮긴 뒤: 사용자 범위는 꺼지고, 그 프로젝트들에서 켜져 있다.
     let after = kit(&f);
