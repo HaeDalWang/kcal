@@ -5,7 +5,7 @@
 <p align="center"><b>A macOS menu bar app for Claude Code, Codex and Kiro: see what your agent loads before you type, and how much usage limit is left.</b><br/>Local only. Changes your agent config only after you confirm.</p>
 
 <p align="center">
-  <img src="docs/assets/demo.gif" alt="kcal menu bar popover on the Claude tab: 60% of the 5-hour window and 42% of the weekly window left with pace, startup context at 17% of the window split into system prompt, tools, MCP, memory files and skills" width="392">
+  <img src="docs/assets/demo.gif" alt="kcal demo with demo data: the menu bar popover shows usage limit left and startup context, the Claude tab splits startup context into system prompt, tools, MCP, memory files and skills, then Checks → Diagnose turns a plugin off showing the exact line it changes, and Undo puts it back" width="720">
   <br/><sub>Demo data. kcal shows numbers from your own sessions.</sub>
 </p>
 

@@ -5,7 +5,7 @@
 <p align="center"><b>Claude Code, Codex, Kiro용 macOS 메뉴 막대 앱: 입력하기 전에 에이전트가 무엇을 싣는지, 사용 한도가 얼마나 남았는지 보여 줍니다.</b><br/>로컬에서만 동작합니다. 에이전트 설정은 확인을 받은 뒤에만 고칩니다.</p>
 
 <p align="center">
-  <img src="docs/assets/demo.gif" alt="kcal 메뉴 막대 팝오버의 Claude 탭: 5시간 한도 60%, 주간 한도 42% 남음과 페이스, 창 대비 17%인 시작 컨텍스트(시스템 프롬프트, 도구, MCP, 메모리 파일, 스킬 내역)" width="392">
+  <img src="docs/assets/demo.gif" alt="demo 데이터로 만든 kcal 시연: 메뉴 막대 팝오버에서 남은 한도와 시작 컨텍스트, Claude 탭에서 시작 컨텍스트 내역(시스템 프롬프트, 도구, MCP, 메모리 파일, 스킬), 이어서 점검 → 진단에서 플러그인을 끄며 바뀌는 줄을 보여 주고 되돌리기로 원래대로" width="720">
   <br/><sub>데모 데이터입니다. kcal은 당신의 세션에서 나온 숫자를 보여 줍니다.</sub>
 </p>
 
