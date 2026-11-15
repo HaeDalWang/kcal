@@ -3,6 +3,8 @@
 // demo-fixtures.ts (demo data, not measurements); nothing is read from the machine.
 // Open: `pnpm exec vite --port 1480 --strictPort`, then http://127.0.0.1:1480/src/test/preview/demo.html
 // `?zoom=1.2` scales the popover (the GIF is shown smaller than 1:1 in the README).
+// `?scene=diagnose` is the launch video: the Checks tab's Diagnose switches answer from demo-diagnose.ts
+// (turn a plugin off, review the line and backup, apply, undo), and clicks show a short ring.
 // Not part of the app bundle: index.html does not reference it, like popover.html and dashboard.html.
 import { mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import { StrictMode, useEffect, useState } from "react";
@@ -11,17 +13,23 @@ import { createRoot } from "react-dom/client";
 import { App } from "@/App";
 import { Dashboard } from "@/components/dashboard";
 import { followSystemTheme } from "@/lib/theme";
+import { diagnoseBackend } from "@/test/preview/demo-diagnose";
 import { demoFixtures } from "@/test/preview/demo-fixtures";
 import "@/index.css";
 
 const OPEN_DASHBOARD = "demo:open-dashboard";
-const zoom = Number(new URLSearchParams(location.search).get("zoom") ?? "1");
+const params = new URLSearchParams(location.search);
+const zoom = Number(params.get("zoom") ?? "1");
+const isDiagnoseScene = params.get("scene") === "diagnose";
+const diagnose = isDiagnoseScene ? diagnoseBackend() : null;
 const now = Date.now();
 const data = demoFixtures(now);
 
 mockWindows("popover", "dashboard");
 mockIPC(
-  (cmd) => {
+  (cmd, args) => {
+    const handled = diagnose?.(cmd, args);
+    if (handled !== undefined) return handled;
     switch (cmd) {
       case "get_settings":
         return data.settings;
@@ -38,6 +46,12 @@ mockIPC(
       case "get_checks":
         return [];
       case "open_dashboard":
+        // The Dashboard reads its first tab from `?tab=`; the real app sends it as an event.
+        if (diagnose && (args as { tab?: string } | undefined)?.tab === "checks") {
+          const url = new URL(location.href);
+          url.searchParams.set("tab", "checks");
+          history.replaceState(null, "", url);
+        }
         window.dispatchEvent(new Event(OPEN_DASHBOARD));
         return null;
       default:
@@ -144,8 +158,25 @@ const style = document.createElement("style");
 style.textContent =
   "@keyframes demo-window-in{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}" +
   ".demo-window-in{animation:demo-window-in .18s ease-out}" +
-  "html,body{background:#141a2b!important}";
+  "html,body{background:#141a2b!important}" +
+  "@keyframes demo-ring{from{opacity:.9;transform:translate(-50%,-50%) scale(.4)}to{opacity:0;transform:translate(-50%,-50%) scale(1.6)}}" +
+  ".demo-ring{position:fixed;z-index:9999;width:36px;height:36px;border-radius:9999px;border:3px solid #fff;pointer-events:none;animation:demo-ring .7s ease-out forwards}";
 document.head.append(style);
+if (isDiagnoseScene) {
+  // A short ring where a click lands, so a viewer can follow the clicks (no cursor in the recording).
+  document.addEventListener(
+    "click",
+    (e) => {
+      const ring = document.createElement("div");
+      ring.className = "demo-ring";
+      ring.style.left = `${e.clientX}px`;
+      ring.style.top = `${e.clientY}px`;
+      document.body.append(ring);
+      setTimeout(() => ring.remove(), 800);
+    },
+    true,
+  );
+}
 const root = document.getElementById("root");
 if (!root) throw new Error("#root element is missing.");
 createRoot(root).render(
