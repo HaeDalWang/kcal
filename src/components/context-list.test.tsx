@@ -307,7 +307,7 @@ describe("ContextList Codex share", () => {
     await screen.findByText("~100 토큰 (예상만, 측정할 Claude 세션 없음)");
     const group = screen.getByRole("group", { name: "시작 컨텍스트" });
 
-    await screen.findByText("기록 모으는 중 (5시간 구간 18개)");
+    await screen.findByText("아직 알 수 없어요");
     expect(within(group).queryByText(/요청마다 다시 실려서/)).toBeNull();
     expect(within(group).queryByText(/~1.90%/)).toBeNull();
   });

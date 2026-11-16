@@ -138,9 +138,26 @@ describe("RateLine", () => {
     expect(await screen.findByText("기록 모으는 중")).toBeTruthy();
   });
 
-  it("keeps the Claude collecting text with the window count and R² while the rate is not estimated", async () => {
+  it("shows a Claude token range in the main text when R² is only good enough for a range", async () => {
+    const range: CodexRate = {
+      ...estimated,
+      status: "range_only",
+      r2: 0.64,
+      windows: 35,
+      perPercent: null,
+      pattern,
+    };
+    renderWith("claude", snapshot(estimated, range));
+    const value = await screen.findByText("~612.9K~711.2K 토큰");
+    expect(screen.getByText(/기록과 덜 맞아 범위로 보여 줘요/)).toBeTruthy();
+    const details = value.closest("section")!.querySelector("[data-slot=details]")!;
+    expect(details.textContent?.replace(/\u00a0/g, " ")).toContain("R² 0.64 · 5시간 구간 35개");
+    expect(screen.queryByText(/기록 모으는 중/)).toBeNull();
+  });
+
+  it("says Claude can't tell yet, with R² and window count, when R² is too low", async () => {
     renderWith("claude", snapshot(estimated));
-    const value = await screen.findByText("기록 모으는 중 (5시간 구간 3개)");
+    const value = await screen.findByText("아직 알 수 없어요");
     const details = value.closest("section")!.querySelector("[data-slot=details]")!;
     expect(details.textContent?.replace(/\u00a0/g, " ")).toBe("R² 0.12 · 5시간 구간 3개");
     expect(screen.queryByText(/^~/)).toBeNull();
@@ -209,7 +226,7 @@ describe("RateLine cache", () => {
 });
 
 describe("codexTokensText and codexDetailText", () => {
-  it("shows only fold ranges in the details when R² is in the range band", () => {
+  it("shows a token range and per-type fold ranges when R² is in the range band", () => {
     const rate: CodexRate = {
       ...estimated,
       status: "range_only",
@@ -218,7 +235,17 @@ describe("codexTokensText and codexDetailText", () => {
       foldRange: { ...estimated.foldRange!, output: bounds(4_900, null) },
       pattern,
     };
-    expect(codexTokensText(rate, 14).isNumber).toBe(false);
+    expect(codexTokensText(rate, 14)).toMatchObject({
+      value: "~612.9K~711.2K 토큰",
+      isNumber: true,
+    });
+    // 한 항만 상한이 없으면 다른 항이 상한을 정한다. 두 항 모두 없을 때만 "≥".
+    const open = {
+      ...rate.foldRange!,
+      cachedInput: bounds(717_000, null),
+      uncachedInput: bounds(56_000, null),
+    };
+    expect(codexTokensText({ ...rate, foldRange: open }, 14).value).toBe("≥612.9K 토큰");
     expect(codexDetailText(rate)).toBe("1%당 캐시 입력 717K~810K · 입력 56K~76K · 출력 ≥4.9K 토큰");
   });
 

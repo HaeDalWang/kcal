@@ -127,6 +127,8 @@ export const en: Messages = {
     collectingHint: "Data builds up as you use it.",
     insufficient: "Not enough data yet",
     insufficientHint: "It shows up once there's more data.",
+    rangeHint:
+      "The fit is loose, so this is a range. Input tokens you can send for 1% of the 5-hour limit.",
     unknown: "Can't tell yet",
     unknownHint: "The logs alone weren't enough to calculate it.",
     kiroTurn: (share) => `1 question = ${share}% of the monthly limit`,
@@ -142,8 +144,6 @@ export const en: Messages = {
     perQuestionHint: "Credits used per question. It differs by model.",
     perQuestionEmpty: "Shows up after a few questions.",
     turns: (model, turns) => `${model}: based on ${n(turns, "question")}`,
-    claudeCollecting: (windows) => `Collecting data (${n(windows, "five-hour window")})`,
-    claudeHint: "It shows up once there's enough history.",
     claudeNone: "No history yet",
     claudeNoneHint:
       "Needs some Claude Code history. Use Claude Code for a while, then press Refresh.",

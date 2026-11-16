@@ -94,6 +94,25 @@ export function codexTokensText(
       };
     }
   }
+  // 범위만 믿을 수 있으면 fold 범위로 보통 구간의 1%당 토큰 범위를 보인다. 상한이 없으면 "≥하한".
+  if (rate.status === "range_only" && rate.foldRange && pattern && pattern.requests.median > 0) {
+    const { cachedInput, uncachedInput } = rate.foldRange;
+    const { median: requests } = pattern.requests;
+    const misses = pattern.misses.median;
+    const low = tokensPerPercent(requests, misses, {
+      cachedInput: cachedInput.min,
+      uncachedInput: uncachedInput.min,
+    });
+    const high = tokensPerPercent(requests, misses, {
+      cachedInput: cachedInput.max,
+      uncachedInput: uncachedInput.max,
+    });
+    if (low !== null) {
+      const range =
+        high === null ? `≥${formatTokens(low)}` : `~${formatTokens(low)}~${formatTokens(high)}`;
+      return { value: t.common.tokens(range), isNumber: true, hint: t.rate.rangeHint };
+    }
+  }
   if (rate.status === "no_data") {
     return { value: t.rate.collecting, isNumber: false, hint: t.rate.collectingHint };
   }
@@ -242,16 +261,15 @@ export function RateLine({
   if (agent === "kiro")
     return <KiroSection models={snapshot.kiro} aside={aside} limit={kiroLimit} />;
   const claude = snapshot.claude;
-  // Claude는 Codex와 같은 환율 모양. 판정을 통과하기 전에는 숫자 대신 쌓인 구간 수만 보인다(0006).
-  if (claude.status === "estimated")
+  // Claude도 Codex와 같은 판정·화면(0006). 5시간 구간이 하나도 없을 때만 따로 안내한다.
+  if (claude.windows > 0)
     return <CodexSections rate={claude} aside={aside} breakdownDays={breakdownDays} />;
   return (
     <InfoSection
       title={title}
-      value={claude.windows === 0 ? t.rate.claudeNone : t.rate.claudeCollecting(claude.windows)}
-      description={claude.windows === 0 ? t.rate.claudeNoneHint : t.rate.claudeHint}
+      value={t.rate.claudeNone}
+      description={t.rate.claudeNoneHint}
       aside={aside}
-      details={claude.r2 !== null && <span>{sampleText(claude)}</span>}
     />
   );
 }
