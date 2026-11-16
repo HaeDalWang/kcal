@@ -30,19 +30,23 @@ kcal이 OS마다 다르게 읽거나 다르게 동작해야 하는 것을 모은
 
 ## 검증 결과
 
-| 항목                                           | macOS              | Windows                                                                                                        | 근거           |
-| ---------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------- | -------------- |
-| `pnpm install --frozen-lockfile`               | 통과               | 통과                                                                                                           | win 2026-11-03 |
-| `typecheck` / `lint` / `format:check` / `test` | 통과               | 통과(테스트 7/7)                                                                                               | win 2026-11-03 |
-| `pnpm rust:check`                              | 통과               | 통과(Rust 테스트 9/9, 첫 빌드 409초)                                                                           | win 2026-11-03 |
-| `pnpm tauri:dev:mcp` 실행·MCP bridge           | 확인               | 확인(127.0.0.1:9223, 첫 dev 빌드 1분 20초)                                                                     | win 2026-11-03 |
-| `compute_stats` IPC(성공·오류)                 | 확인               | 확인(UI 버튼 + MCP `ipc-execute-command`)                                                                      | win 2026-11-03 |
-| 라이트·다크·system 테마                        | 확인               | 확인(system은 OS 다크를 따라감)                                                                                | win 2026-11-03 |
-| WebView 엔진                                   | WKWebView          | WebView2, UA `Edg/131.0.0.0`                                                                                   | win 2026-11-03 |
-| 유휴 CPU(dev 앱, 10초)                         | 모름               | 0초, WorkingSet 29.7MB                                                                                         | win 2026-11-03 |
-| Kiro `/usage`                                  | 동작               | 동작, 21초, 일반 텍스트 출력                                                                                   | win 2026-11-03 |
-| `pnpm rust:check`(`e30cf91`)                   | 통과               | 125/126 — 임시 폴더가 홈 아래라 테스트 1개가 실제 `~\.claude\CLAUDE.md`를 집음                                 | win 2026-11-05 |
-| 트레이 아이콘·툴팁                             | 확인               | 확인(처음엔 숨겨진 아이콘 안, 툴팁에 세 에이전트 %)                                                            | win 2026-11-05 |
-| 팝오버 위치·탭 4개·한도 조회                   | 확인               | 확인(작업 표시줄 위 오른쪽 아래, 실제 값)                                                                      | win 2026-11-05 |
-| 유휴 CPU(`e30cf91`, 10초)                      | 모름               | 0ms, WorkingSet 43.2MB                                                                                         | win 2026-11-05 |
-| 팝오버 반투명                                  | `popover` vibrancy | `acrylic` + `.vibrancy`로 반투명 동작 확인(실험). macOS에서 반영(0004, 2026-11-05), 반영본 Windows 재확인 남음 | win 2026-11-05 |
+| 항목                                           | macOS              | Windows                                                                                                                     | 근거           |
+| ---------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `pnpm install --frozen-lockfile`               | 통과               | 통과                                                                                                                        | win 2026-11-03 |
+| `typecheck` / `lint` / `format:check` / `test` | 통과               | 통과(테스트 7/7)                                                                                                            | win 2026-11-03 |
+| `pnpm rust:check`                              | 통과               | 통과(Rust 테스트 9/9, 첫 빌드 409초)                                                                                        | win 2026-11-03 |
+| `pnpm tauri:dev:mcp` 실행·MCP bridge           | 확인               | 확인(127.0.0.1:9223, 첫 dev 빌드 1분 20초)                                                                                  | win 2026-11-03 |
+| `compute_stats` IPC(성공·오류)                 | 확인               | 확인(UI 버튼 + MCP `ipc-execute-command`)                                                                                   | win 2026-11-03 |
+| 라이트·다크·system 테마                        | 확인               | 확인(system은 OS 다크를 따라감)                                                                                             | win 2026-11-03 |
+| WebView 엔진                                   | WKWebView          | WebView2, UA `Edg/131.0.0.0`                                                                                                | win 2026-11-03 |
+| 유휴 CPU(dev 앱, 10초)                         | 모름               | 0초, WorkingSet 29.7MB                                                                                                      | win 2026-11-03 |
+| Kiro `/usage`                                  | 동작               | 동작, 21초, 일반 텍스트 출력                                                                                                | win 2026-11-03 |
+| `pnpm rust:check`(`e30cf91`)                   | 통과               | 125/126 — 임시 폴더가 홈 아래라 테스트 1개가 실제 `~\.claude\CLAUDE.md`를 집음                                              | win 2026-11-05 |
+| 트레이 아이콘·툴팁                             | 확인               | 확인(처음엔 숨겨진 아이콘 안, 툴팁에 세 에이전트 %)                                                                         | win 2026-11-05 |
+| 팝오버 위치·탭 4개·한도 조회                   | 확인               | 확인(작업 표시줄 위 오른쪽 아래, 실제 값)                                                                                   | win 2026-11-05 |
+| 유휴 CPU(`e30cf91`, 10초)                      | 모름               | 0ms, WorkingSet 43.2MB                                                                                                      | win 2026-11-05 |
+| 팝오버 반투명                                  | `popover` vibrancy | `acrylic` + `.vibrancy`로 반투명 동작 확인(실험). macOS에서 반영(0004, 2026-11-05), 반영본 Windows 확인(release, `5837040`) | win 2026-11-16 |
+| `pnpm tauri:build`(`5837040`)                  | 통과               | 통과(msi 2.95 MiB, nsis 2.12 MiB)                                                                                           | win 2026-11-16 |
+| `pnpm check`(`5837040`)                        | 통과               | Vitest 208/208, Rust 327 통과 · 4 실패(kiro-cli·전역 CLAUDE.md가 테스트에 샘)                                               | win 2026-11-16 |
+| release 앱 트레이·팝오버·한도                  | 확인               | 확인(툴팁·개요 탭 실제 값, 아이콘은 처음엔 숨겨진 아이콘 안)                                                                | win 2026-11-16 |
+| 유휴 CPU(release, 10초)                        | 모름               | 0초, WorkingSet 33MB                                                                                                        | win 2026-11-16 |

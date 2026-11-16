@@ -3,6 +3,36 @@
 기기: 레노버 노트북, Windows 11 Pro 10.0.22631. 테스트 전용(개발은 macOS).
 새 기록은 위에 추가한다. 비교표는 [`README.md`](README.md).
 
+## 2026-11-16 — 공개 버전 release 빌드·실행 (`5837040`)
+
+공개 직전 확인. 원격 히스토리가 공개용으로 새로 쓰여 로컬 main과 공통 조상이 없었다. 로컬은 `backup/pre-public-af78c0d` 브랜치로 남기고 `origin/main`에 맞췄다.
+
+### 검증
+
+| 명령                             | exit | 결과                                                                     |
+| -------------------------------- | ---- | ------------------------------------------------------------------------ |
+| `pnpm install --frozen-lockfile` | 0    |                                                                          |
+| `pnpm check` — 프론트            | 0    | Vitest 208/208                                                           |
+| `pnpm check` — Rust 테스트       | 101  | 327 통과 · **4 실패** · 12 ignored(fmt·clippy 통과)                      |
+| `pnpm tauri:build`               | 0    | `kcal_0.1.0_x64_en-US.msi` 2.95 MiB, `kcal_0.1.0_x64-setup.exe` 2.12 MiB |
+
+### 실패한 테스트 4건 — 이 기기 환경이 테스트에 샌다(확인됨)
+
+제품 동작 결함은 아니다. 전역 CLAUDE.md·kiro-cli가 없는 CI runner에서는 안 걸린다(추정: 최신 `windows-latest` CI 결과로 확인).
+
+- `usage::sources::tests::detects_installed_agents_from_their_folders_and_kiro_cli`, `settings::tests::first_run_shows_only_installed_agents_and_claude_when_none`: Windows의 `kiro_cli_candidates`는 테스트 home과 상관없이 실제 `%LOCALAPPDATA%\Kiro-Cli\kiro-cli.exe`를 본다(`src-tauri/src/usage/paths.rs`). 이 기기에 kiro-cli가 설치돼 있어 빈 home에서도 Kiro가 "설치됨"이 된다. 고치는 방향: 후보 경로의 LOCALAPPDATA를 주입받게 하거나 테스트에서 home 기준으로 고정.
+- `coach::checks::tests::agents_md_hook_in_user_settings_is_removed_with_its_empty_group_and_array`, `…agents_md_hook_in_project_settings_is_instruction_only`(`find_check(...).unwrap()`이 None): 테스트 작업 폴더가 `%TEMP%`(홈 아래)라 `instructions::claude()`의 lineage가 실제 `~\.claude\CLAUDE.md`를 만나 "CLAUDE.md 있음 → AGENTS.md 안 실음"이 된다. 11-05의 lineage 문제와 같은 원인이다. 그때 `claude_in`으로 테스트 lineage를 줄였지만 coach 테스트는 `claude()`를 거쳐 그대로다.
+- 이 기기에서는 코드를 고치지 않았다(테스트 전용).
+
+### release 앱 실행(`target/release/kcal.exe`)
+
+- 트레이 아이콘은 새 exe라 다시 숨겨진 아이콘(^) 안에 있었다. 처음 설치한 사용자는 아이콘을 바로 못 볼 수 있다 → README Windows 절에 안내 한 줄 권장.
+- 툴팁: `Claude 5h 78% 남음 · 7d 36% 남음 Codex 5h 89% 남음 · 7d 61% 남음 Kiro 월 11% 남음`.
+- 팝오버: 개요 탭에 세 에이전트(남은 %, 7일·월 한도 리셋까지, 시작 컨텍스트), Kiro "낮음" 경고, 대시보드·점검(배지 1)·새로고침·설정·종료 메뉴가 나온다.
+- 반투명: 팝오버 뒤 화면이 블러로 비친다. Windows acrylic 반영본 확인(11-05 남은 항목 해소).
+- 유휴 CPU 10초 0초, WorkingSet 33MB.
+- 확인 안 함: msi·nsis 설치 과정(exe를 바로 실행했다), 라이트 모드.
+
 ## 2026-11-05 — 트레이·팝오버·한도 실기 확인 (`e30cf91`)
 
 ### 검증
