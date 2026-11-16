@@ -273,10 +273,12 @@
     "agent": "claude",
     "docs": ["https://code.claude.com/docs/en/settings-reference#effortlevel"],
     "facts": {
+      "folder": "/synthetic/w",
       "imports": ["AGENTS.md"],
       "limit": 200,
       "lines": 340,
       "name": "CLAUDE.md",
+      "scope": "project",
       "type": "longInstructions"
     },
     "file": "/synthetic/.claude/settings.json",

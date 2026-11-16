@@ -7,6 +7,7 @@ use std::sync::Arc;
 #[cfg(unix)]
 use serde_json::json;
 
+use super::super::rules_paths::RulesScope;
 use super::super::tests::records;
 use super::*;
 use crate::coach::{log, undo};
@@ -118,6 +119,43 @@ fn file_of_200_lines_has_no_card_and_201_lines_has_one() {
         .map(|o| (o.id.as_str(), o.is_recommended))
         .collect();
     assert_eq!(ids, [(HANDOFF, true), ("keep", false)]);
+}
+
+#[test]
+fn user_and_project_files_get_different_scope_and_folder() {
+    let f = fixture("scope", &rules(201));
+    f.home.write(".claude/CLAUDE.md", &rules(202));
+    f.work.write("CLAUDE.local.md", &rules(203));
+    let real = |p: &Path| {
+        std::fs::canonicalize(p)
+            .unwrap()
+            .to_string_lossy()
+            .into_owned()
+    };
+    let (home, work) = (real(f.home.path()), real(f.work.path()));
+    let mut found: Vec<(String, RulesScope, String)> =
+        list(f.home.path(), &f.records(), &Tuning::default())
+            .into_iter()
+            .filter_map(|c| match c.facts {
+                CheckFacts::LongInstructions {
+                    name,
+                    scope,
+                    folder,
+                    ..
+                } => Some((name, scope, folder)),
+                _ => None,
+            })
+            .collect();
+    found.sort_by_key(|(n, s, _)| (n.clone(), *s == RulesScope::User));
+    let want = |n: &str, s, d: &String| (n.to_string(), s, d.clone());
+    assert_eq!(
+        found,
+        [
+            want("CLAUDE.local.md", RulesScope::Project, &work),
+            want("CLAUDE.md", RulesScope::Project, &work),
+            want("CLAUDE.md", RulesScope::User, &home),
+        ]
+    );
 }
 
 #[test]

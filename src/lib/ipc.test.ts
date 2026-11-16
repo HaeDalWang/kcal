@@ -572,6 +572,8 @@ const CHECK_FACTS: { [T in CheckFacts["type"]]: Fields<FactsOf<T>> } = {
   longInstructions: {
     type: "required",
     name: "required",
+    scope: "required",
+    folder: "required",
     lines: "required",
     limit: "required",
     imports: "required",

@@ -16,6 +16,7 @@ import {
   ruleRowCopy,
   unknownKeysText,
 } from "@/lib/check-copy";
+import { setLanguage } from "@/lib/i18n";
 import type { CoachCheck } from "@/lib/ipc";
 import {
   EFFORT_CHECK,
@@ -204,11 +205,35 @@ describe("noChecksText", () => {
 });
 
 describe("long instructions card (Claude에게 맡기기)", () => {
+  it("gives a user card and a project card different short titles in ko and en", () => {
+    const user: CoachCheck = {
+      ...LONG_CHECK,
+      facts: { ...LONG_CHECK.facts, scope: "user", folder: "/Users/me", lines: 206 } as never,
+    };
+    const project: CoachCheck = {
+      ...LONG_CHECK,
+      facts: { ...LONG_CHECK.facts, lines: 214 } as never,
+    };
+    expect([checkCopy(user).shortTitle, checkCopy(project).shortTitle]).toEqual([
+      "전역 CLAUDE.md 206줄로 김",
+      "kcal 프로젝트 CLAUDE.md 214줄로 김",
+    ]);
+    setLanguage("en");
+    try {
+      expect([checkCopy(user).shortTitle, checkCopy(project).shortTitle]).toEqual([
+        "Global CLAUDE.md is 206 lines",
+        "kcal project CLAUDE.md is 214 lines",
+      ]);
+    } finally {
+      setLanguage("ko");
+    }
+  });
+
   it("names the line count in the title and puts the limit note under the recommended button", () => {
     const copy = checkCopy(LONG_CHECK);
-    expect(copy.title).toBe("안내문이 340줄이라 Claude가 다 지키기 어려워요");
+    expect(copy.title).toBe("kcal 프로젝트 CLAUDE.md 340줄이라 Claude가 다 지키기 어려워요");
     expect(copy.headline).toBe(
-      "`CLAUDE.md` 파일이 340줄이에요. 공식 문서는 파일당 200줄 아래를 권해요.",
+      "kcal 프로젝트 `CLAUDE.md` 파일이 340줄이에요. 공식 문서는 파일당 200줄 아래를 권해요.",
     );
     expect(copy.actions).toEqual([
       expect.objectContaining({

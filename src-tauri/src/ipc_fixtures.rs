@@ -724,6 +724,8 @@ fn coach_checks_match_fixture() {
             CheckKind::B,
             CheckFacts::LongInstructions {
                 name: "CLAUDE.md".into(),
+                scope: RulesScope::Project,
+                folder: "/synthetic/w".into(),
                 lines: 340,
                 limit: 200,
                 imports: ids(&["AGENTS.md"]),

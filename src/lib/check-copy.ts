@@ -227,10 +227,11 @@ function skillCopy(check: CoachCheck, f: Facts<"sameSkill">): CheckCopy {
 function longCopy(check: CoachCheck, f: Facts<"longInstructions">): CheckCopy {
   const copy = t.checks.long;
   const lines = integer.format(f.lines);
+  const where = f.scope === "user" ? copy.user : copy.project(fileName(f.folder));
   return {
-    title: copy.title(lines),
-    shortTitle: copy.short(lines),
-    headline: copy.headline(f.name, lines, f.limit),
+    title: copy.title(where, f.name, lines),
+    shortTitle: copy.short(where, f.name, lines),
+    headline: copy.headline(where, f.name, lines, f.limit),
     note: copy.note,
     what: copy.what(f.limit),
     mine: copy.mine(f.name),

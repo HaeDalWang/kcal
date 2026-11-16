@@ -171,6 +171,8 @@ export const LONG_CHECK: CoachCheck = {
   facts: {
     type: "longInstructions",
     name: "CLAUDE.md",
+    scope: "project",
+    folder: "/Users/me/work/kcal",
     lines: 340,
     limit: 200,
     imports: ["AGENTS.md", "docs/style.md"],

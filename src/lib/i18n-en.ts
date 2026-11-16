@@ -482,10 +482,13 @@ export const en: Messages = {
     handoffNote: "Uses your limit (runs only if there's limit left)",
     handoffLabel: "Ask Claude to shorten it",
     long: {
-      title: (lines) => `The instructions are ${lines} lines, too long for Claude to follow fully`,
-      short: (lines) => `Instructions are ${lines} lines`,
-      headline: (name, lines, limit) =>
-        `\`${name}\` is ${lines} lines. The official docs suggest under ${limit} lines per file.`,
+      user: "Global",
+      project: (folder) => `${folder} project`,
+      title: (where, name, lines) =>
+        `${where} ${name} is ${lines} lines, too long for Claude to follow fully`,
+      short: (where, name, lines) => `${where} ${name} is ${lines} lines`,
+      headline: (where, name, lines, limit) =>
+        `${where} \`${name}\` is ${lines} lines. The official docs suggest under ${limit} lines per file.`,
       note: "Long files load more every session, and Claude follows them less well (official docs).",
       what: (limit) =>
         `Asks Claude to rewrite it under ${limit} lines by merging overlaps without dropping any rule. You see the rewrite first.`,

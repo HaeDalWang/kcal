@@ -60,7 +60,7 @@ function list(checks: CoachCheck[], onChanged: () => void = () => {}, log: Appli
   );
 }
 
-const LONG_TITLE = "안내문이 340줄이라 Claude가 다 지키기 어려워요";
+const LONG_TITLE = "kcal 프로젝트 CLAUDE.md 340줄이라 Claude가 다 지키기 어려워요";
 const OPEN: HandoffContext = { remaining: 64, minRemaining: 20, timeoutSecs: 300 };
 
 function handoffList(handoff: HandoffContext, onChanged: () => void = () => {}) {
@@ -264,7 +264,9 @@ describe("AgentChecks", () => {
     render(handoffList({ remaining: 12, minRemaining: 20, timeoutSecs: 300 }));
     expect(within(card(LONG_TITLE)).getByText("한도 씀")).toBeTruthy();
     // 접힌 줄의 "Claude에게"도 같은 문으로 꺼진다.
-    const row = screen.getByRole("button", { name: "안내문이 340줄로 김 Claude에게" });
+    const row = screen.getByRole("button", {
+      name: "kcal 프로젝트 CLAUDE.md 340줄로 김 Claude에게",
+    });
     expect((row as HTMLButtonElement).disabled).toBe(true);
     const long = openCard(LONG_TITLE);
     const button = within(long).getByRole("button", { name: /Claude에게 줄여 달라고 하기/ });

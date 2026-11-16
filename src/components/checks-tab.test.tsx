@@ -240,7 +240,7 @@ describe("ChecksTab", () => {
     render(<ChecksTab agents={ALL} focusKey={0} onShowEffect={() => {}} />);
     const long = open(
       await within(column("Claude", "최적화")).findByRole("group", {
-        name: /안내문이 340줄이라/,
+        name: /CLAUDE.md 340줄이라/,
       }),
     );
     await within(long).findByText("한도를 씁니다 · 지금 남은 한도 64%");

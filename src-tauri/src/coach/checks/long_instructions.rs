@@ -7,6 +7,7 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
+use super::rules_paths::RulesScope;
 use super::{CheckFacts, CheckKind, CheckOption, CoachCheck, Inputs};
 use crate::context::fsutil::real_file;
 use crate::context::{ContextKind, Loading, instructions, paths};
@@ -71,7 +72,27 @@ pub fn collect_files(home: &Path, workspaces: &[PathBuf]) -> BTreeSet<PathBuf> {
         .collect()
 }
 
-fn card(file: &Path, text: &str) -> CoachCheck {
+/// 범위와 폴더. 사용자 파일(`<홈>/.claude/CLAUDE.md`)은 사용자 범위·폴더는 홈, 나머지는 프로젝트 범위·
+/// 파일이 놓인 폴더(`.claude/CLAUDE.md`는 `.claude`의 위 폴더). 여러 작업 폴더가 위 폴더의 파일 하나를 함께 싣기 때문에
+/// 작업 폴더가 아니라 파일이 놓인 폴더를 쓴다.
+fn scope_of(home: &Path, file: &Path) -> (RulesScope, String) {
+    let user = real_file(&paths::claude_root(home).join("CLAUDE.md"));
+    if user.as_deref() == Some(file) {
+        return (RulesScope::User, home.to_string_lossy().into_owned());
+    }
+    let mut dir = file.parent();
+    if dir
+        .and_then(Path::file_name)
+        .is_some_and(|n| n == ".claude")
+    {
+        dir = dir.and_then(Path::parent);
+    }
+    let folder = dir.unwrap_or(file).to_string_lossy().into_owned();
+    (RulesScope::Project, folder)
+}
+
+fn card(home: &Path, file: &Path, text: &str) -> CoachCheck {
+    let (scope, folder) = scope_of(home, file);
     let name = file
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
@@ -94,6 +115,8 @@ fn card(file: &Path, text: &str) -> CoachCheck {
         agent: Agent::Claude,
         facts: CheckFacts::LongInstructions {
             name,
+            scope,
+            folder,
             lines: line_count(text),
             limit: MAX_LINES,
             imports: instructions::imports_of(text),
@@ -111,7 +134,7 @@ pub(super) fn long_instructions(input: &Inputs) -> Vec<CoachCheck> {
         .into_iter()
         .filter_map(|file| {
             let text = std::fs::read_to_string(&file).ok()?;
-            (line_count(&text) > MAX_LINES).then(|| card(&file, &text))
+            (line_count(&text) > MAX_LINES).then(|| card(input.home, &file, &text))
         })
         .collect()
 }

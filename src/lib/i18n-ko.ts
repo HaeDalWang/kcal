@@ -474,10 +474,13 @@ export const ko = {
     handoffNote: "한도를 씁니다(남은 한도가 있어야 실행)",
     handoffLabel: "Claude에게 줄여 달라고 하기",
     long: {
-      title: (lines: string) => `안내문이 ${lines}줄이라 Claude가 다 지키기 어려워요`,
-      short: (lines: string) => `안내문이 ${lines}줄로 김`,
-      headline: (name: string, lines: string, limit: number) =>
-        `\`${name}\` 파일이 ${lines}줄이에요. 공식 문서는 파일당 ${limit}줄 아래를 권해요.`,
+      user: "전역",
+      project: (folder: string) => `${folder} 프로젝트`,
+      title: (where: string, name: string, lines: string) =>
+        `${where} ${name} ${lines}줄이라 Claude가 다 지키기 어려워요`,
+      short: (where: string, name: string, lines: string) => `${where} ${name} ${lines}줄로 김`,
+      headline: (where: string, name: string, lines: string, limit: number) =>
+        `${where} \`${name}\` 파일이 ${lines}줄이에요. 공식 문서는 파일당 ${limit}줄 아래를 권해요.`,
       note: "길면 세션마다 싣는 양이 늘고, Claude가 지시를 덜 따라요(공식 문서).",
       what: (limit: number) =>
         `Claude에게 규칙은 하나도 빼지 말고 겹치는 것만 합쳐 ${limit}줄 아래로 고쳐 써 달라고 해요. 고친 글을 먼저 보여 드려요.`,

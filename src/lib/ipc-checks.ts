@@ -101,6 +101,10 @@ export type CheckFacts =
       /** 시작 때 실리는 Claude 안내문 하나가 `limit`줄을 넘는다(0018 작업 A). 경로는 카드 `file`(실제 경로). */
       type: "longInstructions";
       name: string;
+      /** 사용자 파일(`~/.claude/CLAUDE.md`)이면 user. */
+      scope: RulesScope;
+      /** 사용자 범위는 홈, 프로젝트는 파일이 놓인 폴더. */
+      folder: string;
       lines: number;
       limit: number;
       /** 그 파일의 `@` 가져오기. */

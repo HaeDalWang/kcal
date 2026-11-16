@@ -141,6 +141,10 @@ pub enum CheckFacts {
     LongInstructions {
         /// 파일 이름(`CLAUDE.md`·`CLAUDE.local.md`).
         name: String,
+        /// 사용자 파일(`~/.claude/CLAUDE.md`)이면 `user`, 나머지는 `project`.
+        scope: rules_paths::RulesScope,
+        /// 사용자 범위는 홈, 프로젝트는 파일이 놓인 폴더(`.claude/CLAUDE.md`는 `.claude`의 위 폴더).
+        folder: String,
         lines: usize,
         limit: usize,
         /// 그 파일의 `@` 가져오기. 고쳐 쓴 글에서 빠지면 미리보기가 경고한다.
