@@ -15,7 +15,7 @@
 
 ## 설치
 
-macOS(범용 바이너리, Apple Silicon에서만 테스트), 한 줄입니다.
+macOS와 Claude Code가 필요합니다(Codex와 Kiro는 선택, 자세한 내용은 [요구 사항](#요구-사항)). 한 줄입니다.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | sh
@@ -23,7 +23,9 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 
 스크립트는 최신 릴리스를 받아 SHA-256을 확인하고, `kcal.app`을 `/Applications`에 설치한 뒤 실행합니다. 쓸 수 없으면 `~/Applications`에 설치합니다(sudo 없음). 다시 실행하면 업데이트됩니다. 짧으니 먼저 [`install.sh`](install.sh)를 읽어 봐도 됩니다.
 
-**처음 30초.** kcal은 Dock 아이콘도 창도 없습니다. 처음 실행하면 메뉴 막대 아이콘 아래에 팝오버가 한 번 열리고, 그다음부터는 아이콘을 누르세요. 아이콘이 보이지 않으면 메뉴 막대가 가득 찼거나 노치에 가려진 것일 수 있습니다. 다른 메뉴 막대 앱을 종료해 보세요. `~/.claude`(또는 `~/.claude.json`), `~/.codex`, `~/.kiro`(또는 PATH의 `kiro-cli`)에서 찾은 에이전트를 켭니다(하나도 없으면 Claude만 켭니다). 첫 한도 확인 때 kcal은 `Claude Code-credentials` Keychain 항목을 읽습니다([무엇을 보내는지](#개인정보와-읽는-것)). Claude Code가 이 항목을 kcal과 같은 `/usr/bin/security`로 저장했으므로, 시험한 Mac 한 대에서는 묻지 않았습니다(새 Mac에서는 확인하지 못했습니다). macOS가 묻는다면 창에는 kcal이 아니라 `security`가 뜨고, 허용을 누르면 됩니다. Claude Code에 로그인하지 않았다면 팝오버가 `claude`를 실행해 로그인하라고 알려 주고 Claude 한도는 보이지 않습니다. 시작 컨텍스트는 로컬 파일과 세션 로그에서 나오므로 로그인이 필요 없습니다. Claude Code 세션을 처음 열기 전에는 예상값뿐입니다.
+**처음 30초.** kcal은 Dock 아이콘도 창도 없습니다. 처음 실행하면 메뉴 막대 아이콘 아래에 팝오버가 한 번 열리고, 그다음부터는 아이콘을 누르세요. 아이콘이 보이지 않으면 메뉴 막대가 가득 찼거나 노치에 가려진 것일 수 있으니 다른 메뉴 막대 앱을 종료해 보세요. kcal은 찾은 에이전트(Claude Code, Codex, Kiro)를 켜고, 하나도 없으면 Claude만 켭니다.
+
+첫 한도 확인 때 kcal은 macOS Keychain에서 Claude Code 로그인 정보를 읽습니다([무엇을 보내는지](#개인정보와-읽는-것)). Claude Code가 이 항목을 kcal과 같은 `/usr/bin/security`로 저장했으므로, 시험한 Mac 한 대에서는 macOS가 묻지 않았습니다(새 Mac에서는 확인하지 못했습니다). macOS가 묻는다면 창에는 kcal이 아니라 `security`가 뜨니 허용을 누르면 됩니다. Claude Code에 로그인하지 않았다면 팝오버가 `claude`를 실행해 로그인하라고 알려 주고 Claude 한도는 보이지 않습니다. 시작 컨텍스트는 로그인이 필요 없지만, Claude Code 세션을 처음 열기 전에는 예상값뿐입니다.
 
 **kcal은 Apple 서명과 공증이 없습니다.** Apple Developer 계정이 없어서 ad-hoc 서명만 했습니다. 뜻은 다음과 같습니다.
 
@@ -31,18 +33,6 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 - 브라우저로 [Releases](https://github.com/HaeDalWang/kcal/releases/latest)에서 `kcal-macos-universal.dmg`를 받으면 첫 실행을 macOS가 막습니다. 한 번 열어 본 뒤 **시스템 설정 → 개인정보 보호 및 보안 → 그래도 열기**를 누르세요. 스크립트로 설치한 뒤에 창이 뜨더라도 같은 방법을 쓰면 됩니다.
 - SHA-256 확인은 깨진 다운로드를 잡습니다. 누가 만들었는지는 증명하지 않습니다. 그게 중요하면 [소스에서 빌드](CONTRIBUTING.md)하세요.
 - 이 모두의 해결책은 유료 Apple Developer ID와 공증이고, kcal에는 그것이 없습니다.
-
-삭제:
-
-```sh
-rm -rf /Applications/kcal.app "$HOME/Applications/kcal.app" \
-  "$HOME/Library/Application Support/io.github.haedalwang.kcal" \
-  "$HOME/Library/WebKit/io.github.haedalwang.kcal" \
-  "$HOME/Library/Caches/io.github.haedalwang.kcal" \
-  "$HOME/Library/Caches/kcal" "$HOME/Library/WebKit/kcal"
-```
-
-이 명령은 kcal이 에이전트 설정 옆에 만든 `*.kcal-<시각>.bak` 백업과 kcal이 만든 스킬은 지우지 않습니다. 그 변경(kcal이 만든 `<프로젝트>/.claude/settings.local.json` 포함)도 되돌리려면 먼저 kcal에서 되돌리기(Undo)를 누르세요.
 
 ## 무엇을 측정하나
 
@@ -97,7 +87,7 @@ rm -rf /Applications/kcal.app "$HOME/Applications/kcal.app" \
 kcal은 세션, 프롬프트, 설정 내용을 올리지 않습니다. 네트워크 호출은 위의 사용량 endpoint와, 누른 경우의 Claude 넘기기 버튼뿐입니다. 표를 보세요.
 
 **왜 토큰이 필요한가요?**
-남은 한도는 Claude Code가 쓰는 것과 같은 사용량 endpoint 뒤에 있고, 그 endpoint는 당신의 로그인을 요구합니다. kcal은 Keychain에서 토큰을 읽어 그 요청 한 번에만 쓰고, 갱신하지도 저장하지도 않습니다. Keychain을 읽지 못하거나 사용량 요청이 실패하면(예: Keychain 창에서 거부) kcal은 Claude 한도를 보여 주지 않습니다(`~/.local/share/agent-usage-audit/data/claude-ratelimits.jsonl` 파일이 있을 때만 그것을 대신 읽습니다).
+남은 한도는 Claude Code가 쓰는 것과 같은 사용량 endpoint 뒤에 있고, 그 endpoint는 당신의 로그인을 요구합니다. kcal은 Keychain에서 토큰을 읽어 그 요청 한 번에만 쓰고, 갱신하지도 저장하지도 않습니다. Keychain을 읽지 못하거나 사용량 요청이 실패하면(예: Keychain 창에서 거부) kcal은 Claude 한도를 보여 주지 않습니다.
 
 **시작 숫자는 정확한가요?**
 항상은 아닙니다. 시스템 프롬프트, 내장 도구, MCP 도구 정의는 Claude Code가 보낸 요청에서 측정합니다(Claude Code 2.1.300 이상). 지침 파일, 규칙, 스킬, 에이전트 정의는 파일 크기라서 합계에는 추정이 섞입니다. 토큰은 바이트 ÷ 4이고 실제 토크나이저가 아닙니다. 시작 항목 중 하나라도 추정이면 합계 앞에 `~`를 붙이고, 툴팁이 어떤 종류인지 알려 줍니다.
@@ -112,7 +102,19 @@ kcal은 세션, 프롬프트, 설정 내용을 올리지 않습니다. 네트워
 Electron이 아니라 Tauri 앱입니다(Rust + 시스템 WebKit). 만든 사람의 Apple M5 Mac에서 릴리스 빌드를 에이전트 설정 없이 5분 그대로 두었을 때(한 번 측정) 메인 프로세스의 CPU 시간은 0.02초였고, 메모리 footprint는 24MB에 팝오버를 그리는 WebKit 프로세스 약 40MB를 더한 값이었습니다(그 프로세스들의 CPU 시간은 0.02초에 들어 있지 않습니다). 활동 상태 보기의 RSS는 공유 페이지까지 세서 메인 프로세스만 약 91MB로 보였습니다. 에이전트가 설정되어 있으면 타이머로 한도도 조회하는데, 그 경우는 아직 재지 않았습니다.
 
 **Windows와 Linux는요?**
-Windows: 아직 없습니다. 위를 보세요. Linux: 나중에 할 수도 있습니다.
+Windows: 아직 없습니다. 위를 보세요. Linux: 지원하지 않습니다.
+
+**어떻게 삭제하나요?**
+
+```sh
+rm -rf /Applications/kcal.app "$HOME/Applications/kcal.app" \
+  "$HOME/Library/Application Support/io.github.haedalwang.kcal" \
+  "$HOME/Library/WebKit/io.github.haedalwang.kcal" \
+  "$HOME/Library/Caches/io.github.haedalwang.kcal" \
+  "$HOME/Library/Caches/kcal" "$HOME/Library/WebKit/kcal"
+```
+
+이 명령은 kcal이 에이전트 설정 옆에 만든 `*.kcal-<시각>.bak` 백업과 kcal이 만든 스킬은 지우지 않습니다. 그 변경(kcal이 만든 `<프로젝트>/.claude/settings.local.json` 포함)도 되돌리려면 먼저 kcal에서 되돌리기(Undo)를 누르세요.
 
 ## 기여
 
@@ -121,7 +123,3 @@ Windows: 아직 없습니다. 위를 보세요. Linux: 나중에 할 수도 있�
 ## 라이선스
 
 [MIT](LICENSE)
-
----
-
-도움이 됐다면 스타를 눌러 주세요. 다른 사람이 찾는 데 도움이 됩니다.

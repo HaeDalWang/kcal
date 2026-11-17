@@ -15,7 +15,7 @@
 
 ## Install
 
-macOS (universal binary, tested on Apple Silicon only), one line:
+You need macOS and Claude Code (Codex and Kiro are optional; details under [Requirements](#requirements)). One line:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | sh
@@ -23,7 +23,9 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 
 The script downloads the latest release, checks its SHA-256, installs `kcal.app` to `/Applications` (or `~/Applications` if that isn't writable, no sudo), and opens it. Run it again to update. Read [`install.sh`](install.sh) first if you like; it is short.
 
-**First 30 seconds.** kcal has no Dock icon and opens no window; the first launch opens the popover once under its menu bar icon, and after that you click the icon. If you don't see the icon, your menu bar may be full or behind the notch; quit another menu bar app. It turns on the agents it finds in `~/.claude` (or `~/.claude.json`), `~/.codex` and `~/.kiro` (or `kiro-cli` on your PATH); if it finds none, it turns on Claude only. The first limit check reads the `Claude Code-credentials` Keychain item ([what is sent](#privacy-and-what-it-reads)). Claude Code saved that item with `/usr/bin/security`, the same tool kcal uses, so macOS did not ask on the one Mac I tried. I have not confirmed this on a clean Mac. If macOS does ask, the prompt names `security`, not kcal, and you click Allow. If you aren't signed in to Claude Code, the popover tells you to run `claude` and sign in, and shows no Claude limit. Startup context comes from local files and session logs and doesn't need the sign-in. Before your first Claude Code session it is an estimate only.
+**First 30 seconds.** kcal has no Dock icon and no window. The first launch opens the popover once under its menu bar icon; after that, click the icon. If you don't see it, your menu bar may be full or behind the notch: quit another menu bar app. kcal turns on the agents it finds (Claude Code, Codex, Kiro); if it finds none, it turns on Claude only.
+
+The first limit check reads your Claude Code login from the macOS Keychain ([what is sent](#privacy-and-what-it-reads)). On the one Mac I tried, macOS did not ask, because Claude Code stored that item with the same `/usr/bin/security` tool kcal uses; I have not confirmed this on a clean Mac. If macOS does ask, the prompt names `security`, not kcal: click Allow. If you aren't signed in to Claude Code, the popover tells you to run `claude` and sign in, and shows no Claude limit. Startup context doesn't need the sign-in, but before your first Claude Code session it is an estimate only.
 
 **kcal is not signed or notarized by Apple.** There is no Apple Developer account behind it, so the app is ad-hoc signed only (signed without a developer certificate). What that means:
 
@@ -31,18 +33,6 @@ The script downloads the latest release, checks its SHA-256, installs `kcal.app`
 - If you download `kcal-macos-universal.dmg` from [Releases](https://github.com/HaeDalWang/kcal/releases/latest) in a browser, macOS blocks the first launch. Try to open it once, then go to **System Settings → Privacy & Security → Open Anyway**. Use the same step if a prompt ever appears after the script install.
 - The SHA-256 check catches corrupted downloads. It does not prove who built the file. If that matters to you, [build from source](CONTRIBUTING.md).
 - The fix for all of this is a paid Apple Developer ID and notarization, which kcal does not have.
-
-Uninstall:
-
-```sh
-rm -rf /Applications/kcal.app "$HOME/Applications/kcal.app" \
-  "$HOME/Library/Application Support/io.github.haedalwang.kcal" \
-  "$HOME/Library/WebKit/io.github.haedalwang.kcal" \
-  "$HOME/Library/Caches/io.github.haedalwang.kcal" \
-  "$HOME/Library/Caches/kcal" "$HOME/Library/WebKit/kcal"
-```
-
-This does not remove the `*.kcal-<time>.bak` backups kcal made next to your agent config, or skills it created. Use Undo in kcal first if you want those changes reverted, including a `<project>/.claude/settings.local.json` kcal created.
 
 ## What it measures
 
@@ -97,7 +87,7 @@ It is as safe as the source you can read: this repository, built by [`release.ym
 Your sessions, prompts and config contents are not uploaded by kcal. The only network calls are the usage endpoints above, and the Claude handoff button if you press it. See the table.
 
 **Why does it need my token?**
-Your limit left lives behind the same usage endpoint Claude Code uses, and that endpoint needs your login. kcal reads the token from the Keychain, uses it for that one request, and never refreshes or saves it. If the Keychain read or the usage request fails (for example you deny the Keychain prompt), kcal shows no limit for Claude (and, only if the file `~/.local/share/agent-usage-audit/data/claude-ratelimits.jsonl` exists, reads it instead).
+Your limit left lives behind the same usage endpoint Claude Code uses, and that endpoint needs your login. kcal reads the token from the Keychain, uses it for that one request, and never refreshes or saves it. If the Keychain read or the usage request fails (for example you deny the Keychain prompt), kcal shows no limit for Claude.
 
 **Is the startup number exact?**
 Not always. System prompt, built-in tools and MCP tool definitions are measured from the request Claude Code sent (Claude Code 2.1.300 or newer). Instruction files, rules, skills and agent definitions are file size, so the total is partly an estimate. Tokens are bytes ÷ 4, not a real tokenizer. kcal puts `~` in front of the total when any startup item is estimated, and the tooltip says which kind it is.
@@ -112,7 +102,19 @@ It's a Tauri app (Rust + the system WebKit), not Electron. Idle for 5 minutes on
 Not by itself. Add it in **System Settings → General → Login Items** (the name varies a little by macOS version): under "Open at Login", press + and pick kcal.app.
 
 **What about Windows and Linux?**
-Windows: not yet, see above. Linux: maybe later.
+Windows: not yet, see above. Linux: not supported.
+
+**How do I uninstall?**
+
+```sh
+rm -rf /Applications/kcal.app "$HOME/Applications/kcal.app" \
+  "$HOME/Library/Application Support/io.github.haedalwang.kcal" \
+  "$HOME/Library/WebKit/io.github.haedalwang.kcal" \
+  "$HOME/Library/Caches/io.github.haedalwang.kcal" \
+  "$HOME/Library/Caches/kcal" "$HOME/Library/WebKit/kcal"
+```
+
+This does not remove the `*.kcal-<time>.bak` backups kcal made next to your agent config, or skills it created. Use Undo in kcal first if you want those changes reverted, including a `<project>/.claude/settings.local.json` kcal created.
 
 ## Contributing
 
@@ -121,7 +123,3 @@ Dev setup, commands, project layout and design decisions are in [CONTRIBUTING.md
 ## License
 
 [MIT](LICENSE)
-
----
-
-If this helped you, a star helps others find it.
