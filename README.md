@@ -9,7 +9,7 @@
   <br/><sub>Demo data. kcal shows numbers from your own sessions.</sub>
 </p>
 
-**On the author's Mac, Claude Code loaded 37.6K tokens before the first message: 9% of Opus 5.5's 400K-token context window. About half of that (19.6K) came from the author's own setup: 52 skills (9.3K), 9 memory files (6.3K), MCP server instructions and tools (3.6K), 3 custom agents (0.4K).** kcal shows the same split for your setup and points at what you could switch off. <sub>Measured with `/context` in Claude Code 2.1.322 on 2026-11-12. Your numbers will differ.</sub>
+**In the author's setup, Claude Code loaded 37.6K tokens before the first message: 9% of Opus 5.5's 400K-token context window. About half of that (19.6K) came from what the author added: 52 skills (9.3K), 9 memory files (6.3K), MCP server instructions and tools (3.6K), 3 custom agents (0.4K).** kcal shows the same split for your setup and points at what you could switch off. <sub>Measured with `/context` in Claude Code 2.1.322 on 2026-11-12. Your numbers will differ.</sub>
 
 [CodexBar](https://github.com/steipete/CodexBar) shows usage limits for many AI coding providers, [ccusage](https://github.com/ccusage/ccusage) reads token usage from local logs, and Claude Code's `/context` shows how the context window is used in the current session. kcal puts the limit left and the startup context for Claude Code, Codex and Kiro in one menu bar popover, and suggests what to switch off. Not affiliated with Anthropic, OpenAI or AWS.
 
@@ -36,7 +36,11 @@ The first limit check reads your Claude Code login from the macOS Keychain ([wha
 
 ## What it measures
 
-Click the menu bar icon and you see, per agent: how much of your 5-hour and weekly limit is left and when it resets, how many tokens the agent loads at startup (system prompt, tools, MCP servers, memory files, skills), and which of those you could turn off to get limit back. kcal runs locally and has no kcal account.
+Click the menu bar icon and you see, per agent: how much of your 5-hour and weekly limit is left and when it resets, how many tokens the agent loads at startup (system prompt, tools, MCP servers, memory files, skills), and which of those you could turn off to get limit back. kcal runs locally and has no kcal account. In short:
+
+- Limit left and reset time come from each provider's usage endpoint, with local logs as a fallback.
+- Claude Code's startup context is measured from the request it actually sent; instruction files, rules and skills are estimated from file size.
+- Estimated values are marked `~`.
 
 | Number                                                         | How it is obtained                                                                                                                                                                                                                                                                                                                                                 |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -55,7 +59,12 @@ Diagnose suggests turning something off only when your last 30 days of Claude Co
 
 ## Privacy and what it reads
 
-There is no telemetry, no analytics, no updater, and no kcal server. This table lists everything kcal reads, sends or writes. Each row was derived from the source; the file and function are in the last column (function names, because line numbers go stale).
+There is no telemetry, no analytics, no updater, and no kcal server. This table lists everything kcal reads, sends or writes. Each row was derived from the source; the file and function are in the last column (function names, because line numbers go stale). In short:
+
+- Your Claude Code login token goes only to `api.anthropic.com` (Codex: `chatgpt.com`, only if enabled), to ask for your limit. It is not stored or refreshed.
+- Session logs, agent config and project files are read on your Mac; kcal keeps sizes, names and counts, not message text.
+- The one other upload is the Claude handoff button, only when you press it: one instruction file goes to Anthropic through your own Claude Code.
+- kcal writes its own settings folder and, only when you confirm, config edits with `.bak` backups and Undo.
 
 | What                                                                                                                                                                                                                                                                                                                                                                                          | Why                                                                                                                                | Where it goes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Source                                                                                                                                                                         |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -96,7 +105,7 @@ Not always. System prompt, built-in tools and MCP tool definitions are measured 
 Yes. Claude Code alone is enough. The other tabs only appear for agents you enable.
 
 **How heavy is it?**
-It's a Tauri app (Rust + the system WebKit), not Electron. Idle for 5 minutes on the author's Apple M5 Mac, release build, with no agents set up, one run: the main process used 0.02 s of CPU time; its memory footprint was 24 MB, plus about 40 MB for the WebKit processes that draw the popover (their CPU time is not in the 0.02 s). Activity Monitor's RSS counts shared pages and showed about 91 MB for the main process alone. With agents set up it also checks your limits on a timer; that case is not measured yet.
+It's a Tauri app (Rust + the system WebKit), not Electron. One run, release build, no agents set up, idle for 5 minutes on an Apple M5 Mac: the main process used 0.02 s of CPU time; its memory footprint was 24 MB, plus about 40 MB for the WebKit processes that draw the popover (their CPU time is not in the 0.02 s). Activity Monitor's RSS counts shared pages and showed about 91 MB for the main process alone. With agents set up it also checks your limits on a timer; that case is not measured yet.
 
 **Does it start at login?**
 Not by itself. Add it in **System Settings → General → Login Items** (the name varies a little by macOS version): under "Open at Login", press + and pick kcal.app.
