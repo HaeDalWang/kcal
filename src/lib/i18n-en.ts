@@ -698,5 +698,9 @@ export const en: Messages = {
     saving: "Saving…",
     save: "Save",
   },
-  dashboard: { title: "kcal Dashboard", usage: "Usage" },
+  dashboard: {
+    title: "kcal Dashboard",
+    usage: "Usage",
+    emptyGuide: "Use Claude Code, Codex, or Kiro once, then press Refresh and this fills in.",
+  },
 };

@@ -116,6 +116,19 @@ describe("Dashboard", () => {
     expect(cards[1]?.getAttribute("aria-label")).toBeTruthy();
   });
 
+  it("guides an empty first run with one sentence and a refresh action, and hides it once usage exists", async () => {
+    mockIPC((cmd) => (cmd === "get_usage" ? { agents: [] } : (FIXTURE[cmd] ?? null)), {
+      shouldMockEvents: true,
+    });
+    const { unmount } = render(<Dashboard />);
+    await screen.findByText(/한 번 쓰고 새로고침하면/);
+    unmount();
+    mock();
+    render(<Dashboard />);
+    await screen.findByRole("region", { name: "오늘 쓴 양" });
+    expect(screen.queryByText(/한 번 쓰고 새로고침하면/)).toBeNull();
+  });
+
   it("shows the no-data text instead of 0 % on a day with no usage at all", async () => {
     mockIPC((cmd) => (cmd === "get_metrics" ? null : (FIXTURE[cmd] ?? null)), {
       shouldMockEvents: true,

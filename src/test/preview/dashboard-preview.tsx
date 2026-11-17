@@ -1,6 +1,7 @@
 // 개발용 미리보기: 대시보드를 IPC fixture + 합성 시간 버킷으로 브라우저에 그린다(Tauri 없이 화면 확인용).
 // `pnpm exec vite --port 1480` 뒤 http://127.0.0.1:1480/src/test/preview/dashboard.html
 // `?empty`면 시간 버킷·처방 기록을 비워 빈 상태를 본다. `?tab=checks`면 점검 탭으로 연다(이 Mac D·C + Codex·Kiro 스위치, 숨김 1개).
+// `?blank`면 읽은 값이 전혀 없는 새 Mac 상태로 연다.
 // `&handoff=ok|opus&remaining=N`이면 긴 안내문 카드(Claude에게 맡기기)를 더한다.
 // `&rules=ok|opus&remaining=N`이면 늘 실리는 규칙 카드(0018 작업 B)를 더한다.
 // 앱 번들에는 들어가지 않는다(index.html이 참조하지 않음).
@@ -44,6 +45,8 @@ import "@/index.css";
 
 const HOUR_MS = 3_600_000;
 const isEmpty = new URLSearchParams(location.search).has("empty");
+// `?blank`면 읽은 값이 하나도 없는 첫 실행(새 Mac)을 흉내 낸다: 사용량·기록·컨텍스트·처방 전부 비어 있다.
+const isBlank = new URLSearchParams(location.search).has("blank");
 
 /** 에이전트별 하루 모양(지역 시각별 요청 수 가중치)과 요청당 쓴 양. 결정적이다. */
 const SHAPE: Record<Agent, { peak: number; scale: number; perRequest: number }> = {
@@ -156,15 +159,15 @@ mockIPC(
       case "get_settings":
         return allAgents;
       case "get_usage":
-        return usageSnapshot;
+        return isBlank ? { agents: [] } : usageSnapshot;
       case "get_metrics":
-        return metricsSnapshot;
+        return isBlank ? null : metricsSnapshot;
       case "get_rates":
-        return rates;
+        return isBlank ? null : rates;
       case "get_context":
-        return context;
+        return isBlank ? null : context;
       case "get_health":
-        return healthReport;
+        return isBlank ? null : healthReport;
       case "get_checks":
         return checks;
       case "ask_claude_handoff":

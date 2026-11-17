@@ -681,7 +681,11 @@ export const ko = {
     saving: "저장 중…",
     save: "저장",
   },
-  dashboard: { title: "kcal 대시보드", usage: "사용량" },
+  dashboard: {
+    title: "kcal 대시보드",
+    usage: "사용량",
+    emptyGuide: "Claude Code, Codex, Kiro 중 하나를 한 번 쓰고 새로고침하면 여기에 채워져요.",
+  },
 };
 
 export type Messages = typeof ko;

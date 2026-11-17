@@ -33,6 +33,9 @@ import { useSettings } from "@/lib/use-settings";
 /** 요일 줄에 보이는 날 수(오늘 포함). */
 const WEEK_DAYS = 7;
 
+/** 선택된 탭의 그림자를 없애 라이트에서 가볍게 보이게 한다(다크는 그림자가 안 보이므로 그대로). */
+const TAB = "px-3 group-data-[variant=default]/tabs-list:data-active:shadow-none";
+
 type UsageState = { snapshot: UsageSnapshot | null; error: string | null; now: number };
 
 /** 값이 하나도 없고 이유만 있다(로그인 필요·설치 안 됨). 사용자가 할 일이라 첫 화면 맨 위에 둔다. */
@@ -55,6 +58,33 @@ function UnreadableNotices({ settings, usage: state }: { settings: Settings; usa
           </StateText>
         </div>
       ))}
+    </section>
+  );
+}
+
+/** 읽은 값이 하나도 없는 첫 실행(이유도 없음). 빈 카드만 늘어서지 않게 무엇이 필요한지 한 줄과 할 일 하나를 맨 위에 둔다. */
+function EmptyGuide({
+  settings,
+  usage: state,
+  onRefresh,
+}: {
+  settings: Settings;
+  usage: UsageState;
+  onRefresh: () => void;
+}) {
+  const { snapshot } = state;
+  if (!snapshot) return null;
+  const isEmpty = settings.enabledAgents.every((agent) => {
+    const usage = snapshot.agents.find((a) => a.agent === agent);
+    return !usage || (usage.windows.length === 0 && !usage.reason);
+  });
+  if (!isEmpty) return null;
+  return (
+    <section className={`${CARD} flex items-center justify-between gap-3 p-3`}>
+      <p className="px-1 text-sm text-muted-foreground">{t.dashboard.emptyGuide}</p>
+      <Button variant="outline" size="sm" onClick={onRefresh} className="shrink-0">
+        {t.app.refresh}
+      </Button>
     </section>
   );
 }
@@ -187,16 +217,17 @@ export function Dashboard() {
             className="gap-3"
           >
             <TabsList>
-              <TabsTrigger value="usage" className="px-3">
+              <TabsTrigger value="usage" className={TAB}>
                 {t.dashboard.usage}
               </TabsTrigger>
-              <TabsTrigger value="checks" className="px-3">
+              <TabsTrigger value="checks" className={TAB}>
                 {t.app.checks}
               </TabsTrigger>
             </TabsList>
             {/* 사용량은 숨겨도 그대로 둔다(다시 와도 다시 읽지 않는다). 점검은 열 때마다 새로 읽는다. */}
             <TabsContent value="usage" keepMounted className="flex flex-col gap-3">
               <UnreadableNotices settings={settings} usage={usage} />
+              <EmptyGuide settings={settings} usage={usage} onRefresh={refresh} />
               <DailyActivity
                 days={days}
                 selected={selected}
