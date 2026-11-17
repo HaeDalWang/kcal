@@ -65,7 +65,7 @@ export const en: Messages = {
     left: (label, percent) => `${label} ${percent}% left`,
     remainingBar: (label) => `${label} remaining`,
     creditsLeft: (left, limit) => `${left} / ${limit} credits left`,
-    reset: "Reset",
+    reset: "Just reset",
     resetsIn: (duration) => `resets in ${duration}`,
     ago: (duration) => `${duration} ago`,
     updated: (ago) => `updated ${ago}`,

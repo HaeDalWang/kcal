@@ -251,7 +251,7 @@ function OverviewWindow({ window, now, lowPercent, agent }: BarProps & { agent: 
   const label = t.popover.windowShort[window.id];
   return (
     <div className="flex items-center gap-2 text-[10px] tabular-nums">
-      <span className="w-16 shrink-0 whitespace-nowrap">{`${label} ${Math.round(remaining)}%`}</span>
+      <span className="w-18 shrink-0 whitespace-nowrap">{`${label} ${Math.round(remaining)}%`}</span>
       <Bar
         remaining={remaining}
         label={t.popover.remainingBar(label)}
