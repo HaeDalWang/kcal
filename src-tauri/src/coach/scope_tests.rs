@@ -301,3 +301,76 @@ fn undo_refuses_records_pointing_outside_project_settings() {
     );
     assert!(f.a.join(".claude/settings.local.json").exists());
 }
+
+#[cfg(unix)]
+#[test]
+fn apply_refuses_when_project_claude_dir_links_outside() {
+    let f = fixture("link-dir");
+    let outside = f.home.path().join("outside");
+    std::fs::create_dir_all(&outside).unwrap();
+    std::os::unix::fs::symlink(&outside, f.a.join(".claude")).unwrap();
+    let error = message(apply_now(&f, "0000000000000000").unwrap_err());
+    assert!(error.contains("링크"), "{error}");
+    assert_eq!(std::fs::read_dir(&outside).unwrap().count(), 0);
+    assert_eq!(std::fs::read_to_string(&f.user).unwrap(), USER);
+    assert!(log::read(&f.log).is_empty());
+}
+
+#[cfg(unix)]
+#[test]
+fn apply_refuses_when_project_settings_file_links_outside() {
+    let f = fixture("link-file");
+    let outside = f.home.write("outside/victim.json", B_LOCAL);
+    std::fs::remove_file(&f.b_local).unwrap();
+    std::os::unix::fs::symlink(&outside, &f.b_local).unwrap();
+    let error = message(apply_now(&f, "0000000000000000").unwrap_err());
+    assert!(error.contains("링크"), "{error}");
+    assert_eq!(std::fs::read_to_string(&outside).unwrap(), B_LOCAL);
+    assert_eq!(std::fs::read_to_string(&f.user).unwrap(), USER);
+    assert!(!f.a.join(".claude").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn undo_refuses_when_a_project_file_became_a_link_after_apply() {
+    let f = fixture("undo-link");
+    let p = preview(&kit(&f)).unwrap();
+    let applied = apply_now(&f, &p.before_hash).unwrap();
+    let outside = f.home.write("outside/victim.json", "{}\n");
+    std::fs::remove_file(&f.b_local).unwrap();
+    std::os::unix::fs::symlink(&outside, &f.b_local).unwrap();
+    assert!(
+        undo_record(
+            f.home.path(),
+            &f.log,
+            &applied.id,
+            OffsetDateTime::now_utc()
+        )
+        .is_err()
+    );
+    assert_eq!(std::fs::read_to_string(&outside).unwrap(), "{}\n");
+}
+
+#[cfg(unix)]
+#[test]
+fn apply_and_undo_still_follow_a_linked_user_settings_file() {
+    let f = fixture("link-user");
+    let dotfiles = f.home.write("dotfiles/settings.json", USER);
+    std::fs::remove_file(&f.user).unwrap();
+    std::os::unix::fs::symlink(&dotfiles, &f.user).unwrap();
+    let p = preview(&kit(&f)).unwrap();
+    let applied = apply_now(&f, &p.before_hash).unwrap();
+    assert!(std::fs::symlink_metadata(&f.user).unwrap().is_symlink());
+    assert_eq!(
+        std::fs::read_to_string(&dotfiles).unwrap(),
+        USER.replace("\"kit@m\": true", "\"kit@m\": false")
+    );
+    undo_record(
+        f.home.path(),
+        &f.log,
+        &applied.id,
+        OffsetDateTime::now_utc(),
+    )
+    .unwrap();
+    assert_eq!(std::fs::read_to_string(&dotfiles).unwrap(), USER);
+}

@@ -211,8 +211,25 @@ fn local_file(project: &Path) -> PathBuf {
     project.join(CLAUDE_DIR).join(LOCAL_FILE)
 }
 
+fn is_link(path: &Path) -> bool {
+    std::fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink())
+}
+
+/// 프로젝트 쪽 `.claude` 폴더나 설정 파일이 링크면 쓰지 않는다(낯선 저장소가 프로젝트 밖 파일을 가리켜 덮게 하지 못하게).
+/// 사용자 설정 파일의 링크(dotfiles)는 대상이 아니라 계속 따라간다.
+fn has_project_link(file: &Path) -> bool {
+    is_link(file) || file.parent().is_some_and(is_link)
+}
+
 fn plan_project(project: &Path, id: &str) -> Result<Option<Planned>, AppError> {
     let dir = project.join(CLAUDE_DIR);
+    if has_project_link(&local_file(project)) {
+        return Err(refuse(crate::tr!(
+            "{}의 설정 폴더나 파일이 링크라 프로젝트 밖을 고칠 수 있어 고치지 않습니다.",
+            "The settings folder or file in {} is a link that could point outside the project, so kcal won't edit it.",
+            project.display()
+        )));
+    }
     if dir.exists() && !dir.is_dir() {
         return Err(refuse(crate::tr!(
             "{}이(가) 폴더가 아니라 고치지 않습니다.",
@@ -506,6 +523,7 @@ fn is_known_project_file(logged: &LoggedFile) -> bool {
         && file.file_name() == Some(LOCAL_FILE.as_ref())
         && file.parent().and_then(Path::file_name) == Some(CLAUDE_DIR.as_ref());
     is_local_file
+        && !has_project_link(file)
         && logged
             .backup
             .as_deref()
