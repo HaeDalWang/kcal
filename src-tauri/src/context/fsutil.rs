@@ -48,21 +48,24 @@ const NEVER_WALKED: [&str; 2] = ["node_modules", ".git"];
 /// 읽지 못하는 폴더는 건너뛴다. 결과는 이름순.
 pub fn walk_files(directory: &Path, predicate: &dyn Fn(&Path) -> bool) -> Vec<PathBuf> {
     let mut files = Vec::new();
-    walk(directory, predicate, &mut files, &mut HashSet::new());
+    if let Ok(real) = std::fs::canonicalize(directory)
+        && real.is_dir()
+    {
+        walk(directory, real, predicate, &mut files, &mut HashSet::new());
+    }
     files
 }
 
+/// `real`은 `directory`의 실제 경로다.
 fn walk(
     directory: &Path,
+    real: PathBuf,
     predicate: &dyn Fn(&Path) -> bool,
     files: &mut Vec<PathBuf>,
     visited: &mut HashSet<PathBuf>,
 ) {
     // ctxmeter는 inode로 중복을 막는다. 폴더는 hard link가 없으므로 실제 경로로 같다(Windows 포함).
-    let Ok(real) = std::fs::canonicalize(directory) else {
-        return;
-    };
-    if !real.is_dir() || !visited.insert(real) {
+    if !visited.insert(real.clone()) {
         return;
     }
     let Ok(entries) = std::fs::read_dir(directory) else {
@@ -76,12 +79,26 @@ fn walk(
             continue;
         }
         let item = entry.path();
-        // metadata는 링크를 따라간다. 깨진 링크는 건너뛴다.
+        // 항목 종류는 stat 없이 나오고, 링크가 아닌 폴더의 실제 경로는 부모 실제 경로 + 이름이다
+        // (Kiro 세션 폴더는 폴더 약 3만 개). 링크만 stat·canonicalize로 따라가고, 깨진 링크는 건너뛴다.
+        let Ok(kind) = entry.file_type() else {
+            continue;
+        };
+        if !kind.is_symlink() {
+            if kind.is_dir() {
+                walk(&item, real.join(&name), predicate, files, visited);
+            } else if kind.is_file() && predicate(&item) {
+                files.push(item);
+            }
+            continue;
+        }
         let Ok(meta) = std::fs::metadata(&item) else {
             continue;
         };
         if meta.is_dir() {
-            walk(&item, predicate, files, visited);
+            if let Ok(target) = std::fs::canonicalize(&item) {
+                walk(&item, target, predicate, files, visited);
+            }
         } else if meta.is_file() && predicate(&item) {
             files.push(item);
         }
@@ -341,5 +358,23 @@ mod tests {
             p("/h/.claude/skills/a/SKILL.md"),
             AssetStatus::ActiveCandidate
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn walk_follows_links_once_and_skips_broken_links() {
+        use std::os::unix::fs::symlink;
+        let dir = testing::TempDir::new("walk-links");
+        dir.write("root/a/x.md", "");
+        dir.write("other/y.md", "");
+        let root = dir.path().join("root");
+        symlink(dir.path().join("other"), root.join("b")).unwrap();
+        symlink(&root, root.join("a/loop")).unwrap();
+        symlink(root.join("nowhere"), root.join("broken")).unwrap();
+        symlink(root.join("a/x.md"), root.join("z.md")).unwrap();
+        let got = walk_files(&root, &|p| p.extension().is_some_and(|e| e == "md"));
+        let names: Vec<_> = got.iter().map(|p| p.strip_prefix(&root).unwrap()).collect();
+        // 폴더 링크는 따라가고(b), 이미 본 폴더로 가는 링크(a/loop)는 다시 들어가지 않는다. 파일 링크(z.md)는 센다.
+        assert_eq!(names, ["a/x.md", "b/y.md", "z.md"].map(Path::new).to_vec());
     }
 }
