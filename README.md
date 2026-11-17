@@ -123,3 +123,7 @@ Dev setup, commands, project layout and design decisions are in [CONTRIBUTING.md
 ## License
 
 [MIT](LICENSE)
+
+---
+
+If this helped you, a star helps others find it.
