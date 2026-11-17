@@ -113,10 +113,27 @@ fn entry(line: &[u8]) -> Option<Entry> {
 }
 
 /// 파일별 파싱 결과: (수정 시각, 크기)가 같으면 다시 읽지 않는다. 환율·지표·검진 전후·점검이 같은 파일을 나눠 쓴다.
-// ponytail: 없어진 파일의 항목은 앱이 끝날 때까지 남는다(이 Mac 줄 수만큼의 작은 목록). 문제가 되면 호출마다 목록에 없는 경로를 지운다.
+// ponytail: 메모는 앱이 끝날 때까지 남고 없어진 파일의 항목도 안 지운다. 이 Mac(322파일·3.6만 줄)은 줄당 약 269B, 총 약 9.7MB(RSS +28.7MB는 읽기 중 버퍼·할당자 몫 포함). 10MB를 넘으면 model·cwd를 Arc<str>로 인터닝하고 호출마다 목록에 없는 경로를 지운다.
 #[allow(clippy::type_complexity)]
 static PARSED: LazyLock<Mutex<HashMap<PathBuf, (SystemTime, u64, Arc<Vec<Entry>>)>>> =
     LazyLock::new(Default::default);
+
+/// 테스트용: 메모의 (파일 수, 항목 수, 추정 바이트 = 항목 크기 × 개수 + 문자열 capacity 합).
+#[cfg(test)]
+pub(crate) fn memo_stats() -> (usize, usize, usize) {
+    let map = PARSED.lock().unwrap();
+    let (mut n, mut bytes) = (0, 0);
+    for (_, _, v) in map.values() {
+        n += v.len();
+        bytes += v.capacity() * std::mem::size_of::<Entry>();
+        for e in v.iter() {
+            for s in [&e.id, &e.model, &e.cwd].into_iter().flatten() {
+                bytes += s.capacity();
+            }
+        }
+    }
+    (map.len(), n, bytes)
+}
 
 /// 테스트용: 경로별로 실제로 파일을 읽은 횟수.
 #[cfg(test)]

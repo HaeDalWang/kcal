@@ -250,6 +250,17 @@ fn real_claude_read_cost() {
     );
     let now = unix_secs(OffsetDateTime::now_utc());
     let tuning = crate::tuning::Tuning::default();
+    let rss_kb = || -> u64 {
+        let out = std::process::Command::new("ps")
+            .args(["-o", "rss=", "-p", &std::process::id().to_string()])
+            .output()
+            .unwrap();
+        String::from_utf8_lossy(&out.stdout)
+            .trim()
+            .parse()
+            .unwrap_or(0)
+    };
+    println!("MEMO before rss={}KB", rss_kb());
     for pass in ["cold", "warm"] {
         let total = Instant::now();
         let t = Instant::now();
@@ -274,6 +285,12 @@ fn real_claude_read_cost() {
             models.len(),
             cwds.len(),
             total.elapsed().as_millis()
+        );
+        let (files, n, bytes) = crate::metrics::claude::memo_stats();
+        println!(
+            "MEMO {pass} rss={}KB files={files} entries={n} est={bytes}B per_entry={}B",
+            rss_kb(),
+            bytes / n.max(1)
         );
     }
 }
