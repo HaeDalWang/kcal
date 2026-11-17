@@ -33,7 +33,7 @@ static ENABLED_BOOL: LazyLock<Regex> =
 
 /// 진짜 table 헤더인 줄 번호. 여러 줄 배열(`  ["a", "b"],`)·여러 줄 문자열 안에서 `[`로 시작하는 줄은
 /// 값의 일부라 헤더로 보지 않는다(그렇게 보면 section이 일찍 끝나 키가 두 번 들어간다).
-fn header_indices(lines: &[&str]) -> Vec<usize> {
+pub(crate) fn header_indices(lines: &[&str]) -> Vec<usize> {
     let mut headers = Vec::new();
     let mut depth: usize = 0;
     let mut open_string: Option<&str> = None;

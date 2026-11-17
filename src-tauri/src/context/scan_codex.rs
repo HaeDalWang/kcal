@@ -4,6 +4,16 @@ use super::*;
 
 static SECTION: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\s*\[([^\]]+)\]").unwrap());
 
+/// 진짜 table 헤더의 section 이름. 여러 줄 배열 안의 `["a"],` 같은 줄은 헤더가 아니다(편집기와 같은 판정을 쓴다).
+fn section_headers(config: &str) -> Vec<Option<String>> {
+    let lines: Vec<&str> = config.split('\n').collect();
+    let mut sections = vec![None; lines.len()];
+    for i in crate::coach::edit::header_indices(&lines) {
+        sections[i] = SECTION.captures(lines[i]).map(|c| c[1].to_owned());
+    }
+    sections
+}
+
 /// Codex `config.toml`의 켜고 끄는 section 하나(5층 코칭이 같은 결과로 스위치 목록을 만든다, 0014).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct TomlSwitchState {
@@ -20,12 +30,13 @@ pub(crate) fn codex_plugin_states(config: &str) -> Vec<TomlSwitchState> {
         LazyLock::new(|| Regex::new(r"^\s*enabled\s*=\s*true(?:\s*(?:#.*)?)?$").unwrap());
     let mut states: Vec<TomlSwitchState> = Vec::new();
     let mut current: Option<usize> = None;
-    for line in config.split('\n') {
-        if let Some(section) = SECTION.captures(line) {
-            current = PLUGIN.captures(&section[1]).map(|c| {
+    let headers = section_headers(config);
+    for (line, header) in config.split('\n').zip(&headers) {
+        if let Some(section) = header {
+            current = PLUGIN.captures(section).map(|c| {
                 states.push(TomlSwitchState {
                     name: c[1].to_owned(),
-                    section: section[1].to_owned(),
+                    section: section.to_owned(),
                     enabled: false,
                 });
                 states.len() - 1
@@ -55,16 +66,17 @@ pub(crate) fn codex_mcp_server_states(config: &str) -> Vec<TomlSwitchState> {
         LazyLock::new(|| Regex::new(r"^\s*enabled\s*=\s*false(?:\s*(?:#.*)?)?$").unwrap());
     let mut states = Vec::new();
     let mut current: Option<TomlSwitchState> = None;
-    for line in config.split('\n') {
-        if let Some(section) = SECTION.captures(line) {
+    let headers = section_headers(config);
+    for (line, header) in config.split('\n').zip(&headers) {
+        if let Some(section) = header {
             states.extend(current.take());
             // `.env` 같은 하위 section은 이름을 비워 그 안의 키를 서버 키로 읽지 않는다.
             current = SERVER
-                .captures(&section[1])
+                .captures(section)
                 .and_then(|c| c.get(1).or(c.get(2)))
                 .map(|m| TomlSwitchState {
                     name: m.as_str().to_owned(),
-                    section: section[1].to_owned(),
+                    section: section.to_owned(),
                     enabled: true,
                 });
         } else if let Some(state) = current.as_mut()

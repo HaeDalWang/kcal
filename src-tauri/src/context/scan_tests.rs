@@ -289,6 +289,28 @@ enabled = false
 }
 
 #[test]
+fn codex_toml_readers_ignore_multi_line_array_rows_that_look_like_headers() {
+    let config = r#"
+[mcp_servers.x]
+args = [
+  ["a", "b"],
+  ["c"],
+]
+enabled = false
+[plugins."y@m"]
+list = [
+  [1],
+]
+enabled = true
+"#;
+    assert!(codex_enabled_mcp_servers(config).is_empty());
+    assert_eq!(codex_enabled_plugins(config), ["y@m"]);
+    let states = codex_mcp_server_states(config);
+    assert_eq!(states.len(), 1);
+    assert!(!states[0].enabled);
+}
+
+#[test]
 fn codex_measured_system_item_and_first_request_tokens() {
     let home = TempDir::new("scan-codex-session");
     home.write(".codex/AGENTS.md", "global");
