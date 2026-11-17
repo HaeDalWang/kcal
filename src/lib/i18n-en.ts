@@ -97,7 +97,7 @@ export const en: Messages = {
       skills: "Skills",
     },
     startupValue: (mark, percent, tokens, window) =>
-      `${mark}${percent}% of context window (${mark}${tokens} / ${window})`,
+      `${mark}${percent}% of context window (${mark}${tokens} / ${window} tokens)`,
     // Overview line: with the token counts it wraps to two lines at 310px (2026-11-11 screen). Tokens stay in the tooltip.
     startupShort: (mark, percent) => `${mark}${percent}% of context window`,
     estimateOnly: "(estimate only, no Claude session to measure)",
@@ -191,6 +191,7 @@ export const en: Messages = {
     amount: (value, isCredits) => (isCredits ? `${value} credits` : `${value}%`),
     unit: (isCredits) => (isCredits ? "credits" : "%"),
     goal: (goal) => ` / daily share ${goal}`,
+    goalLabel: (goal) => `daily share ${goal}`,
     today: "Today",
     yesterday: "Yesterday",
     previous: "Previous day",
@@ -699,6 +700,7 @@ export const en: Messages = {
     range: (range) => `Must be within ${range}.`,
     formInvalid: "Some values are out of range, so nothing was saved.",
     rejected: "Save was rejected.",
+    title: "Tuning (defaults are fine)",
     advanced: "Advanced: rules for tokens per 1% of the limit",
     advancedNote: "Changing these changes what \u201cestimated\u201d means.",
     reset: "Reset to defaults",

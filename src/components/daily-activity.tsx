@@ -245,10 +245,12 @@ function TodayCard({ values }: { values: readonly AgentDay[] }) {
               )}
               {/* 넘침을 색만으로 알리지 않는다(6절 3). */}
               {isOver && <span className="text-xs font-medium text-warn">{t.daily.over}</span>}
-              {/* 빈 날은 단위 없는 목표 숫자를 보이지 않는다(design.md 1절: 모르는 값은 줄 숨김). */}
+              {/* 빈 날은 목표 줄을 보이지 않는다(design.md 1절: 모르는 값은 줄 숨김). */}
               {!isEmpty && (
                 <span className="mt-1.5 w-full border-t pt-1 text-center text-xs text-muted-foreground tabular-nums">
-                  {v.goal === null ? t.daily.noMonthlyLimit : `/${amount.format(v.goal)}`}
+                  {v.goal === null
+                    ? t.daily.noMonthlyLimit
+                    : t.daily.goalLabel(t.daily.amount(amount.format(v.goal), v.isCredits))}
                 </span>
               )}
             </li>

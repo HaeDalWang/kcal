@@ -37,7 +37,18 @@ function mockSave(reply: (args: { enabledAgents: Agent[]; tuning?: Tuning }) => 
 }
 
 const input = (label: RegExp) => screen.getByLabelText(label) as HTMLInputElement;
-const saveButton = () => screen.getByRole("button", { name: "저장" });
+/** 조절 값은 접혀 있고 저장 줄은 펼쳐야 보인다. */
+function openTuning() {
+  // jsdom은 summary 클릭으로 details를 열지 않는다. 브라우저처럼 open + toggle 이벤트를 낸다.
+  const details = screen.getByText(/^조절 값/).closest("details") as HTMLDetailsElement;
+  if (details.open) return;
+  details.open = true;
+  fireEvent(details, new Event("toggle"));
+}
+const saveButton = () => {
+  openTuning();
+  return screen.getByRole("button", { name: "저장" });
+};
 
 describe("SettingsView", () => {
   it("shows the app version at the bottom", async () => {
@@ -72,6 +83,16 @@ describe("SettingsView", () => {
       expect(onSaved).toHaveBeenCalledWith(settingsWith(DEFAULT_TUNING, ["claude", "codex"])),
     );
     expect(calls).toEqual([{ enabledAgents: ["claude", "codex"] }]);
+  });
+
+  it("keeps the tuning fields folded and hides the save row until opened", () => {
+    mockIPC(() => undefined);
+    render(<SettingsView settings={settingsWith()} onSaved={() => {}} onBack={() => {}} />);
+    expect((screen.getByText(/^조절 값/).closest("details") as HTMLDetailsElement).open).toBe(
+      false,
+    );
+    expect(screen.queryByRole("button", { name: "저장" })).toBeNull();
+    expect(saveButton().hasAttribute("disabled")).toBe(true);
   });
 
   it("converts between display units and stored units both ways", () => {
@@ -176,7 +197,7 @@ describe("SettingsView", () => {
     render(<SettingsView settings={settingsWith(changed)} onSaved={() => {}} onBack={() => {}} />);
     expect(input(/^Claude·Codex 간격/).value).toBe("2");
 
-    fireEvent.click(screen.getByRole("button", { name: "기본값으로" }));
+    fireEvent.click((openTuning(), screen.getByRole("button", { name: "기본값으로" })));
     expect(input(/^Claude·Codex 간격/).value).toBe("5");
     expect(input(/^경고색 기준/).value).toBe("20");
     fireEvent.click(saveButton());

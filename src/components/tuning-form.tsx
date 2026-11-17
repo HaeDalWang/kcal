@@ -164,6 +164,7 @@ export function TuningForm({ settings, isSaving, onSave, children }: TuningFormP
   const [edits, setEdits] = useState<Edits>({});
   const [errors, setErrors] = useState<Edits>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [isTuningOpen, setIsTuningOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const specs = new Map(settings.tuningSpec.map((spec) => [spec.key, spec]));
   const current = (key: TuningKey) => toDisplay(key, readTuning(settings.tuning, key));
@@ -171,6 +172,7 @@ export function TuningForm({ settings, isSaving, onSave, children }: TuningFormP
 
   const showErrors = (next: Edits) => {
     setErrors(next);
+    if (Object.keys(next).length > 0) setIsTuningOpen(true);
     if (Object.keys(next).some((key) => key.startsWith(ADVANCED_PREFIX))) setIsAdvancedOpen(true);
   };
 
@@ -274,49 +276,63 @@ export function TuningForm({ settings, isSaving, onSave, children }: TuningFormP
         style={{ maxHeight: SCROLL_MAX_PX }}
       >
         {children}
-        {SECTIONS.map((section) => (
-          <fieldset key={section} className="flex flex-col gap-1.5">
-            <legend className="mb-1 text-xs text-muted-foreground">
-              {t.tuning.sections[section]}
-            </legend>
-            {keysOf(section).map(renderField)}
-          </fieldset>
-        ))}
+        {/* 조절 값은 기본으로 접는다. 저장 줄도 펼쳤을 때만 보인다(에이전트·언어는 바로 저장). */}
         <details
-          open={isAdvancedOpen}
-          onToggle={(event) => setIsAdvancedOpen(event.currentTarget.open)}
+          open={isTuningOpen}
+          onToggle={(event) => setIsTuningOpen(event.currentTarget.open)}
           className="flex flex-col"
         >
           <summary className={`${SUMMARY_CLASS} text-xs text-muted-foreground`}>
-            {t.tuning.advanced}
+            {t.tuning.title}
           </summary>
-          <div className="mt-1.5 flex flex-col gap-1.5">
-            <p className="text-xs text-muted-foreground">{t.tuning.advancedNote}</p>
-            {keysOf("advanced").map(renderField)}
+          <div className="mt-1.5 flex flex-col gap-3">
+            {SECTIONS.map((section) => (
+              <fieldset key={section} className="flex flex-col gap-1.5">
+                <legend className="mb-1 text-xs text-muted-foreground">
+                  {t.tuning.sections[section]}
+                </legend>
+                {keysOf(section).map(renderField)}
+              </fieldset>
+            ))}
+            <details
+              open={isAdvancedOpen}
+              onToggle={(event) => setIsAdvancedOpen(event.currentTarget.open)}
+              className="flex flex-col"
+            >
+              <summary className={`${SUMMARY_CLASS} text-xs text-muted-foreground`}>
+                {t.tuning.advanced}
+              </summary>
+              <div className="mt-1.5 flex flex-col gap-1.5">
+                <p className="text-xs text-muted-foreground">{t.tuning.advancedNote}</p>
+                {keysOf("advanced").map(renderField)}
+              </div>
+            </details>
           </div>
         </details>
       </div>
-      <div className="flex flex-col gap-1.5 border-t px-3 py-2">
-        {formError && (
-          <p role="alert" className="text-xs text-destructive">
-            {formError}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={resetToDefaults}
-            disabled={isSaving}
-          >
-            {t.tuning.reset}
-          </Button>
-          <Button type="submit" size="sm" disabled={!isDirty || isSaving}>
-            {isSaving ? t.tuning.saving : t.tuning.save}
-          </Button>
+      {isTuningOpen && (
+        <div className="flex flex-col gap-1.5 border-t px-3 py-2">
+          {formError && (
+            <p role="alert" className="text-xs text-destructive">
+              {formError}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={resetToDefaults}
+              disabled={isSaving}
+            >
+              {t.tuning.reset}
+            </Button>
+            <Button type="submit" size="sm" disabled={!isDirty || isSaving}>
+              {isSaving ? t.tuning.saving : t.tuning.save}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </form>
   );
 }

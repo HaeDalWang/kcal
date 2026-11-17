@@ -125,9 +125,23 @@ describe("Dashboard", () => {
     expect(within(card).getAllByText("기록 없음").length).toBeGreaterThanOrEqual(3);
     expect(within(card).queryByText("%")).toBeNull();
     expect(within(card).queryByText("0")).toBeNull();
-    // 단위 없는 목표("/14")는 빈 날에 보이지 않는다.
-    expect(within(card).queryByText(/^\/\d/)).toBeNull();
+    // 목표 줄("하루 몫 14%")은 빈 날에 보이지 않는다.
+    expect(within(card).queryByText(/^하루 몫/)).toBeNull();
     expect(within(card).getByRole("img").getAttribute("aria-label")).not.toMatch(/\d/);
+  });
+
+  it("names the daily share with its unit under each ring", async () => {
+    // 지표 픽스처의 기록이 있는 날(2026-11-04 UTC 10~11시)을 오늘로 둔다.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-04T14:00:00Z"));
+    try {
+      mock();
+      render(<Dashboard />);
+      const card = await screen.findByRole("region", { name: "오늘 쓴 양" });
+      expect(within(card).getAllByText(/^하루 몫 [\d.,]+%$/).length).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("effect button in diagnosis goes to the usage tab and scrolls to prescription effects", async () => {
