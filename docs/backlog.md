@@ -120,7 +120,8 @@
 
 Windows에서 확인할 것:
 
-- [ ] `fsutil`이 `canonicalize`를 쓰는데 Windows에서는 `\\?\` 경로가 나온다. 3b에서 사용자 경로·세션 `cwd`와 비교할 때 어긋날 수 있다.
+- [x] `canonicalize`의 `\\?\` 경로(2026-11-18, 확인됨·코드 읽기): `canonicalize` 결과는 모두 다른 `canonicalize` 결과와만 비교한다(`coach/contents.rs` 플러그인·마켓 폴더, `context/scan.rs` 중복 제거, `fsutil::walk_files`). 사용자 경로·세션 `cwd`와 섞지 않는다.
+- [ ] 경로 대소문자(추정): 세션 `cwd`와 작업 폴더를 `Path::starts_with`로 비교한다(`context/codex_session.rs`, `context/kiro_session.rs`). Claude 프로젝트 폴더 이름도 입력 경로 글자 그대로 만든다(`context/shape.rs` `claude_project_dir`). Windows에서 `c:\`와 `C:\`처럼 대소문자만 다르면 같은 폴더를 못 찾을 수 있다. 확인 = Windows에서 작업 폴더를 소문자 드라이브로 넣고 시작 컨텍스트·세션 수가 나오는지 본다.
 - [ ] 32px 메뉴바 막대 화면 확인.
 - [ ] 배율이 다른 다중 모니터에서 팝오버 위치.
 - [ ] 코칭 경로·권한, 6층 검진.
