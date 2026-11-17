@@ -18,7 +18,8 @@
     "tauri:dev:mcp": "tauri dev --features mcp --config src-tauri/tauri.mcp.conf.json",
     "tauri:build": "tauri build",
     "rust:check": "cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm rust:check"
+    "installer:test": "sh install.test.sh",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm installer:test && pnpm rust:check"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
