@@ -3,7 +3,7 @@ import { mockIPC } from "@tauri-apps/api/mocks";
 import { describe, expect, it, vi } from "vitest";
 
 import { SettingsView } from "@/components/settings-view";
-import { parseField, toDisplay } from "@/components/tuning-form";
+import { fieldsInMessage, parseField, toDisplay } from "@/components/tuning-form";
 import { AGENTS, type Agent, type Settings, type Tuning, type TuningKey } from "@/lib/ipc";
 import { DEFAULT_TUNING, TUNING_SPEC } from "@/test/tuning";
 
@@ -104,6 +104,14 @@ describe("SettingsView", () => {
     expect(parseField("0.7", spec("advanced.holdoutTrain"))).toEqual({ value: 0.7 });
     expect(parseField("1.5", spec("apiIntervalSecs"))).toEqual({ error: "정수로 입력하세요." });
     expect(parseField("", spec("lowPercent"))).toEqual({ error: "숫자를 입력하세요." });
+  });
+
+  it("finds every Rust tuning field named in a range error, in both languages", () => {
+    const keys = TUNING_SPEC.map((s) => s.key);
+    const joined = keys.join(", ");
+    expect(fieldsInMessage(`Some values are out of range: ${joined}`)).toEqual(keys);
+    expect(fieldsInMessage(`tuning 값이 범위를 벗어났습니다: ${joined}`)).toEqual(keys);
+    expect(fieldsInMessage("toString constructor: __proto__")).toEqual([]);
   });
 
   it("enables save only after a change and stores minutes as seconds", async () => {

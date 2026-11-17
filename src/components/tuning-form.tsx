@@ -147,7 +147,7 @@ function rangeText(spec: TuningFieldSpec): string {
 
 /** Rust `invalid_input` 메시지("…: advanced.goodR2, advanced.rangeR2")에 나온 필드 이름. */
 export function fieldsInMessage(message: string): TuningKey[] {
-  return message.split(/[\s,:]+/).filter((word): word is TuningKey => word in FIELDS);
+  return message.split(/[\s,:]+/).filter((word): word is TuningKey => Object.hasOwn(FIELDS, word));
 }
 
 type TuningFormProps = {
