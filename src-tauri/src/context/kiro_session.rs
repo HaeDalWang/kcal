@@ -79,19 +79,24 @@ fn workspace_paths(session_dir: &Path) -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// 최근에 바뀐 순.
+/// `sessions/<hash>/<id>/messages.jsonl`만, 최근에 바뀐 순. 세션 폴더 안(`snapshots` 등, 이 Mac에서 폴더의 2/3)은 내려가지 않는다.
 pub fn message_files(home: &Path) -> Vec<PathBuf> {
-    let mut files: Vec<(PathBuf, SystemTime)> =
-        fsutil::walk_files(&paths::kiro_root(home).join("sessions"), &|p| {
-            p.file_name() == Some("messages.jsonl".as_ref())
-        })
-        .into_iter()
-        .filter_map(|p| {
-            let modified = std::fs::metadata(&p).ok()?.modified().ok()?;
-            Some((p, modified))
+    let subdirs = |dir: &Path| -> Vec<PathBuf> {
+        std::fs::read_dir(dir)
+            .map(|entries| entries.flatten().map(|e| e.path()).collect())
+            .unwrap_or_default()
+    };
+    let mut files: Vec<(PathBuf, SystemTime)> = subdirs(&paths::kiro_root(home).join("sessions"))
+        .iter()
+        .flat_map(|hash| subdirs(hash))
+        .filter_map(|session| {
+            let file = session.join("messages.jsonl");
+            let meta = std::fs::metadata(&file).ok().filter(|m| m.is_file())?;
+            Some((file, meta.modified().ok()?))
         })
         .collect();
-    files.sort_by_key(|f| std::cmp::Reverse(f.1));
+    // 같은 시각이면 경로순(폴더 읽기 순서는 OS마다 다르다).
+    files.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
     files.into_iter().map(|(p, _)| p).collect()
 }
 
@@ -173,5 +178,32 @@ mod tests {
         assert_eq!(got.first_request_chars, 4);
         assert!(latest(home.path(), Some(Path::new("/w/ap")), 50).is_none());
         assert!(latest(home.path(), Some(Path::new("/nowhere")), 50).is_none());
+    }
+
+    #[test]
+    fn message_files_skip_files_nested_inside_a_session_folder() {
+        let home = TempDir::new("kiro-message-files-depth");
+        home.write(".kiro/sessions/h/sess_a/messages.jsonl", "{}");
+        home.write(".kiro/sessions/h/sess_a/snapshots/x/messages.jsonl", "{}");
+        home.write(".kiro/sessions/h/messages.jsonl", "{}");
+        let got = message_files(home.path());
+        assert_eq!(
+            got,
+            vec![home.path().join(".kiro/sessions/h/sess_a/messages.jsonl")]
+        );
+    }
+
+    /// 이 Mac 실제 HOME에서 목록 시간. `cargo test --release --lib real_kiro_message_files_cost -- --ignored --nocapture`
+    #[test]
+    #[ignore = "실제 HOME을 읽는다"]
+    fn real_kiro_message_files_cost() {
+        let home = std::path::PathBuf::from(std::env::var_os("HOME").unwrap());
+        let started = std::time::Instant::now();
+        let files = message_files(&home);
+        println!(
+            "kiro message_files: {} files in {:?}",
+            files.len(),
+            started.elapsed()
+        );
     }
 }
