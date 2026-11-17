@@ -319,7 +319,7 @@ export const en: Messages = {
     },
     namesIn: (kind, names) => `${kind} (${names})`,
     moreNames: (count) => `+${count} more`,
-    moveToProjects: "Only where used",
+    moveToProjects: "Turn on only where used",
     moveTitle: (name) => `${name}: on only where used`,
     moveNote:
       "These files change together. Backups are made next to the originals first, and one Undo restores them all.",
@@ -582,7 +582,8 @@ export const en: Messages = {
     notChecked: (name) =>
       `Nothing was checked: kcal didn't find ${name} on this computer. Run claude once and sign in, then press Refresh. Not installed yet? https://code.claude.com/docs/en/setup`,
     restore: "Show again",
-    noChecks: (label) => `No optimization checks for ${label} yet.`,
+    noChecks: (label) =>
+      `No optimization checks for ${label} yet. Only Claude Code is checked so far.`,
     alert: (count) => `${count} to check`,
     hidden: (count) => ns(count, "hidden card"),
   },

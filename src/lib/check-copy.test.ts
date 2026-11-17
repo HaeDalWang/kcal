@@ -199,8 +199,12 @@ describe("alertCount", () => {
 describe("noChecksText", () => {
   it("says nothing to fix for Claude and that no checks exist yet for Codex and Kiro", () => {
     expect(noChecksText("claude", "Claude")).toBe("지금 고칠 것이 없어요.");
-    expect(noChecksText("codex", "Codex")).toBe("Codex는 아직 최적화 점검이 없어요.");
-    expect(noChecksText("kiro", "Kiro")).toBe("Kiro는 아직 최적화 점검이 없어요.");
+    expect(noChecksText("codex", "Codex")).toBe(
+      "Codex는 아직 최적화 점검이 없어요. 지금은 Claude Code만 점검해요.",
+    );
+    expect(noChecksText("kiro", "Kiro")).toBe(
+      "Kiro는 아직 최적화 점검이 없어요. 지금은 Claude Code만 점검해요.",
+    );
   });
 });
 

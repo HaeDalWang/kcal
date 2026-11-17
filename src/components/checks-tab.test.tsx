@@ -53,10 +53,14 @@ describe("ChecksTab", () => {
       within(column("Claude", "최적화")).getByRole("group", { name: /커밋 안내가 두 벌/ }),
     ).toBeTruthy();
     expect(
-      within(column("Codex", "최적화")).getByText("Codex는 아직 최적화 점검이 없어요."),
+      within(column("Codex", "최적화")).getByText(
+        "Codex는 아직 최적화 점검이 없어요. 지금은 Claude Code만 점검해요.",
+      ),
     ).toBeTruthy();
     expect(
-      within(column("Kiro", "최적화")).getByText("Kiro는 아직 최적화 점검이 없어요."),
+      within(column("Kiro", "최적화")).getByText(
+        "Kiro는 아직 최적화 점검이 없어요. 지금은 Claude Code만 점검해요.",
+      ),
     ).toBeTruthy();
     expect(within(section("Codex")).queryByRole("group", { name: EFFORT_TITLE })).toBeNull();
 
