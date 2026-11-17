@@ -589,3 +589,91 @@ fn kiro_timeout_reports_timeout_and_kills_the_process() {
     );
     let _ = std::fs::remove_dir_all(home);
 }
+
+/// 새 Mac(빈 HOME)에서 모든 에이전트가 값이나 이유 중 하나를 갖는지 본다. 실제 Keychain·PATH의 CLI는 건드리지 않는다:
+/// - Codex: `codex()`를 그대로 부른다(파일만 읽는다).
+/// - Kiro: `kiro()`는 실제 `PATH`를 읽어서, PATH에서 kiro-cli가 보이면 실제 CLI가 돌기 때문에 그때는 건너뛴다.
+/// - Claude(macOS): `claude()`는 `/usr/bin/security`를 고정해서 실제 Keychain을 읽는다. 가짜 `security`(항목 없음, 44)로
+///   `read_keychain`과 같은 대체 기록 경로를 조합해 본다. 다른 OS는 `claude()`를 그대로 부른다.
+#[test]
+fn fresh_home_usage_explains_each_agent() {
+    use crate::i18n::{Lang, with_lang};
+    let home = std::env::temp_dir().join(format!(
+        "kcal-test-fresh-{}-{}",
+        std::process::id(),
+        unique()
+    ));
+    let _ = std::fs::remove_dir_all(&home);
+    std::fs::create_dir_all(&home).unwrap();
+    let ctx = Context::with_urls(home.clone(), String::new(), String::new());
+    let tuning = Tuning::default();
+    let now = OffsetDateTime::now_utc();
+
+    let path_env = std::env::var_os("PATH");
+    let real_kiro = paths::kiro_cli_candidates(&home, path_env.as_deref())
+        .iter()
+        .any(|p| is_executable(p));
+
+    #[cfg(target_os = "macos")]
+    let claude_fresh = || {
+        let program = fake_security("fresh", "#!/bin/sh\nexit 44\n");
+        let api =
+            tauri::async_runtime::block_on(read_keychain(&program, "svc", Duration::from_secs(5)))
+                .map(|_| unreachable!("fake security finds no item"))
+                .or_else(|e| {
+                    if is_installed(Agent::Claude, &home, None) {
+                        Err(e)
+                    } else {
+                        setup("claude() shows its not-found text here")
+                    }
+                });
+        let log_home = home.clone();
+        let out =
+            tauri::async_runtime::block_on(with_log_fallback(Agent::Claude, api, move || {
+                claude_from_log(&log_home, now, 1 << 20)
+            }));
+        let _ = std::fs::remove_dir_all(program.parent().unwrap());
+        out
+    };
+    #[cfg(not(target_os = "macos"))]
+    let claude_fresh = || tauri::async_runtime::block_on(claude(&ctx, now, &tuning));
+
+    for lang in [Lang::Ko, Lang::En] {
+        let mut outcomes = vec![
+            with_lang(lang, || {
+                tauri::async_runtime::block_on(codex(&ctx, now, &tuning))
+            }),
+            with_lang(lang, claude_fresh),
+        ];
+        if !real_kiro {
+            outcomes.push(with_lang(lang, || {
+                tauri::async_runtime::block_on(kiro(&ctx, now, &tuning))
+            }));
+        }
+        for Outcome { usage, .. } in outcomes {
+            let who = usage.agent.id();
+            assert!(usage.checked_at.is_some(), "{who}: no checkedAt");
+            let reason = usage.reason.as_deref().unwrap_or("");
+            assert!(
+                !usage.windows.is_empty() || !reason.is_empty(),
+                "{who}: neither a value nor a reason"
+            );
+            // 빈 HOME에는 로그인도 설치도 없다: 사용자가 할 일(setup)이지 고장(failure)이 아니다.
+            assert!(usage.windows.is_empty() && usage.source.is_none(), "{who}");
+            assert_eq!(
+                usage.reason_kind,
+                Some(ReasonKind::Setup),
+                "{who}: {reason}"
+            );
+        }
+    }
+    // 첫 조회 전(`get_usage`가 처음 돌려주는 값)은 이유도 checkedAt도 없다. 화면은 "첫 조회 중"으로 읽는다.
+    let pending = crate::usage::UsageState::default().snapshot().unwrap();
+    assert!(
+        pending
+            .agents
+            .iter()
+            .all(|a| a.checked_at.is_none() && a.reason.is_none())
+    );
+    let _ = std::fs::remove_dir_all(home);
+}
