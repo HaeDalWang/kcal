@@ -24,6 +24,9 @@ const FILE_NAME: &str = "settings.json";
 #[serde(rename_all = "camelCase")]
 struct SettingsFile {
     enabled_agents: Vec<String>,
+    /// 저장할 때 이미 본(설치돼 있던) 에이전트. 없으면(옛 파일) 모두 본 것으로 친다.
+    #[serde(default)]
+    seen_agents: Option<Vec<String>>,
 }
 
 /// 설정 화면의 언어 선택(0021). TS 짝은 `src/lib/ipc.ts`의 `LanguageChoice`.
@@ -52,6 +55,9 @@ pub struct Settings {
     pub language: Language,
     /// 프론트엔드가 마지막으로 알려 준 화면 언어(`set_ui_language`). 자동일 때 Rust 문구가 이 언어를 쓴다.
     pub resolved_language: Lang,
+    /// 이미 본 에이전트. 여기 없는 에이전트가 새로 설치되면 다음 시작에 저절로 켠다. 화면에는 안 보낸다.
+    #[serde(skip)]
+    pub seen_agents: Vec<Agent>,
 }
 
 impl Default for Settings {
@@ -63,6 +69,7 @@ impl Default for Settings {
             reason: None,
             language: Language::Auto,
             resolved_language: Lang::default(),
+            seen_agents: Agent::ALL.to_vec(),
         }
     }
 }
@@ -113,10 +120,7 @@ pub fn validate_agents(ids: &[String]) -> Result<Vec<Agent>, String> {
             "Unknown agent: {unknown}"
         ));
     }
-    let agents: Vec<Agent> = Agent::ALL
-        .into_iter()
-        .filter(|a| ids.iter().any(|id| Agent::from_id(id) == Some(*a)))
-        .collect();
+    let agents = agents_in_order(ids);
     if agents.is_empty() {
         return Err(tr!(
             "에이전트를 하나 이상 켜야 합니다",
@@ -147,7 +151,13 @@ fn load(path: &Path) -> Settings {
                 "The settings file is malformed"
             )
         })
-        .and_then(|file| validate_agents(&file.enabled_agents));
+        .and_then(|file| {
+            let seen = file
+                .seen_agents
+                .map(|ids| agents_in_order(&ids))
+                .unwrap_or_else(|| Agent::ALL.to_vec());
+            validate_agents(&file.enabled_agents).map(|enabled| (enabled, seen))
+        });
     let file = serde_json::from_str::<Value>(&text).ok();
     let tuning = file
         .as_ref()
@@ -155,8 +165,9 @@ fn load(path: &Path) -> Settings {
         .unwrap_or_default();
     let (language, resolved_language) = languages(file.as_ref());
     let base = match parsed {
-        Ok(enabled_agents) => Settings {
+        Ok((enabled_agents, seen_agents)) => Settings {
             enabled_agents,
+            seen_agents,
             ..Settings::default()
         },
         Err(why) => broken(why),
@@ -183,16 +194,45 @@ fn first_run_agents(home: &Path, path_env: Option<&std::ffi::OsStr>) -> Vec<Agen
     }
 }
 
-/// `load` + 첫 실행이면 있는 에이전트만 켠다. 홈을 모르면 기본값(모두) 그대로.
-fn load_first_run(path: &Path, home: Option<&Path>) -> Settings {
+/// `load` + 첫 실행이면 있는 에이전트만 켜고, 파일이 있으면 저장 뒤 새로 설치된 에이전트를 더 켠다.
+/// 사용자가 끈 에이전트(이미 본 것)는 그대로 둔다. 홈을 모르면 파일(또는 기본값 모두) 그대로.
+fn load_first_run(
+    path: &Path,
+    home: Option<&Path>,
+    path_env: Option<&std::ffi::OsStr>,
+) -> Settings {
     let settings = load(path);
-    match home {
-        Some(home) if !path.exists() => Settings {
-            enabled_agents: first_run_agents(home, std::env::var_os("PATH").as_deref()),
+    let Some(home) = home else { return settings };
+    if !path.exists() {
+        let found = first_run_agents(home, path_env);
+        return Settings {
+            seen_agents: found.clone(),
+            enabled_agents: found,
             ..settings
-        },
-        _ => settings,
+        };
     }
+    let installed: Vec<Agent> = Agent::ALL
+        .into_iter()
+        .filter(|&a| crate::usage::sources::is_installed(a, home, path_env))
+        .collect();
+    let is_on = |a: &Agent| {
+        settings.enabled_agents.contains(a)
+            || (installed.contains(a) && !settings.seen_agents.contains(a))
+    };
+    let is_seen = |a: &Agent| settings.seen_agents.contains(a) || installed.contains(a);
+    Settings {
+        enabled_agents: Agent::ALL.into_iter().filter(is_on).collect(),
+        seen_agents: Agent::ALL.into_iter().filter(is_seen).collect(),
+        ..settings
+    }
+}
+
+/// 아는 id만 `Agent::ALL` 순서로. 모르는 id는 버린다(이미 본 목록은 틀려도 설정을 깨지 않는다).
+fn agents_in_order(ids: &[String]) -> Vec<Agent> {
+    Agent::ALL
+        .into_iter()
+        .filter(|a| ids.iter().any(|id| Agent::from_id(id) == Some(*a)))
+        .collect()
 }
 
 fn broken(why: String) -> Settings {
@@ -213,6 +253,7 @@ fn save(path: &Path, settings: &Settings) -> std::io::Result<()> {
     let ids: Vec<&str> = settings.enabled_agents.iter().map(|a| a.id()).collect();
     let json = serde_json::to_string_pretty(&serde_json::json!({
         "enabledAgents": ids,
+        "seenAgents": settings.seen_agents.iter().map(|a| a.id()).collect::<Vec<_>>(),
         "tuning": settings.tuning,
         "language": settings.language,
         "resolvedLanguage": settings.resolved_language,
@@ -250,13 +291,20 @@ impl SettingsState {
     pub fn from_app<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Self> {
         let path = app.path().app_config_dir()?.join(FILE_NAME);
         let home = std::env::home_dir();
-        let state = Self::with(path.clone(), load_first_run(&path, home.as_deref()));
+        let path_env = std::env::var_os("PATH");
+        let state = Self::with(
+            path.clone(),
+            load_first_run(&path, home.as_deref(), path_env.as_deref()),
+        );
         let lang = state
             .get()
             .map(|s| s.effective_language())
             .unwrap_or_default();
         Ok(if crate::i18n::set(lang) {
-            Self::with(path.clone(), load_first_run(&path, home.as_deref()))
+            Self::with(
+                path.clone(),
+                load_first_run(&path, home.as_deref(), path_env.as_deref()),
+            )
         } else {
             state
         })
@@ -310,6 +358,7 @@ impl SettingsState {
             tuning,
             language: language.unwrap_or(now.language),
             resolved_language: now.resolved_language,
+            seen_agents: now.seen_agents,
             ..Settings::default()
         };
         self.store(next, true)
@@ -464,8 +513,29 @@ mod tests {
         let state = SettingsState::load(path.clone());
         state.set(&ids(&["kiro"]), None, None).unwrap();
         assert_eq!(
-            load_first_run(&path, Some(&home)).enabled_agents,
+            load_first_run(&path, Some(&home), empty_path).enabled_agents,
             [Agent::Kiro]
+        );
+        // 저장할 때 못 본 에이전트가 나중에 설치되면 켜고, 본 것 중 끈 것은 그대로 둔다.
+        std::fs::write(
+            &path,
+            r#"{"enabledAgents":["claude"],"seenAgents":["claude"]}"#,
+        )
+        .unwrap();
+        let later = load_first_run(&path, Some(&home), empty_path);
+        assert_eq!(later.enabled_agents, [Agent::Claude, Agent::Codex]);
+        assert_eq!(later.seen_agents, [Agent::Claude, Agent::Codex]);
+        let saved = SettingsState::with(path.clone(), later);
+        saved.set(&ids(&["claude"]), None, None).unwrap();
+        assert_eq!(
+            load_first_run(&path, Some(&home), empty_path).enabled_agents,
+            [Agent::Claude]
+        );
+        // 이미 본 목록이 없는 옛 파일은 모두 본 것으로 쳐서 아무것도 더 켜지 않는다.
+        std::fs::write(&path, r#"{"enabledAgents":["claude"]}"#).unwrap();
+        assert_eq!(
+            load_first_run(&path, Some(&home), empty_path).enabled_agents,
+            [Agent::Claude]
         );
         let _ = std::fs::remove_dir_all(home);
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
