@@ -87,6 +87,9 @@ beforeEach(() => {
   healthStore.reset();
 });
 
+// 대시보드 전체를 그리는 두 테스트는 단독 3초 안팎이라, 기계가 바쁠 때 기본 5초를 넘는다.
+const FULL_RENDER_MS = 15_000;
+
 describe("English UI", () => {
   it("auto picks Korean only when the browser language starts with ko", () => {
     expect(resolveLanguage("auto", "ko-KR")).toBe("ko");
@@ -134,91 +137,101 @@ describe("English UI", () => {
     ).toEqual([]);
   });
 
-  it("shows no Hangul on the dashboard usage and checks tabs", async () => {
-    mock();
-    const { container } = render(<Dashboard />);
-    await screen.findByRole("tab", { name: "Usage" });
-    await screen.findByText("Change effects");
-    await waitFor(() => expect(screen.queryAllByText("Loading…")).toHaveLength(0));
-    expect(hangulIn(container), "usage").toEqual([]);
+  it(
+    "shows no Hangul on the dashboard usage and checks tabs",
+    { timeout: FULL_RENDER_MS },
+    async () => {
+      mock();
+      const { container } = render(<Dashboard />);
+      await screen.findByRole("tab", { name: "Usage" });
+      await screen.findByText("Change effects");
+      await waitFor(() => expect(screen.queryAllByText("Loading…")).toHaveLength(0));
+      expect(hangulIn(container), "usage").toEqual([]);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Checks" }));
-    await screen.findAllByRole("group", { name: "Optimize" });
-    await waitFor(() => expect(screen.queryAllByText("Loading…")).toHaveLength(0));
-    expect(hangulIn(container), "checks").toEqual([]);
+      fireEvent.click(screen.getByRole("tab", { name: "Checks" }));
+      await screen.findAllByRole("group", { name: "Optimize" });
+      await waitFor(() => expect(screen.queryAllByText("Loading…")).toHaveLength(0));
+      expect(hangulIn(container), "checks").toEqual([]);
 
-    // 진단하기: 펼친 줄(근거 칩·함께 꺼지는 것)과 "그대로 둠", 읽는 법도 영어만.
-    // 탭 전체에서 펼친 줄은 하나라 줄마다 펼친 그때 본다.
-    let losesShown = 0;
-    for (const toggle of container.querySelectorAll<HTMLElement>("li button[aria-expanded]")) {
-      fireEvent.click(toggle);
-      expect(hangulIn(container), `open ${toggle.textContent}`).toEqual([]);
-      losesShown += screen.queryAllByText(/^Turns off with it/).length;
-    }
-    container.querySelectorAll("details").forEach((d) => (d.open = true));
-    screen.getAllByRole("button", { name: en.coach.howToRead }).forEach((b) => fireEvent.click(b));
-    expect(losesShown).toBeGreaterThan(0);
-    expect(hangulIn(container), "diagnose open").toEqual([]);
-  });
+      // 진단하기: 펼친 줄(근거 칩·함께 꺼지는 것)과 "그대로 둠", 읽는 법도 영어만.
+      // 탭 전체에서 펼친 줄은 하나라 줄마다 펼친 그때 본다.
+      let losesShown = 0;
+      for (const toggle of container.querySelectorAll<HTMLElement>("li button[aria-expanded]")) {
+        fireEvent.click(toggle);
+        expect(hangulIn(container), `open ${toggle.textContent}`).toEqual([]);
+        losesShown += screen.queryAllByText(/^Turns off with it/).length;
+      }
+      container.querySelectorAll("details").forEach((d) => (d.open = true));
+      screen
+        .getAllByRole("button", { name: en.coach.howToRead })
+        .forEach((b) => fireEvent.click(b));
+      expect(losesShown).toBeGreaterThan(0);
+      expect(hangulIn(container), "diagnose open").toEqual([]);
+    },
+  );
 
-  it("shows no Hangul and says what was not checked when Claude Code is missing or has little history", async () => {
-    const few = (switches as { target: string; usage: object | null }[]).filter((s) =>
-      s.target.startsWith("claude/plugin"),
-    );
-    mockIPC(
-      (cmd) => {
-        if (cmd === "get_installed_agents") return ["codex"];
-        if (cmd === "get_checks") return [];
-        if (cmd === "get_switches") return [];
-        return FIXTURE[cmd] ?? null;
-      },
-      { shouldMockEvents: true },
-    );
-    const { container, unmount } = render(<Dashboard />);
-    await screen.findByRole("tab", { name: "Usage" });
-    fireEvent.click(screen.getByRole("tab", { name: "Checks" }));
-    await screen.findAllByText(
-      "Nothing was checked: kcal didn't find Claude Code on this computer. Run claude once and sign in, then press Refresh. Not installed yet? https://code.claude.com/docs/en/setup",
-    );
-    expect(screen.queryByText("Nothing to fix right now.")).toBeNull();
-    expect(hangulIn(container)).toEqual([]);
-    unmount();
+  it(
+    "shows no Hangul and says what was not checked when Claude Code is missing or has little history",
+    { timeout: FULL_RENDER_MS },
+    async () => {
+      const few = (switches as { target: string; usage: object | null }[]).filter((s) =>
+        s.target.startsWith("claude/plugin"),
+      );
+      mockIPC(
+        (cmd) => {
+          if (cmd === "get_installed_agents") return ["codex"];
+          if (cmd === "get_checks") return [];
+          if (cmd === "get_switches") return [];
+          return FIXTURE[cmd] ?? null;
+        },
+        { shouldMockEvents: true },
+      );
+      const { container, unmount } = render(<Dashboard />);
+      await screen.findByRole("tab", { name: "Usage" });
+      fireEvent.click(screen.getByRole("tab", { name: "Checks" }));
+      await screen.findAllByText(
+        "Nothing was checked: kcal didn't find Claude Code on this computer. Run claude once and sign in, then press Refresh. Not installed yet? https://code.claude.com/docs/en/setup",
+      );
+      expect(screen.queryByText("Nothing to fix right now.")).toBeNull();
+      expect(hangulIn(container)).toEqual([]);
+      unmount();
 
-    // 기록이 적으면 "안 쓴다"가 아니라 "알 수 없다".
-    const plugin = {
-      ...few[0],
-      usage: {
-        days: 30,
-        total: 0,
-        projects: [],
-        projectCount: 0,
-        isPartial: false,
-        sessions: 3,
-        minSessions: 10,
-        scopeMinUses: 3,
-        lastUsed: null,
-        lastProject: null,
-      },
-      isProposed: false,
-      scopeMove: null,
-    };
-    mockIPC(
-      (cmd) => {
-        if (cmd === "get_installed_agents") return ["claude"];
-        if (cmd === "get_switches") return [plugin];
-        return FIXTURE[cmd] ?? null;
-      },
-      { shouldMockEvents: true },
-    );
-    const second = render(<Dashboard />);
-    await screen.findByRole("tab", { name: "Usage" });
-    fireEvent.click(screen.getByRole("tab", { name: "Checks" }));
-    const reason = await screen.findByText("Can't tell · Little history (3 sessions)");
-    expect(reason.getAttribute("title")).toMatch(
-      /^Not enough Claude history to tell if you use this \(3 sessions in 30 days\)/,
-    );
-    expect(hangulIn(second.container)).toEqual([]);
-  });
+      // 기록이 적으면 "안 쓴다"가 아니라 "알 수 없다".
+      const plugin = {
+        ...few[0],
+        usage: {
+          days: 30,
+          total: 0,
+          projects: [],
+          projectCount: 0,
+          isPartial: false,
+          sessions: 3,
+          minSessions: 10,
+          scopeMinUses: 3,
+          lastUsed: null,
+          lastProject: null,
+        },
+        isProposed: false,
+        scopeMove: null,
+      };
+      mockIPC(
+        (cmd) => {
+          if (cmd === "get_installed_agents") return ["claude"];
+          if (cmd === "get_switches") return [plugin];
+          return FIXTURE[cmd] ?? null;
+        },
+        { shouldMockEvents: true },
+      );
+      const second = render(<Dashboard />);
+      await screen.findByRole("tab", { name: "Usage" });
+      fireEvent.click(screen.getByRole("tab", { name: "Checks" }));
+      const reason = await screen.findByText("Can't tell · Little history (3 sessions)");
+      expect(reason.getAttribute("title")).toMatch(
+        /^Not enough Claude history to tell if you use this \(3 sessions in 30 days\)/,
+      );
+      expect(hangulIn(second.container)).toEqual([]);
+    },
+  );
 
   it("uses singular wording for one day and one switch, and names what the weekly row measures", () => {
     const last = { at: Date.UTC(2026, 10, 5, 12) / 1000, project: "side-app" };
