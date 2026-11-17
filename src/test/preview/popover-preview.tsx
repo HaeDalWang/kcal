@@ -26,7 +26,12 @@ mockIPC(
       case "get_settings":
         return allAgents;
       case "get_usage":
-        return usage;
+        // fixture 끝의 대기 중 Claude는 직렬화 계약용이다. 실제 스냅샷은 에이전트당 한 줄.
+        return {
+          agents: usage.agents.filter(
+            (a, i, all) => all.findIndex((b) => b.agent === a.agent) === i,
+          ),
+        };
       case "get_checks":
         return checks;
       default:
