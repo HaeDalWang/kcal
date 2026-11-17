@@ -144,6 +144,40 @@ describe("Dashboard", () => {
     }
   });
 
+  it("shows a dash, not 0 %, for an agent whose limit was never read", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-04T14:00:00Z"));
+    try {
+      // Claude는 요청이 있지만 한도 표본이 없다(막대 0개, 쓴 양 0).
+      const unread = {
+        ...metrics,
+        agents: metrics.agents.map((a) =>
+          a.agent === "claude"
+            ? {
+                ...a,
+                bars: [],
+                hourly: [{ startsAt: "2026-11-04T11:00:00Z", requests: 3, used: 0 }],
+              }
+            : a,
+        ),
+      };
+      mockIPC((cmd) => (cmd === "get_metrics" ? unread : (FIXTURE[cmd] ?? null)), {
+        shouldMockEvents: true,
+      });
+      render(<Dashboard />);
+      const card = await screen.findByRole("region", { name: "오늘 쓴 양" });
+      expect(within(card).getByText("—")).toBeTruthy();
+      expect(within(card).getByText("한도 못 읽음")).toBeTruthy();
+      expect(within(card).getByRole("img").getAttribute("aria-label")).toMatch(
+        /Claude 한도 못 읽음/,
+      );
+      // 읽은 Codex는 그대로 숫자와 하루 몫을 보인다.
+      expect(within(card).getByText("1.5")).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("effect button in diagnosis goes to the usage tab and scrolls to prescription effects", async () => {
     mock();
     const scrolled: Element[] = [];

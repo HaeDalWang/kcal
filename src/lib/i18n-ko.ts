@@ -194,6 +194,7 @@ export const ko = {
     usedToday: "오늘 쓴 양",
     over: "넘침",
     noMonthlyLimit: "월 한도 모름",
+    limitUnread: "한도 못 읽음",
     hourly: "시간대별 요청",
     question: "질문",
     request: "요청",

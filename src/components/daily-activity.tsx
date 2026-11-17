@@ -37,6 +37,8 @@ type AgentDay = {
   goal: number | null;
   /** Kiro는 크레딧, 나머지는 %. */
   isCredits: boolean;
+  /** % 에이전트인데 한도 표본이 하나도 없다(로그인 못 읽음 등). 0 %가 아니라 모르는 값이다. */
+  isUnread: boolean;
 };
 
 function agentDays(
@@ -48,18 +50,24 @@ function agentDays(
 ): AgentDay[] {
   return agents.map((agent) => {
     const m = metrics?.agents.find((a) => a.agent === agent);
+    const activity = dayActivity(m?.hourly ?? [], day);
+    const isCredits = agent === "kiro";
     return {
       agent,
-      activity: dayActivity(m?.hourly ?? [], day),
+      activity,
       goal: dailyGoal(agent, settings.tuning, kiroUsage, day),
-      isCredits: agent === "kiro",
+      isCredits,
+      // 5시간 막대(`bars`)는 한도 표본으로만 생긴다. 비어 있으면 그날 %도 읽지 못한 것이다.
+      isUnread: !isCredits && m !== undefined && m.bars.length === 0 && activity.used === 0,
     };
   });
 }
 
 function rings(values: readonly AgentDay[]): Ring[] {
   return values.flatMap((v) =>
-    v.goal === null ? [] : [{ agent: v.agent, fraction: ringFraction(v.activity.used, v.goal) }],
+    v.goal === null || v.isUnread
+      ? []
+      : [{ agent: v.agent, fraction: ringFraction(v.activity.used, v.goal) }],
   );
 }
 
@@ -73,6 +81,7 @@ function ringsLabel(values: readonly AgentDay[], isEmpty = isEmptyDay(values)): 
   return values
     .map((v) => {
       if (isEmpty) return `${AGENT_LABEL[v.agent]} ${t.common.noRecord}`;
+      if (v.isUnread) return `${AGENT_LABEL[v.agent]} ${t.daily.limitUnread}`;
       const used = t.daily.amount(amount.format(v.activity.used), v.isCredits);
       const goal =
         v.goal === null ? "" : t.daily.goal(t.daily.amount(amount.format(v.goal), v.isCredits));
@@ -238,9 +247,9 @@ function TodayCard({ values }: { values: readonly AgentDay[] }) {
               <span
                 className={`text-2xl leading-tight font-semibold tabular-nums ${isOver ? "text-warn" : ""}`}
               >
-                {isEmpty ? t.common.noRecord : amount.format(v.activity.used)}
+                {isEmpty ? t.common.noRecord : v.isUnread ? "—" : amount.format(v.activity.used)}
               </span>
-              {!isEmpty && (
+              {!isEmpty && !v.isUnread && (
                 <span className="text-xs text-muted-foreground">{t.daily.unit(v.isCredits)}</span>
               )}
               {/* 넘침을 색만으로 알리지 않는다(6절 3). */}
@@ -248,9 +257,11 @@ function TodayCard({ values }: { values: readonly AgentDay[] }) {
               {/* 빈 날은 목표 줄을 보이지 않는다(design.md 1절: 모르는 값은 줄 숨김). */}
               {!isEmpty && (
                 <span className="mt-1.5 w-full border-t pt-1 text-center text-xs text-muted-foreground tabular-nums">
-                  {v.goal === null
-                    ? t.daily.noMonthlyLimit
-                    : t.daily.goalLabel(t.daily.amount(amount.format(v.goal), v.isCredits))}
+                  {v.isUnread
+                    ? t.daily.limitUnread
+                    : v.goal === null
+                      ? t.daily.noMonthlyLimit
+                      : t.daily.goalLabel(t.daily.amount(amount.format(v.goal), v.isCredits))}
                 </span>
               )}
             </li>

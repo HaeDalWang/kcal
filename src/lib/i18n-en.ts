@@ -206,6 +206,7 @@ export const en: Messages = {
     usedToday: "Used today",
     over: "Over",
     noMonthlyLimit: "Monthly limit unknown",
+    limitUnread: "Limit not read",
     hourly: "Requests by hour",
     question: "questions",
     request: "requests",
