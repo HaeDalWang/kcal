@@ -37,14 +37,9 @@ pub fn kiro_cli_candidates(home: &Path, path_env: Option<&std::ffi::OsStr>) -> V
     #[cfg(not(windows))]
     let (installed, name) = (home.join(".local/bin/kiro-cli"), "kiro-cli");
 
-    let on_path: Vec<PathBuf> = path_env
-        .map(|value| {
-            std::env::split_paths(value)
-                .map(|dir| dir.join(name))
-                .collect()
-        })
-        .unwrap_or_default();
-    std::iter::once(installed).chain(on_path).collect()
+    std::iter::once(installed)
+        .chain(on_path(path_env, name))
+        .collect()
 }
 
 /// Claude Code CLI 후보(docs/decisions/0018 "실측 사실"). 설치 위치를 먼저, `PATH`를 다음에 본다.
@@ -56,12 +51,44 @@ pub fn claude_cli_candidates(home: &Path, path_env: Option<&std::ffi::OsStr>) ->
     let name = "claude";
 
     let installed = home.join(".local").join("bin").join(name);
-    let on_path: Vec<PathBuf> = path_env
+    std::iter::once(installed)
+        .chain(on_path(path_env, name))
+        .collect()
+}
+
+/// `PATH`의 절대 경로 항목만 후보로 쓴다. 빈 항목·`.`은 앱 작업 폴더 기준 상대 경로가 되어 엉뚱한 실행 파일을 고를 수 있다.
+fn on_path(path_env: Option<&std::ffi::OsStr>, name: &str) -> Vec<PathBuf> {
+    path_env
         .map(|value| {
             std::env::split_paths(value)
+                .filter(|dir| dir.is_absolute())
                 .map(|dir| dir.join(name))
                 .collect()
         })
-        .unwrap_or_default();
-    std::iter::once(installed).chain(on_path).collect()
+        .unwrap_or_default()
+}
+
+#[cfg(all(test, not(windows)))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cli_candidates_skip_relative_path_entries() {
+        let home = Path::new("/home/me");
+        let path = std::ffi::OsString::from(":.:bin:/usr/bin");
+        assert_eq!(
+            claude_cli_candidates(home, Some(&path)),
+            vec![
+                PathBuf::from("/home/me/.local/bin/claude"),
+                PathBuf::from("/usr/bin/claude")
+            ]
+        );
+        assert_eq!(
+            kiro_cli_candidates(home, Some(&path)),
+            vec![
+                PathBuf::from("/home/me/.local/bin/kiro-cli"),
+                PathBuf::from("/usr/bin/kiro-cli")
+            ]
+        );
+    }
 }

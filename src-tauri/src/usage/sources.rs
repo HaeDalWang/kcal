@@ -50,6 +50,8 @@ impl Context {
     fn with_urls(home: PathBuf, claude_url: String, codex_url: String) -> Self {
         let client = reqwest::Client::builder()
             .user_agent(concat!("kcal/", env!("CARGO_PKG_VERSION")))
+            // 사용량 API는 리다이렉트할 일이 없다. 따라가면 계정 헤더가 다른 호스트로 갈 수 있다.
+            .redirect(reqwest::redirect::Policy::none())
             .build()
             .ok();
         Self {
