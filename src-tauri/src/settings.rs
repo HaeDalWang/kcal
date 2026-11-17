@@ -662,4 +662,42 @@ mod tests {
         assert_eq!(state.tuning(), faster);
         assert_eq!(load(&path).tuning, faster);
     }
+
+    #[test]
+    fn failed_save_keeps_the_previous_settings_in_memory() {
+        let path = temp_file("save-fail");
+        let state = SettingsState::load(path.clone());
+        state
+            .set(&ids(&["claude"]), None, Some(Language::Ko))
+            .unwrap();
+        // 임시 파일 자리가 폴더라 저장이 실패한다.
+        std::fs::create_dir_all(path.with_extension("json.tmp")).unwrap();
+        let error = state
+            .set(&ids(&["codex"]), None, Some(Language::En))
+            .unwrap_err();
+        assert!(matches!(error, AppError::Internal));
+        let now = state.get().unwrap();
+        assert_eq!(
+            (now.enabled_agents, now.language),
+            (vec![Agent::Claude], Language::Ko)
+        );
+        assert!(state.set_resolved(Lang::Ko).is_err());
+        assert_eq!(state.get().unwrap().resolved_language, Lang::default());
+        assert_eq!(load(&path).enabled_agents, [Agent::Claude]);
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
+    #[test]
+    fn set_resolved_writes_the_file_only_when_the_language_changes() {
+        let path = temp_file("resolved-same");
+        let state = SettingsState::load(path.clone());
+        state.set_resolved(Lang::default()).unwrap();
+        assert!(!path.exists());
+        state.set_resolved(Lang::Ko).unwrap();
+        assert!(path.exists());
+        std::fs::remove_file(&path).unwrap();
+        state.set_resolved(Lang::Ko).unwrap();
+        assert!(!path.exists());
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
 }

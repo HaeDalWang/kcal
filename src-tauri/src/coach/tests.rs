@@ -417,3 +417,68 @@ fn real_usage_read_only() {
         );
     }
 }
+
+// ---------- 쓰기 실패·기록 손상 ----------
+
+#[test]
+fn non_utf8_settings_file_is_refused_and_left_byte_for_byte() {
+    let f = fixture("non-utf8");
+    let bytes = b"[plugins.\"big@m\"]\nenabled = true\n# \xff\xfe\n".to_vec();
+    std::fs::write(&f.config, &bytes).unwrap();
+    let hash = edit::content_hash(&bytes);
+    assert!(message(preview_of(&f, TARGET, false).unwrap_err()).contains("UTF-8"));
+    assert!(message(apply_with(&f, &hash).unwrap_err()).contains("UTF-8"));
+    assert_eq!(std::fs::read(&f.config).unwrap(), bytes);
+    assert_eq!(
+        std::fs::read_dir(f.config.parent().unwrap())
+            .unwrap()
+            .count(),
+        1
+    );
+    assert!(log::read(&f.log).is_empty());
+}
+
+#[test]
+fn apply_error_carries_the_manual_undo_command_when_the_log_cannot_be_written() {
+    let f = fixture("log-fail");
+    // 기록 경로가 폴더면 줄을 덧붙일 수 없다.
+    std::fs::create_dir_all(&f.log).unwrap();
+    let p = preview_of(&f, TARGET, false).unwrap();
+    let error = message(apply_with(&f, &p.before_hash).unwrap_err());
+    let backup = f
+        .config
+        .with_file_name("config.toml.kcal-20261105T120000123Z.bak");
+    assert!(error.contains(&copy_command(&backup, &f.config)), "{error}");
+    // 설정은 이미 바뀌었고 백업은 원본이다(안내한 명령이 실제로 되돌린다).
+    assert!(
+        std::fs::read_to_string(&f.config)
+            .unwrap()
+            .contains("enabled = false")
+    );
+    assert_eq!(std::fs::read_to_string(&backup).unwrap(), CONFIG);
+}
+
+#[test]
+fn log_read_skips_a_corrupt_line_and_undo_still_works() {
+    let f = fixture("log-corrupt");
+    let p = preview_of(&f, TARGET, false).unwrap();
+    let applied = apply_with(&f, &p.before_hash).unwrap();
+    // 쓰다 끊긴 줄이 기록 가운데에 끼었다.
+    std::fs::write(
+        &f.log,
+        format!(
+            "{}{{\"id\":\"9\",\"at\":\n",
+            std::fs::read_to_string(&f.log).unwrap()
+        ),
+    )
+    .unwrap();
+    let undone = undo(
+        f.home.path(),
+        &f.log,
+        &applied.id,
+        NOW + time::Duration::SECOND,
+    )
+    .unwrap();
+    assert_eq!(std::fs::read(&f.config).unwrap(), CONFIG.as_bytes());
+    assert_eq!(log::read(&f.log), [undone, applied]);
+}

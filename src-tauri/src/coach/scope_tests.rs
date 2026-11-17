@@ -374,3 +374,26 @@ fn apply_and_undo_still_follow_a_linked_user_settings_file() {
     .unwrap();
     assert_eq!(std::fs::read_to_string(&dotfiles).unwrap(), USER);
 }
+
+#[cfg(unix)]
+#[test]
+fn apply_rolls_back_files_already_written_when_a_later_project_file_cannot_be_replaced() {
+    use std::os::unix::fs::PermissionsExt;
+    let f = fixture("rollback");
+    // A도 기존 파일이 있어 "바꾸기"로 쓰인다(되돌림이 백업에서 원래 바이트를 읽어야 한다).
+    let a_original = "{\n  \"theme\": \"x\"\n}\n";
+    let a_local = f
+        .home
+        .write("work/a/.claude/settings.local.json", a_original);
+    let p = preview(&kit(&f)).unwrap();
+    // 두 번째 프로젝트(B)는 폴더에 쓸 수 없어 백업부터 실패한다.
+    let b_dir = f.b_local.parent().unwrap().to_path_buf();
+    std::fs::set_permissions(&b_dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+    let result = apply_now(&f, &p.before_hash);
+    std::fs::set_permissions(&b_dir, std::fs::Permissions::from_mode(0o755)).unwrap();
+    assert!(message(result.unwrap_err()).contains("백업 만들기"));
+    assert_eq!(std::fs::read_to_string(&a_local).unwrap(), a_original);
+    assert_eq!(std::fs::read_to_string(&f.b_local).unwrap(), B_LOCAL);
+    assert_eq!(std::fs::read_to_string(&f.user).unwrap(), USER);
+    assert!(log::read(&f.log).is_empty());
+}

@@ -246,3 +246,32 @@ fn content_hash_is_fnv1a_64_hex() {
     assert_eq!(content_hash(b""), "cbf29ce484222325");
     assert_eq!(content_hash(b"a"), "af63dc4c8601ec8c");
 }
+
+#[test]
+fn toml_rejects_non_bool_enabled_values() {
+    for value in ["\"yes\"", "1", "truex", "[true]"] {
+        let config = format!("[plugins.\"a@m\"]\nenabled = {value}\n");
+        let error = set_toml_enabled(&config, "plugins.\"a@m\"", false).unwrap_err();
+        assert!(error.contains("true/false"), "{value}: {error}");
+    }
+}
+
+#[test]
+fn toml_keeps_crlf_when_replacing_or_inserting_enabled() {
+    let crlf =
+        "# top\r\n[plugins.\"a@m\"]\r\nenabled = true # keep\r\n\r\n[plugins.\"b@m\"]\r\nx = 1\r\n";
+    let replaced = set_toml_enabled(crlf, "plugins.\"a@m\"", false).unwrap();
+    assert_eq!(
+        replaced.content,
+        crlf.replace("enabled = true", "enabled = false")
+    );
+    assert_eq!(replaced.after, "enabled = false # keep");
+    let inserted = set_toml_enabled(crlf, "plugins.\"b@m\"", true).unwrap();
+    assert_eq!(
+        inserted.content,
+        crlf.replace(
+            "[plugins.\"b@m\"]\r\n",
+            "[plugins.\"b@m\"]\r\nenabled = true\r\n"
+        )
+    );
+}
