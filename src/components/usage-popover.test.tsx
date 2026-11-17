@@ -290,6 +290,8 @@ describe("UsagePopover", () => {
     );
     // 다른 창(5시간)은 막대 줄 그대로.
     expect(within(claude).getByText("5시간 90%")).toBeTruthy();
+    // 개요 줄의 %가 "남은 비율"임은 title이 말한다(모양은 그대로).
+    expect(within(claude).getByText("5시간 90%").getAttribute("title")).toBe("5시간 90% 남음");
   });
 
   it("shows startup context as a share of the window on the overview, tokens only when the window is unknown", async () => {

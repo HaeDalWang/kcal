@@ -191,6 +191,8 @@ describe("Dashboard", () => {
       render(<Dashboard />);
       const card = await screen.findByRole("region", { name: "오늘 쓴 양" });
       expect(within(card).getAllByText(/^하루 몫 [\d.,]+%$/).length).toBeGreaterThan(0);
+      // 쓴 양의 분모(주간 한도)는 숫자 아래 단위 줄이 말한다. 크레딧(Kiro)은 그대로.
+      expect(within(card).getAllByText("% (주간 한도)").length).toBeGreaterThan(0);
     } finally {
       vi.useRealTimers();
     }
@@ -270,6 +272,13 @@ describe("Dashboard", () => {
       "캐시 적중률92%",
     ]);
     expect(within(codex).getByRole("list", { name: "최근 5시간 구간 사용량" })).toBeTruthy();
+    // 분모가 보이게: 캐시 적중률은 전체 입력 중 비율, 구간 막대 제목은 5시간 한도 중 비율.
+    expect(within(codex).getByText("92%").closest("li")?.getAttribute("title")).toBe(
+      "정확: 캐시에서 읽은 입력 ÷ 전체 입력, 현재 5시간 구간",
+    );
+    expect(within(codex).getByText("최근 5시간 구간").getAttribute("title")).toBe(
+      "구간마다 5시간 한도에서 쓴 비율",
+    );
   });
 
   it("shows the startup context once per agent, not also as a metric card", async () => {

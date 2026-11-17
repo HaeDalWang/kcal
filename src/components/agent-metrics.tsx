@@ -89,7 +89,7 @@ export function metricLines(metrics: AgentMetrics): Line[] {
     lines.push({
       label: t.metrics.cacheHit,
       value: `${integer.format(metrics.cacheHitRatio * 100)}%`,
-      title: t.info.measured,
+      title: t.info.measuredDetail(t.metrics.cacheHitDetail),
     });
   }
   return lines;
@@ -170,7 +170,9 @@ export function UsageBars({ agent, className = "h-[58px]" }: { agent: Agent; cla
   return (
     <div className="flex flex-col gap-[10px] px-[20px]">
       <div className="flex items-baseline justify-between text-[10px] text-muted-foreground tabular-nums">
-        <span>{isPercent ? t.metrics.recentWindows : t.metrics.dailyCredits}</span>
+        <span title={isPercent ? t.metrics.recentWindowsHint : undefined}>
+          {isPercent ? t.metrics.recentWindows : t.metrics.dailyCredits}
+        </span>
         <span aria-live="polite" title={t.info.measured}>
           {hovered ? barTitle(hovered, barUnit) : maxText}
         </span>
