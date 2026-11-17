@@ -1,6 +1,8 @@
 use super::*;
 use crate::context::fsutil::testing::TempDir;
 use serde_json::json;
+use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 
 const TOL: f64 = 600.0;
 const HOUR: f64 = 3600.0;
@@ -234,4 +236,63 @@ fn claude_parity_on_real_logs() {
             got.windows, got.requests.median, got.requests.p90, got.misses.median, got.misses.p90
         );
     }
+}
+
+/// 같은 Claude 기록을 읽는 네 곳(환율·지표·검진 전후·점검)을 이 Mac 실제 HOME에서 두 번씩 잰다(읽기만, 숫자만).
+/// `cargo test --release -- --ignored real_claude_read_cost --nocapture`.
+#[test]
+#[ignore = "실제 ~/.claude/projects를 읽는다"]
+fn real_claude_read_cost() {
+    use std::time::Instant;
+    let home = std::env::home_dir().unwrap();
+    let history = crate::rate::history::file(
+        &home.join("Library/Application Support/io.github.haedalwang.kcal"),
+    );
+    let now = unix_secs(OffsetDateTime::now_utc());
+    let tuning = crate::tuning::Tuning::default();
+    for pass in ["cold", "warm"] {
+        let total = Instant::now();
+        let t = Instant::now();
+        let rate = requests(&files(&home));
+        let rate_ms = t.elapsed().as_millis();
+        let t = Instant::now();
+        let m = crate::metrics::claude::metrics(&home, &history, now, &tuning);
+        let metrics_ms = t.elapsed().as_millis();
+        let t = Instant::now();
+        let (inputs, _) =
+            crate::metrics::claude::request_inputs(&home, now - 14.0 * crate::metrics::DAY_SECS);
+        let health_ms = t.elapsed().as_millis();
+        let t = Instant::now();
+        let (models, cwds) =
+            crate::metrics::claude::model_requests(&home, now - 30.0 * crate::metrics::DAY_SECS);
+        let checks_ms = t.elapsed().as_millis();
+        println!(
+            "BENCH {pass} rate={rate_ms}ms({}) metrics={metrics_ms}ms({:?}) health={health_ms}ms({}) checks={checks_ms}ms({}/{}) total={}ms",
+            rate.len(),
+            m.recent_requests,
+            inputs.len(),
+            models.len(),
+            cwds.len(),
+            total.elapsed().as_millis()
+        );
+    }
+}
+
+#[test]
+fn rate_requests_reuse_the_parse_other_readers_made() {
+    let home = TempDir::new("rate-claude-once");
+    let line = assistant(1_000.0, "m1", 3, 0, 0, 4);
+    let file = home.write(".claude/projects/-w/s.jsonl", &line);
+    let path = file.parent().unwrap().join("s.jsonl");
+    let (inputs, _) = crate::metrics::claude::request_inputs(home.path(), 0.0);
+    let got = requests(&files(home.path()));
+    assert_eq!((inputs.len(), got.len(), got[0].output), (1, 1, 4.0));
+    let parses = |f: &Path| {
+        crate::metrics::claude::PARSE_COUNTS
+            .lock()
+            .unwrap()
+            .get(f)
+            .copied()
+    };
+    assert_eq!(parses(&path).or(parses(&file)), Some(1));
 }

@@ -12,44 +12,15 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use serde::Deserialize;
-use time::OffsetDateTime;
-use time::format_description::well_known::Rfc3339;
-
 use super::codex::{self, DAY_SECS, VARIABLES, WindowFit};
 use super::fit;
 use super::history::HistoryEntry;
 use super::{CodexRate, RateStatus, WindowPattern};
-use crate::metrics::claude::{log_files, read_lines};
+use crate::metrics::claude::{Entry, entries, log_files};
 use crate::metrics::unix_secs;
 use crate::tuning::AdvancedTuning;
 
-const ASSISTANT_MARK: &[u8] = br#""type":"assistant""#;
-const USAGE_MARK: &[u8] = br#""usage""#;
 const WINDOW_SECS: f64 = 5.0 * 3600.0;
-
-#[derive(Deserialize)]
-struct Row {
-    #[serde(rename = "type")]
-    kind: Option<String>,
-    timestamp: Option<String>,
-    message: Option<Message>,
-}
-
-#[derive(Deserialize)]
-struct Message {
-    id: Option<String>,
-    usage: Option<Usage>,
-}
-
-/// 값이 null이어도 줄을 버리지 않는다(파이썬 `u.get(k) or 0`).
-#[derive(Deserialize)]
-struct Usage {
-    input_tokens: Option<f64>,
-    cache_creation_input_tokens: Option<f64>,
-    cache_read_input_tokens: Option<f64>,
-    output_tokens: Option<f64>,
-}
 
 /// 요청 하나의 토큰(유닉스 초 시각).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -67,26 +38,17 @@ impl Request {
     }
 }
 
-fn request(line: &[u8]) -> Option<(Option<String>, Request)> {
-    if !codex::contains(line, ASSISTANT_MARK) || !codex::contains(line, USAGE_MARK) {
-        return None;
-    }
-    let row: Row = serde_json::from_slice(line).ok()?;
-    if row.kind.as_deref() != Some("assistant") {
-        return None;
-    }
-    let ts = OffsetDateTime::parse(row.timestamp.as_deref()?, &Rfc3339).ok()?;
-    let message = row.message?;
-    let usage = message.usage?;
-    let value = |v: Option<f64>| v.unwrap_or(0.0);
+/// 요청 하나와 그 `message.id`(usage가 있는 assistant 줄만). 파일 파싱은 `metrics::claude::entries`가 나눠 쓴다.
+fn request(e: &Entry) -> Option<(Option<String>, Request)> {
+    let usage = e.usage?;
     Some((
-        message.id,
+        e.id.clone(),
         Request {
-            ts: unix_secs(ts),
-            input: value(usage.input_tokens),
-            cache_read: value(usage.cache_read_input_tokens),
-            cache_write: value(usage.cache_creation_input_tokens),
-            output: value(usage.output_tokens),
+            ts: e.ts,
+            input: usage.input_tokens,
+            cache_read: usage.cache_read_input_tokens,
+            cache_write: usage.cache_creation_input_tokens,
+            output: usage.output_tokens,
         },
     ))
 }
@@ -102,7 +64,10 @@ pub fn files(home: &Path) -> Vec<PathBuf> {
 pub fn requests(files: &[PathBuf]) -> Vec<Request> {
     let mut by_id: HashMap<String, usize> = HashMap::new();
     let mut out: Vec<Request> = Vec::new();
-    for (id, r) in files.iter().flat_map(|f| read_lines(f, request)) {
+    for (id, r) in files
+        .iter()
+        .flat_map(|f| entries(f).iter().filter_map(request).collect::<Vec<_>>())
+    {
         let Some(id) = id else {
             out.push(r);
             continue;

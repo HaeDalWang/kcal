@@ -4,9 +4,11 @@
 //! 줄은 `"type":"assistant"`와 `"usage"`가 둘 다 있을 때만 파싱하고, 숫자 필드·timestamp·`message.id`만
 //! 가진 타입으로 읽는다(본문은 serde가 건너뛰어 메모리에 남지 않는다). 같은 `message.id`는 한 번만 센다.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, LazyLock, Mutex};
+use std::time::SystemTime;
 
 use serde::Deserialize;
 use time::OffsetDateTime;
@@ -40,21 +42,40 @@ struct Message {
     id: Option<String>,
     /// 최적화 점검(coach::checks)이 최근 모델을 셀 때만 쓴다.
     model: Option<String>,
-    usage: Option<Usage>,
+    usage: Option<RawUsage>,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Deserialize)]
-#[serde(default)]
-struct Usage {
-    input_tokens: f64,
-    cache_creation_input_tokens: f64,
-    cache_read_input_tokens: f64,
+/// 값이 null이어도 줄을 버리지 않는다(`rate::claude`와 같다).
+#[derive(Deserialize)]
+struct RawUsage {
+    input_tokens: Option<f64>,
+    cache_creation_input_tokens: Option<f64>,
+    cache_read_input_tokens: Option<f64>,
+    output_tokens: Option<f64>,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) struct Usage {
+    pub(crate) input_tokens: f64,
+    pub(crate) cache_creation_input_tokens: f64,
+    pub(crate) cache_read_input_tokens: f64,
+    pub(crate) output_tokens: f64,
 }
 
 impl Usage {
     fn total_input(&self) -> f64 {
         self.input_tokens + self.cache_creation_input_tokens + self.cache_read_input_tokens
     }
+}
+
+/// assistant 줄 하나에서 쓰는 곳 모두가 필요한 값(시각·id·usage·model·cwd). 본문은 serde가 건너뛴다.
+#[derive(Clone, Debug)]
+pub(crate) struct Entry {
+    pub(crate) ts: f64,
+    pub(crate) id: Option<String>,
+    pub(crate) usage: Option<Usage>,
+    pub(crate) model: Option<String>,
+    pub(crate) cwd: Option<String>,
 }
 
 /// 요청 하나: (시각(유닉스 초), `message.id`, usage).
@@ -64,8 +85,10 @@ fn contains(haystack: &[u8], needle: &[u8]) -> bool {
     haystack.windows(needle.len()).any(|w| w == needle)
 }
 
-fn request(line: &[u8]) -> Option<Request> {
-    if !contains(line, ASSISTANT_MARK) || !contains(line, USAGE_MARK) {
+fn entry(line: &[u8]) -> Option<Entry> {
+    if !contains(line, ASSISTANT_MARK)
+        || !(contains(line, USAGE_MARK) || contains(line, MODEL_MARK))
+    {
         return None;
     }
     let row: Row = serde_json::from_slice(line).ok()?;
@@ -74,28 +97,65 @@ fn request(line: &[u8]) -> Option<Request> {
     }
     let ts = OffsetDateTime::parse(row.timestamp.as_deref()?, &Rfc3339).ok()?;
     let message = row.message?;
-    Some((unix_secs(ts), message.id, message.usage?))
+    let value = |v: Option<f64>| v.unwrap_or(0.0);
+    Some(Entry {
+        ts: unix_secs(ts),
+        id: message.id,
+        usage: message.usage.map(|u| Usage {
+            input_tokens: value(u.input_tokens),
+            cache_creation_input_tokens: value(u.cache_creation_input_tokens),
+            cache_read_input_tokens: value(u.cache_read_input_tokens),
+            output_tokens: value(u.output_tokens),
+        }),
+        model: message.model,
+        cwd: row.cwd,
+    })
+}
+
+/// 파일별 파싱 결과: (수정 시각, 크기)가 같으면 다시 읽지 않는다. 환율·지표·검진 전후·점검이 같은 파일을 나눠 쓴다.
+// ponytail: 없어진 파일의 항목은 앱이 끝날 때까지 남는다(이 Mac 줄 수만큼의 작은 목록). 문제가 되면 호출마다 목록에 없는 경로를 지운다.
+#[allow(clippy::type_complexity)]
+static PARSED: LazyLock<Mutex<HashMap<PathBuf, (SystemTime, u64, Arc<Vec<Entry>>)>>> =
+    LazyLock::new(Default::default);
+
+/// 테스트용: 경로별로 실제로 파일을 읽은 횟수.
+#[cfg(test)]
+pub(crate) static PARSE_COUNTS: LazyLock<Mutex<HashMap<PathBuf, usize>>> =
+    LazyLock::new(Default::default);
+
+/// 파일의 assistant 줄(usage나 model이 있는 것). 같은 파일은 바뀌기 전까지 한 번만 읽는다.
+pub(crate) fn entries(file: &Path) -> Arc<Vec<Entry>> {
+    let key = std::fs::metadata(file)
+        .ok()
+        .and_then(|m| Some((m.modified().ok()?, m.len())));
+    if let Some((modified, len)) = key
+        && let Ok(map) = PARSED.lock()
+        && let Some((m, l, found)) = map.get(file)
+        && (*m, *l) == (modified, len)
+    {
+        return Arc::clone(found);
+    }
+    #[cfg(test)]
+    if let Ok(mut counts) = PARSE_COUNTS.lock() {
+        *counts.entry(file.to_path_buf()).or_default() += 1;
+    }
+    let parsed = Arc::new(read_lines(file, entry));
+    if let Some((modified, len)) = key
+        && let Ok(mut map) = PARSED.lock()
+    {
+        map.insert(file.to_path_buf(), (modified, len, Arc::clone(&parsed)));
+    }
+    parsed
 }
 
 /// 요청 하나의 모델: (시각(유닉스 초), `message.id`, `message.model`). 정규화는 쓰는 쪽이 한다.
 pub(crate) type ModelRequest = (f64, Option<String>, String);
 
-/// 요청 하나의 모델과 그 줄의 `cwd`(없으면 `None`).
-fn model_request(line: &[u8]) -> Option<(ModelRequest, Option<String>)> {
-    if !contains(line, ASSISTANT_MARK) || !contains(line, MODEL_MARK) {
-        return None;
-    }
-    let row: Row = serde_json::from_slice(line).ok()?;
-    if row.kind.as_deref() != Some("assistant") {
-        return None;
-    }
-    let ts = OffsetDateTime::parse(row.timestamp.as_deref()?, &Rfc3339).ok()?;
-    let message = row.message?;
-    Some(((unix_secs(ts), message.id, message.model?), row.cwd))
-}
-
 fn read_requests(file: &Path) -> Vec<Request> {
-    read_lines(file, request)
+    entries(file)
+        .iter()
+        .filter_map(|e| Some((e.ts, e.id.clone(), e.usage?)))
+        .collect()
 }
 
 /// 파일을 줄마다 `parse`한다. 표식이 없는 줄은 `parse`가 JSON으로 읽기 전에 건너뛴다.
@@ -122,8 +182,13 @@ pub(crate) fn read_lines<T>(file: &Path, parse: impl Fn(&[u8]) -> Option<T>) -> 
 pub(crate) fn model_requests(home: &Path, since: f64) -> (Vec<ModelRequest>, Vec<PathBuf>) {
     let lines: Vec<(ModelRequest, Option<String>)> = log_files(home, since, usize::MAX)
         .iter()
-        .flat_map(|f| read_lines(f, model_request))
-        .filter(|((ts, _, _), _)| *ts >= since)
+        .flat_map(|f| {
+            entries(f)
+                .iter()
+                .filter(|e| e.ts >= since)
+                .filter_map(|e| Some(((e.ts, e.id.clone(), e.model.clone()?), e.cwd.clone())))
+                .collect::<Vec<_>>()
+        })
         .collect();
     let workspaces: std::collections::BTreeSet<PathBuf> = lines
         .iter()
@@ -273,16 +338,20 @@ mod tests {
     #[test]
     fn reads_only_usage_numbers_from_assistant_lines() {
         let line = assistant("2026-11-05T01:00:00Z", "msg_1", 2, 90, 8);
-        let (ts, id, usage) = request(line.as_bytes()).unwrap();
-        assert_eq!(ts, unix_secs(time::macros::datetime!(2026-11-05 01:00 UTC)));
-        assert_eq!(id.as_deref(), Some("msg_1"));
-        assert_eq!(usage.total_input(), 100.0);
+        let e = entry(line.as_bytes()).unwrap();
+        assert_eq!(
+            e.ts,
+            unix_secs(time::macros::datetime!(2026-11-05 01:00 UTC))
+        );
+        assert_eq!(e.id.as_deref(), Some("msg_1"));
+        let usage = e.usage.unwrap();
+        assert_eq!((usage.total_input(), usage.output_tokens), (100.0, 9.0));
         // user 줄, usage 없는 줄, 깨진 줄은 요청이 아니다.
         let user = json!({"type": "user", "timestamp": "2026-11-05T01:00:00Z",
             "message": {"content": "\"type\":\"assistant\" \"usage\""}})
         .to_string();
-        assert!(request(user.as_bytes()).is_none());
-        assert!(request(br#"{"type":"assistant","usage" broken"#).is_none());
+        assert!(entry(user.as_bytes()).is_none());
+        assert!(entry(br#"{"type":"assistant","usage" broken"#).is_none());
     }
 
     #[test]
@@ -290,15 +359,15 @@ mod tests {
         let line = json!({"type": "assistant", "timestamp": "2026-11-05T01:00:00Z",
             "message": {"id": "msg_1", "model": "claude-opus-5-5", "content": []}})
         .to_string();
-        let ((_, id, model), _) = model_request(line.as_bytes()).unwrap();
+        let e = entry(line.as_bytes()).unwrap();
         assert_eq!(
-            (id.as_deref(), model.as_str()),
-            (Some("msg_1"), "claude-opus-5-5")
+            (e.id.as_deref(), e.model.as_deref()),
+            (Some("msg_1"), Some("claude-opus-5-5"))
         );
         let user = json!({"type": "user", "timestamp": "2026-11-05T01:00:00Z",
             "message": {"model": "x", "content": "\"type\":\"assistant\""}})
         .to_string();
-        assert!(model_request(user.as_bytes()).is_none());
+        assert!(entry(user.as_bytes()).is_none());
     }
 
     #[test]
@@ -307,6 +376,7 @@ mod tests {
             input_tokens: input,
             cache_read_input_tokens: read,
             cache_creation_input_tokens: create,
+            output_tokens: 0.0,
         };
         let requests = vec![
             (10.0, Some("a".into()), usage(2.0, 90.0, 8.0)),
@@ -317,6 +387,31 @@ mod tests {
             (30.0, Some("d".into()), usage(1.0, 1.0, 1.0)), // 지금 뒤
         ];
         assert_eq!(tally(requests, 10.0, 20.0), (2, 90.0, 200.0));
+    }
+
+    #[test]
+    fn every_reader_shares_one_parse_per_unchanged_file() {
+        let home = TempDir::new("metrics-claude-once");
+        let now = OffsetDateTime::now_utc();
+        let ts = now.format(&Rfc3339).unwrap();
+        let line =
+            json!({"type": "assistant", "timestamp": ts, "cwd": "/w", "message": {"id": "m1",
+            "model": "claude-opus-5-5", "usage": {"input_tokens": 3, "output_tokens": 4}}})
+            .to_string();
+        let file = home.write(".claude/projects/-w/s.jsonl", &line);
+        let history = home.write("data/limit-history.jsonl", "");
+        let secs = unix_secs(now);
+        let _ = metrics(home.path(), &history, secs, &Tuning::default());
+        let (inputs, _) = request_inputs(home.path(), secs - DAY_SECS);
+        let (models, _) = model_requests(home.path(), secs - DAY_SECS);
+        assert_eq!((inputs.len(), models.len()), (1, 1));
+        let parses = |f: &Path| PARSE_COUNTS.lock().unwrap().get(f).copied();
+        let path = file.parent().unwrap().join("s.jsonl");
+        assert_eq!(parses(&path).or(parses(&file)), Some(1));
+        // 파일이 바뀌면(크기) 다시 읽는다.
+        std::fs::write(&path, format!("{line}\n{line}")).unwrap();
+        assert_eq!(model_requests(home.path(), secs - DAY_SECS).0.len(), 2);
+        assert_eq!(parses(&path), Some(2));
     }
 
     #[test]
