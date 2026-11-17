@@ -10,7 +10,10 @@ import type { Settings } from "@/lib/ipc";
 import { followSystemTheme } from "@/lib/theme";
 import settings from "@/test/fixtures/ipc/settings.json";
 import usage from "@/test/fixtures/ipc/usage-snapshot.json";
-import { ALL_HIDDEN, DASHBOARD_CHECKS } from "@/test/preview/checks-fixtures";
+import context from "@/test/fixtures/ipc/context-snapshot.json";
+import metrics from "@/test/fixtures/ipc/metrics-snapshot.json";
+import rates from "@/test/fixtures/ipc/rate-snapshot.json";
+import { ALL_HIDDEN, DASHBOARD_CHECKS, DASHBOARD_SWITCHES } from "@/test/preview/checks-fixtures";
 import "@/index.css";
 
 const isNone = new URLSearchParams(location.search).get("s") === "none";
@@ -18,6 +21,34 @@ const checks = isNone ? ALL_HIDDEN : DASHBOARD_CHECKS;
 const allAgents: Settings = {
   ...(settings as Settings),
   enabledAgents: ["claude", "codex", "kiro"],
+};
+
+// 실제 Claude 탭 길이를 보려고 Claude 값을 채운다(시작 컨텍스트 7묶음, 요청 수, 캐시, 최근 구간 막대).
+const START = ["system", "tools", "mcpInstructions", "agents", "instructions", "skills", "mcp"];
+const claudeContext = {
+  ...context.agents[0],
+  totalStartupTokens: 34_200,
+  items: START.map((kind, i) => ({
+    kind,
+    name: kind,
+    bytes: 4000,
+    tokens: 1000 * (i + 1),
+    source: i === 4 ? "estimated" : "measured",
+    loading: "startup",
+    path: null,
+  })),
+  warnings: [],
+};
+const barAt = (i: number, value: number) => ({
+  isCurrent: i === 5,
+  startsAt: `2026-11-0${i + 1}T10:00:00Z`,
+  value,
+});
+const claudeMetrics = {
+  ...metrics.agents[0],
+  recentRequests: 139,
+  cacheHitRatio: 0.94,
+  bars: [31, 12, 55, 40, 22, 18].map((v, i) => barAt(i, v)),
 };
 
 mockIPC(
@@ -34,6 +65,14 @@ mockIPC(
         };
       case "get_checks":
         return checks;
+      case "get_context":
+        return { ...context, agents: [claudeContext, ...context.agents.slice(1)] };
+      case "get_metrics":
+        return { ...metrics, agents: [claudeMetrics, ...metrics.agents.slice(1)] };
+      case "get_rates":
+        return rates;
+      case "get_switches":
+        return DASHBOARD_SWITCHES;
       default:
         return null;
     }

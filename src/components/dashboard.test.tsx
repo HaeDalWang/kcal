@@ -207,6 +207,19 @@ describe("Dashboard", () => {
     expect(await within(kiro).findByRole("group", { name: "질문당 크레딧" })).toBeTruthy();
   });
 
+  it("shows the request count, cache hit rate and recent window bars moved off the tray", async () => {
+    mock();
+    render(<Dashboard />);
+    // 트레이 에이전트 탭에서 뺀 값(0023). Codex 픽스처에 값이 있다.
+    const codex = await screen.findByRole("region", { name: "Codex" });
+    const lines = await within(codex).findByRole("list", { name: "지표" });
+    expect([...lines.querySelectorAll("li")].map((li) => li.textContent)).toEqual([
+      "최근 5시간 요청42회",
+      "캐시 적중률92%",
+    ]);
+    expect(within(codex).getByRole("list", { name: "최근 5시간 구간 사용량" })).toBeTruthy();
+  });
+
   it("shows the startup context once per agent, not also as a metric card", async () => {
     mock();
     render(<Dashboard />);

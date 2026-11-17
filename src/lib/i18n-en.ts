@@ -87,15 +87,6 @@ export const en: Messages = {
     runsOut: (duration) => `runs out in ${duration}`,
   },
   metrics: {
-    groups: {
-      system: "System prompt",
-      tools: "System tools",
-      mcp: "MCP tools",
-      mcpInstructions: "MCP server instructions",
-      agents: "Custom agents",
-      memory: "Memory files",
-      skills: "Skills",
-    },
     startupValue: (mark, percent, tokens, window) =>
       `${mark}${percent}% of context window (${mark}${tokens} / ${window} tokens)`,
     // Overview line: with the token counts it wraps to two lines at 310px (2026-11-11 screen). Tokens stay in the tooltip.
@@ -109,7 +100,6 @@ export const en: Messages = {
     recentRequests: "Requests, last 5h",
     cacheHit: "Cache hit rate",
     list: "Metrics",
-    startupParts: "Startup context breakdown",
     barStart: (date) => `Starts ${dateTime.format(date)}`,
     max: (value) => `peak ${value}`,
     recentWindows: "Recent 5-hour windows",

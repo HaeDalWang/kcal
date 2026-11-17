@@ -84,7 +84,7 @@ export function onUsageUpdated(handler: (snapshot: UsageSnapshot) => void): Prom
   return listen<UsageSnapshot>(USAGE_UPDATED_EVENT, (event) => handler(event.payload));
 }
 
-/** Rust `context::ContextKind`. 화면은 `agent-metrics.tsx` `CONTEXT_GROUPS`로 Claude Code `/context` 묶음에 맞춰 모은다. */
+/** Rust `context::ContextKind`. 화면은 항목별로 보인다(`context-list.tsx`). */
 export type ContextKind =
   | "instructions"
   | "rules"

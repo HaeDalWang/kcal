@@ -4,10 +4,9 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { AgentIcon } from "@/components/agent-icon";
 import {
   AGENT_COLOR,
-  MetricLines,
   startupShortValue,
+  StartupSummary,
   startupTitle,
-  UsageBars,
 } from "@/components/agent-metrics";
 import { Dial } from "@/components/dial";
 import { reasonStateKind, StateText } from "@/components/state-text";
@@ -487,7 +486,7 @@ export function useUsageSnapshot(): {
   return { snapshot, error, now };
 }
 
-/** 개요(켠 에이전트 요약) 또는 에이전트 하나의 결론(사용량 → 지표 3줄 → 최근 구간 막대, docs/decisions/0010). */
+/** 개요(켠 에이전트 요약) 또는 에이전트 하나의 결론(사용량 → 시작 컨텍스트 한 줄, docs/decisions/0010·0023). */
 export function UsagePopover({
   agents,
   selected,
@@ -563,8 +562,7 @@ export function UsagePopover({
                 onOpenDashboard={onOpenDashboard}
               />
               {trim && onReview && <TrimEntry trim={trim} onReview={onReview} />}
-              <MetricLines agent={usage.agent} />
-              <UsageBars agent={usage.agent} />
+              <StartupSummary agent={usage.agent} />
             </div>
           )
         )}

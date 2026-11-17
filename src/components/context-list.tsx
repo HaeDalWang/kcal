@@ -97,7 +97,7 @@ function ContextBody({
       ? 0
       : context.firstRequestTokens - context.totalStartupTokens;
   const remainderShare = remainder > 0 ? share(remainder) : null;
-  // 대시보드의 시작 컨텍스트는 이 칸 하나다(팝오버 카드와 같은 값 줄 + 항목별 목록). `MetricLines`는 대시보드에서 이 줄을 빼 두 번 보이지 않는다.
+  // 대시보드의 시작 컨텍스트는 이 칸 하나다(트레이 `StartupSummary`와 같은 값 줄 + 항목별 목록·한도 몫).
   return (
     <InfoSection
       title={t.common.startupContext}

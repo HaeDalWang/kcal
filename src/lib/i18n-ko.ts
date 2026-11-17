@@ -76,15 +76,6 @@ export const ko = {
     runsOut: (duration: string) => `${duration} 후 소진`,
   },
   metrics: {
-    groups: {
-      system: "시스템 프롬프트",
-      tools: "기본 도구",
-      mcp: "MCP 도구",
-      mcpInstructions: "MCP 서버 안내",
-      agents: "에이전트",
-      memory: "지시 파일",
-      skills: "스킬",
-    },
     startupValue: (mark: string, percent: string, tokens: string, window: string) =>
       `${mark}${percent}% (${mark}${tokens} / ${window} 토큰)`,
     /** 개요 카드 한 줄(폭 310 안). 한국어는 값 줄과 같다. */
@@ -99,7 +90,6 @@ export const ko = {
     recentRequests: "최근 5시간 요청",
     cacheHit: "캐시 적중률",
     list: "지표",
-    startupParts: "시작 컨텍스트 구성",
     barStart: (date: Date) =>
       `${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())} 시작`,
     max: (value: string) => `최고 ${value}`,

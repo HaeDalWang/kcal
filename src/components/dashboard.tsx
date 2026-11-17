@@ -85,7 +85,7 @@ function AgentPanels({ settings, usage: state }: { settings: Settings; usage: Us
               <AgentSection usage={usage} now={now} lowPercent={lowPercent} />
             )}
             {/* 시작 컨텍스트는 오른쪽 `ContextList` 하나로 보인다(같은 값·구성이 두 번 나오지 않게). */}
-            <MetricLines agent={agent} hasStartup={false} />
+            <MetricLines agent={agent} />
             <UsageBars agent={agent} className="h-24" />
             <RateLine
               agent={agent}

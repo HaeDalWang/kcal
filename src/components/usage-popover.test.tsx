@@ -317,7 +317,7 @@ describe("UsagePopover", () => {
     expect(within(kiro).queryByText(/%/)).toBeNull();
   });
 
-  it("breaks startup context down by /context category in the agent tab", async () => {
+  it("shows only the startup context line in the agent tab, details stay on the dashboard", async () => {
     mockIPC((cmd) => (cmd === "get_context" ? startupContexts : mockCommands(cmd)), {
       shouldMockEvents: true,
     });
@@ -331,51 +331,15 @@ describe("UsagePopover", () => {
       />,
     );
 
-    const groups = await screen.findByRole("list", { name: "시작 컨텍스트 구성" });
-    const rows = within(groups).getAllByRole("listitem");
-    expect(rows.map((li) => li.textContent)).toEqual([
-      "시스템 프롬프트3.3K",
-      "기본 도구17.1K",
-      "MCP 서버 안내2.4K",
-      "에이전트342",
-      "지시 파일~3.8K",
-      "스킬7.2K",
-    ]);
-    expect(rows[4].getAttribute("title")).toBe("예상: 기록으로 계산한 값 · /context Memory files");
-    expect(rows[0].getAttribute("title")).toBe("정확: 측정한 값 · /context System prompt");
-  });
-
-  it("shows only metric lines and recent window bars under the usage, without details", async () => {
-    mockIPC(mockCommands, { shouldMockEvents: true });
-    const props = {
-      agents: [...AGENTS],
-      onSelect: () => {},
-      lowPercent: 20,
-      onOpenDashboard: () => {},
-    };
-    const { rerender } = render(<UsagePopover {...props} selected="claude" />);
-
-    const lines = await screen.findByRole("list", { name: "지표" });
-    expect([...lines.querySelectorAll("li")].map((li) => li.textContent)).toEqual([
-      "최근 5시간 요청42회",
-      "캐시 적중률92%",
-    ]);
-    const bars = screen.getByRole("list", { name: "최근 5시간 구간 사용량" });
-    const items = within(bars).getAllByRole("listitem");
-    expect(items).toHaveLength(2);
-    expect(items[1].getAttribute("aria-current")).toBe("true");
-    expect(items[1].getAttribute("title")).toMatch(/^정확: \d\d\/\d\d \d\d:\d\d 시작 · 12%$/);
+    const value = await screen.findByTitle(/바이트 ÷ 4/);
+    expect(value.textContent).toBe("~8.5% (~34.2K / 400K 토큰)");
+    expect(value.parentElement?.textContent).toBe("시작 컨텍스트~8.5% (~34.2K / 400K 토큰)");
+    // 트레이에서 뺀 것: 구성 목록·한도 몫 문장·요청 수·캐시·최근 구간 막대(대시보드에 있음, 0023).
+    expect(screen.queryByRole("list", { name: "시작 컨텍스트 구성" })).toBeNull();
+    expect(screen.queryByText(/요청마다 다시 실려서/)).toBeNull();
+    expect(screen.queryByRole("list", { name: "지표" })).toBeNull();
+    expect(screen.queryByRole("list", { name: "최근 5시간 구간 사용량" })).toBeNull();
     expect(document.querySelector("details")).toBeNull();
-    expect(screen.queryByRole("group", { name: "1%당 토큰" })).toBeNull();
-
-    // Kiro: 5시간 한도가 없어 "질문", 캐시 적중률은 몰라서 줄이 없다.
-    rerender(<UsagePopover {...props} selected="kiro" />);
-    const kiro = await screen.findByRole("list", { name: "지표" });
-    expect(
-      within(kiro)
-        .getAllByRole("listitem")
-        .map((li) => li.textContent),
-    ).toEqual(["최근 5시간 질문3회"]);
   });
 
   it("keeps behavior lists off the tray even when sessions and Kiro credits are known", async () => {
@@ -397,22 +361,6 @@ describe("UsagePopover", () => {
     rerender(<UsagePopover {...props} selected="kiro" />);
     await screen.findByRole("group", { name: "Kiro" });
     expect(screen.queryByText("질문당 크레딧")).toBeNull();
-  });
-
-  it("hides the metric lines when no value is known", async () => {
-    mockIPC(mockCommands, { shouldMockEvents: true });
-    render(
-      <UsagePopover
-        agents={[...AGENTS]}
-        selected="codex"
-        onSelect={() => {}}
-        lowPercent={20}
-        onOpenDashboard={() => {}}
-      />,
-    );
-    await screen.findByRole("group", { name: "Codex" });
-    expect(screen.queryByRole("list", { name: "지표" })).toBeNull();
-    expect(screen.queryByRole("list", { name: "최근 5시간 구간 사용량" })).toBeNull();
   });
 
   it("colors a bar as low when remaining is at or below lowPercent", async () => {
