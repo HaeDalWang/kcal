@@ -52,7 +52,7 @@
 - [x] README 데모 GIF를 줄인 에이전트 탭에 맞춤(`9707182`): 옛 GIF는 0023 뒤 없는 화면(Claude 탭 시작 컨텍스트 내역)을 보였다. 2단계를 최근 구간 막대(커서 값)·시작 컨텍스트 한 줄로 다시 녹화, 영어·한국어 alt 고침. 미리보기 데모 데이터, 28.5초, 4.4MB.
 - [x] README 처음 읽는 사람 점검(`69eddb7`·`58523d4`): 설치 줄에 "macOS와 Claude Code 필요(Codex·Kiro 선택)", 첫 30초 문단을 둘로, 삭제 방법은 FAQ 끝으로, FAQ 토큰 답의 개인 도구 경로 괄호 삭제, "Linux: maybe later" → "not supported". 남은 것: 개인정보 표 `agent-usage-audit` 줄(코드 대체 경로와 함께 지워야 함), 두 표가 넓고 빽빽함, README 약 30KB.
 - [x] 빈 대시보드에 한 문장 + 행동, 라이트 선택 탭 가볍게(`fde448b`·`a43bf0b`): 켜진 에이전트 모두 기록(막대·요청)이 없으면 맨 위에 "한 번 쓰고 새로고침" 한 줄과 새로고침 버튼. 사용량 확인 전(`checkedAt` null)·지표 도착 전에는 숨김. 선택 탭은 그림자만 뺐다. 남은 것: 라이트 선택 날 칸(회색 상자)도 무거운지 모름, 실제 앱 눈 확인 아직.
-- [x] 영어 첫 사용자 화면 점검(2026-11-17, 미리보기): `18f2735` 개요 "Reset" → "Just reset", 창 라벨 폭 w-16 → w-18("Weekly 100%" 넘침, "Monthly"는 추정). `e51ad28` 점검 없음 문구에 "지금은 Claude Code만 점검", 영어 버튼 "Turn on only where used". `7371fd4` 미리보기가 새 Mac을 재현(`?blank`·`?s=fresh`가 Rust 모양 빈 스냅샷, `agents=`, `lang=`); 새 Mac 영어 대시보드에 빈 안내 있음·Loading 없음·한글 0 확인. 점검의 거짓 양성(영구 Loading, Codex 중복 key)은 미리보기 탓이었다. 남은 것: "Turn on only where used" 버튼 줄바꿈 미확인, 실제 새 Mac의 사용량 문구(빈 HOME `get_usage`)는 모름.
+- [x] 영어 첫 사용자 화면 점검(2026-11-17, 미리보기): `18f2735` 개요 "Reset" → "Just reset", 창 라벨 폭 w-16 → w-18("Weekly 100%" 넘침, "Monthly"는 추정). `e51ad28` 점검 없음 문구에 "지금은 Claude Code만 점검", 영어 버튼 "Turn on only where used". `7371fd4` 미리보기가 새 Mac을 재현(`?blank`·`?s=fresh`가 Rust 모양 빈 스냅샷, `agents=`, `lang=`); 새 Mac 영어 대시보드에 빈 안내 있음·Loading 없음·한글 0 확인. 점검의 거짓 양성(영구 Loading, Codex 중복 key)은 미리보기 탓이었다. "Turn on only where used" 버튼은 폭 1000·640에서 한 줄(높이 23, 넘침 없음). 남은 것: 실제 새 Mac의 사용량 문구(빈 HOME `get_usage`)는 모름.
 - [ ] 시작 컨텍스트 누적 막대, 행 %의 분모 표시, 에이전트 아이콘을 불꽃 대신 글자 모노그램, 데모 데이터 스위치. 대담한 안: 메뉴바 아이콘을 링 + 숫자로(0012와 충돌).
 
 ## 기능 후보
