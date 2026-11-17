@@ -1,4 +1,4 @@
-// IPC fixture 계약 테스트(ipc.test.ts, ipc-coach.test.ts)가 함께 쓰는 도우미.
+// IPC fixture 계약 테스트(ipc.test.ts, ipc-coach.test.ts, ipc-rules.test.ts)가 함께 쓰는 도우미.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 

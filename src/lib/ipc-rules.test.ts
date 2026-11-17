@@ -1,30 +1,9 @@
 // 0018 작업 B IPC fixture(src-tauri/src/ipc_fixtures.rs `claude_rules_types_match_fixture`)가 ipc.ts 타입과
 // 키·enum 값까지 같은지 본다. 공통 계약 테스트는 ipc.test.ts(800줄 아래로 두려고 나눴다).
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
 import type { AppliedSwitch, Proposal, RuleProblem, RuleProposal, RulesPreview } from "@/lib/ipc";
-
-type Fields<T> = Record<keyof T, "required" | "optional">;
-
-function fixture(name: string): unknown {
-  return JSON.parse(readFileSync(resolve("src/test/fixtures/ipc", `${name}.json`), "utf8"));
-}
-
-function expectKeys<T>(value: unknown, fields: Fields<T>, where: string): void {
-  const keys = Object.keys(value as object);
-  const required = Object.entries(fields).flatMap(([k, v]) => (v === "required" ? [k] : []));
-  expect(
-    keys.filter((k) => !(k in fields)),
-    `${where}: keys unknown to ipc.ts`,
-  ).toEqual([]);
-  expect(
-    required.filter((k) => !keys.includes(k)),
-    `${where}: required keys missing`,
-  ).toEqual([]);
-}
+import { expectFields, fixture, type Fields } from "@/test/ipc-fixture";
 
 const RULES_PREVIEW = {
   id: "required",
@@ -66,11 +45,11 @@ const RULE_PROBLEM = {
 describe("Rust rules IPC fixtures match ipc.ts types", () => {
   it("rules preview rows have the keys of RuleProposal and every proposal choice", () => {
     const preview = fixture("rules-preview") as RulesPreview;
-    expectKeys<RulesPreview>(preview, RULES_PREVIEW, "RulesPreview");
+    expectFields<RulesPreview>(preview, RULES_PREVIEW, "RulesPreview");
     preview.rules.forEach((r) => {
-      expectKeys<RuleProposal>(r, RULE_PROPOSAL, "RuleProposal");
+      expectFields<RuleProposal>(r, RULE_PROPOSAL, "RuleProposal");
       const fields = PROPOSAL[r.proposal.choice] as Fields<Proposal>;
-      expectKeys<Proposal>(r.proposal, fields, `Proposal.${r.proposal.choice}`);
+      expectFields<Proposal>(r.proposal, fields, `Proposal.${r.proposal.choice}`);
     });
     expect([...new Set(preview.rules.map((r) => r.proposal.choice))].sort()).toEqual(
       Object.keys(PROPOSAL).sort(),
