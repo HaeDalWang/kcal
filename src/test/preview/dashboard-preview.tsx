@@ -1,9 +1,10 @@
 // 개발용 미리보기: 대시보드를 IPC fixture + 합성 시간 버킷으로 브라우저에 그린다(Tauri 없이 화면 확인용).
 // `pnpm exec vite --port 1480` 뒤 http://127.0.0.1:1480/src/test/preview/dashboard.html
 // `?empty`면 시간 버킷·처방 기록을 비워 빈 상태를 본다. `?tab=checks`면 점검 탭으로 연다(이 Mac D·C + Codex·Kiro 스위치, 숨김 1개).
-// `?blank`면 읽은 값이 전혀 없는 새 Mac 상태로 연다.
 // `&handoff=ok|opus&remaining=N`이면 긴 안내문 카드(Claude에게 맡기기)를 더한다.
 // `&rules=ok|opus&remaining=N`이면 늘 실리는 규칙 카드(0018 작업 B)를 더한다.
+// `?blank`면 갓 설치한 Mac(기록 없음)을 그린다: 지표·컨텍스트·처방 효과·사용량·환율이 null이 아니라 Rust처럼 빈 스냅샷이다.
+// `&agents=claude,codex`(쉼표 목록)면 켠 에이전트를 그것만으로 덮고(기본 3개), `&lang=en|ko`면 화면 언어를 고른다(기본은 브라우저 언어를 따르는 auto라, ko 브라우저면 한국어로 나온다).
 // 앱 번들에는 들어가지 않는다(index.html이 참조하지 않음).
 import { mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import { StrictMode } from "react";
@@ -25,7 +26,6 @@ import context from "@/test/fixtures/ipc/context-snapshot.json";
 import health from "@/test/fixtures/ipc/health-report.json";
 import metrics from "@/test/fixtures/ipc/metrics-snapshot.json";
 import rates from "@/test/fixtures/ipc/rate-snapshot.json";
-import settings from "@/test/fixtures/ipc/settings.json";
 import usage from "@/test/fixtures/ipc/usage-snapshot.json";
 import {
   CODEX_APPLIED,
@@ -41,11 +41,18 @@ import {
   RULES_PREVIEW,
   SCOPE_PREVIEW,
 } from "@/test/preview/checks-fixtures";
+import {
+  freshContext,
+  freshHealth,
+  freshMetrics,
+  freshRates,
+  freshUsage,
+  previewSettings,
+} from "@/test/preview/fresh";
 import "@/index.css";
 
 const HOUR_MS = 3_600_000;
 const isEmpty = new URLSearchParams(location.search).has("empty");
-// `?blank`면 읽은 값이 하나도 없는 첫 실행(새 Mac)을 흉내 낸다: 사용량·기록·컨텍스트·처방 전부 비어 있다.
 const isBlank = new URLSearchParams(location.search).has("blank");
 
 /** 에이전트별 하루 모양(지역 시각별 요청 수 가중치)과 요청당 쓴 양. 결정적이다. */
@@ -113,10 +120,7 @@ const healthReport: HealthReport = isEmpty
       prescriptions: [],
     }
   : { ...fixtureHealth, prescriptions: [running, ...fixtureHealth.prescriptions] };
-const allAgents: Settings = {
-  ...(settings as Settings),
-  enabledAgents: ["claude", "codex", "kiro"],
-};
+const allAgents: Settings = previewSettings(new URLSearchParams(location.search));
 
 // `?handoff=ok|opus&remaining=64`: 점검 탭 맨 앞에 긴 안내문 카드(0018 작업 A)를 두고 Claude 남은 한도를 그 %로 둔다.
 // ok면 "Claude에게 줄여 달라고 하기"가 미리보기를, opus면 "Opus 5.5를 쓸 수 없음" 오류를 돌려준다.
@@ -155,19 +159,41 @@ const askRules = () =>
 mockWindows("dashboard");
 mockIPC(
   (cmd) => {
+    if (isBlank) {
+      switch (cmd) {
+        case "get_settings":
+          return allAgents;
+        case "get_usage":
+          return freshUsage(now);
+        case "get_metrics":
+          return freshMetrics(now, allAgents.tuning.barDays);
+        case "get_rates":
+          return freshRates(now);
+        case "get_context":
+          return freshContext(now);
+        case "get_health":
+          return freshHealth(now, allAgents.enabledAgents, allAgents.tuning.compareDays);
+        case "get_checks":
+        case "get_switches":
+        case "get_coach_log":
+          return [];
+        default:
+          return null;
+      }
+    }
     switch (cmd) {
       case "get_settings":
         return allAgents;
       case "get_usage":
-        return isBlank ? { agents: [] } : usageSnapshot;
+        return usageSnapshot;
       case "get_metrics":
-        return isBlank ? null : metricsSnapshot;
+        return metricsSnapshot;
       case "get_rates":
-        return isBlank ? null : rates;
+        return rates;
       case "get_context":
-        return isBlank ? null : context;
+        return context;
       case "get_health":
-        return isBlank ? null : healthReport;
+        return healthReport;
       case "get_checks":
         return checks;
       case "ask_claude_handoff":

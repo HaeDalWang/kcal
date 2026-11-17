@@ -1,6 +1,9 @@
 // 개발용 미리보기: 팝오버(폭 310)를 IPC fixture로 브라우저에 그린다(Tauri 없이 메뉴 "점검" 알림 확인용).
 // 대시보드 미리보기와 같은 방법으로 연다(src/test/preview/popover.html).
 // 기본은 이 Mac 카드(알림 1개, 점 있음), `?s=none`이면 그대로 두기·숨긴 카드만(점 없음). 앱 번들에는 들어가지 않는다.
+// `?s=fresh`면 갓 설치한 Mac(기록 없음: 빈 지표·컨텍스트·사용량·환율, 점검·스위치 없음)을 그린다.
+// `&agents=claude,codex`(쉼표 목록)면 켠 에이전트를 그것만으로 덮는다(기본 claude·codex·kiro).
+// `&lang=en|ko`면 화면 언어를 고른다(기본은 브라우저 언어를 따르는 auto라, ko 브라우저면 한국어로 나온다).
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
@@ -8,20 +11,26 @@ import { createRoot } from "react-dom/client";
 import { App } from "@/App";
 import type { Settings } from "@/lib/ipc";
 import { followSystemTheme } from "@/lib/theme";
-import settings from "@/test/fixtures/ipc/settings.json";
 import usage from "@/test/fixtures/ipc/usage-snapshot.json";
 import context from "@/test/fixtures/ipc/context-snapshot.json";
 import metrics from "@/test/fixtures/ipc/metrics-snapshot.json";
 import rates from "@/test/fixtures/ipc/rate-snapshot.json";
 import { ALL_HIDDEN, DASHBOARD_CHECKS, DASHBOARD_SWITCHES } from "@/test/preview/checks-fixtures";
+import {
+  freshContext,
+  freshMetrics,
+  freshRates,
+  freshUsage,
+  previewSettings,
+} from "@/test/preview/fresh";
 import "@/index.css";
 
-const isNone = new URLSearchParams(location.search).get("s") === "none";
+const query = new URLSearchParams(location.search);
+const isNone = query.get("s") === "none";
+const isFresh = query.get("s") === "fresh";
 const checks = isNone ? ALL_HIDDEN : DASHBOARD_CHECKS;
-const allAgents: Settings = {
-  ...(settings as Settings),
-  enabledAgents: ["claude", "codex", "kiro"],
-};
+const allAgents: Settings = previewSettings(query);
+const now = Date.now();
 
 // 실제 Claude 탭 길이를 보려고 Claude 값을 채운다(시작 컨텍스트 7묶음, 요청 수, 캐시, 최근 구간 막대).
 const START = ["system", "tools", "mcpInstructions", "agents", "instructions", "skills", "mcp"];
@@ -53,6 +62,25 @@ const claudeMetrics = {
 
 mockIPC(
   (cmd) => {
+    if (isFresh) {
+      switch (cmd) {
+        case "get_settings":
+          return allAgents;
+        case "get_usage":
+          return freshUsage(now);
+        case "get_checks":
+        case "get_switches":
+          return [];
+        case "get_context":
+          return freshContext(now);
+        case "get_metrics":
+          return freshMetrics(now, allAgents.tuning.barDays);
+        case "get_rates":
+          return freshRates(now);
+        default:
+          return null;
+      }
+    }
     switch (cmd) {
       case "get_settings":
         return allAgents;
