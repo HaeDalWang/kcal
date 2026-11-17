@@ -552,6 +552,47 @@ describe("CoachPanel", () => {
     });
   });
 
+  it("lists at most three open applies, skipping undone ones and optimization-check fixes", () => {
+    mock();
+    const applied = (id: string, extra: Partial<AppliedSwitch> = {}): AppliedSwitch => ({
+      ...APPLIED,
+      id,
+      name: `p${id}@m`,
+      ...extra,
+    });
+    const log = [
+      applied("1"),
+      applied("2", { action: "undo", undoOf: "1" }),
+      applied("3", { target: "claude/check:x", agent: "codex" }),
+      applied("4"),
+      applied("5"),
+      applied("6"),
+      applied("7"),
+    ];
+    const onShowEffect = vi.fn();
+    render(
+      <CoachPanel
+        agent="codex"
+        switches={SWITCHES}
+        log={log}
+        onChanged={() => {}}
+        onShowEffect={onShowEffect}
+      />,
+    );
+    const recent = screen.getByRole("group", { name: "최근 바꾼 것" });
+    expect(
+      within(recent)
+        .getAllByRole("listitem")
+        .map((li) => li.textContent),
+    ).toEqual([
+      expect.stringContaining("p4@m"),
+      expect.stringContaining("p5@m"),
+      expect.stringContaining("p6@m"),
+    ]);
+    fireEvent.click(within(recent).getAllByRole("button", { name: ko.coach.showEffect })[0]);
+    expect(onShowEffect).toHaveBeenCalledTimes(1);
+  });
+
   it("does not show another agent's recent applies", () => {
     mock();
     renderPanel("kiro", { log: [APPLIED] });

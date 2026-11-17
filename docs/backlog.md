@@ -33,7 +33,7 @@
 
 - [ ] CLAUDE.md 줄이기(0018 작업 A): Opus 없는 플랜의 오류 모양은 모름. Windows 실행 미확인.
 - [ ] `paths` 없는 rules 옮기기(0018 작업 B): 실제 Claude 실행은 해 보지 않았다(제안 품질 모름). 실제 실행 테스트는 한도 문을 거치지 않으니 남은 한도를 먼저 보고 돌린다: `cd src-tauri && cargo test --lib real_claude_proposes_where_rules_belong -- --ignored --nocapture`. 약점: 스킬로 옮기기 되돌리기 중 SKILL.md 지우기만 실패하면 기록 줄 없이 두 파일이 남고(뒤 되돌리기는 거절하고 수동 명령을 안내), 규칙이 심볼릭 링크면 링크가 끊긴다.
-- [ ] 첫 점검의 한계: hook 점검은 최근 세션 폴더만 본다. `coach-view`의 RecentLog 렌더 테스트가 없다(`appliedName` 단위 테스트만 있음).
+- [ ] 첫 점검의 한계: hook 점검은 최근 세션 폴더만 본다.
 - [ ] Codex·Kiro 사실표(0017)와 코드의 차이 중 고치지 않은 것: Codex `project_root_markers`·`plugins._default.enabled`, Kiro 세션 기록 위치. Codex·Kiro의 다음 점검 후보 3개는 구현하지 않았다.
 - [ ] Codex·Kiro 끄기 제안 정책: 두 에이전트는 사용 기록을 읽는 출처가 없어(근거 없음) 플러그인·MCP 끄기를 제안하지 않고, 사용자가 직접 끌 수만 있다. Claude는 최근 30일 기록(세션 10개 이상)에서 한 번도 안 쓴 것만 제안한다. 같은 기준을 Codex·Kiro에 쓰려면 사용 기록 출처를 먼저 찾아야 한다(결정 0017·0022).
 - [ ] Codex 플러그인은 매니페스트(플러그인 폴더의 설정 파일)에 적힌 스킬·명령 경로를 읽지 않는다(Claude는 공식 규칙대로 읽음). 최적화 칸의 "고친 것" 줄 문구는 적용한 때의 언어로 남는다.
