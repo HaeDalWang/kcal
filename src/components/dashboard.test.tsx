@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Dashboard } from "@/components/dashboard";
 import { healthStore } from "@/components/health-compare";
+import { metricsStore } from "@/lib/snapshot-store";
 import { DASHBOARD_TAB_EVENT, initialDashboardTab, type Settings } from "@/lib/ipc";
 import context from "@/test/fixtures/ipc/context-snapshot.json";
 import health from "@/test/fixtures/ipc/health-report.json";
@@ -52,6 +53,7 @@ const isSelected = (name: string) => tab(name).getAttribute("aria-selected") ===
 
 afterEach(() => {
   healthStore.reset();
+  metricsStore.reset();
   window.history.replaceState(null, "", "/");
 });
 
@@ -116,13 +118,34 @@ describe("Dashboard", () => {
     expect(cards[1]?.getAttribute("aria-label")).toBeTruthy();
   });
 
-  it("guides an empty first run with one sentence and a refresh action, and hides it once usage exists", async () => {
-    mockIPC((cmd) => (cmd === "get_usage" ? { agents: [] } : (FIXTURE[cmd] ?? null)), {
+  it("guides an empty first run when there are no metrics records, even with usage windows", async () => {
+    mockIPC((cmd) => (cmd === "get_metrics" ? null : (FIXTURE[cmd] ?? null)), {
       shouldMockEvents: true,
     });
-    const { unmount } = render(<Dashboard />);
+    render(<Dashboard />);
     await screen.findByText(/한 번 쓰고 새로고침하면/);
-    unmount();
+  });
+
+  it("does not guide while usage rows are still pending (checkedAt null)", async () => {
+    const pending = {
+      agents: (usage as { agents: object[] }).agents.map((a) => ({
+        ...a,
+        windows: [],
+        reason: null,
+        checkedAt: null,
+      })),
+    };
+    mockIPC(
+      (cmd) =>
+        cmd === "get_metrics" ? null : cmd === "get_usage" ? pending : (FIXTURE[cmd] ?? null),
+      { shouldMockEvents: true },
+    );
+    render(<Dashboard />);
+    await screen.findByRole("region", { name: "오늘 쓴 양" });
+    expect(screen.queryByText(/한 번 쓰고 새로고침하면/)).toBeNull();
+  });
+
+  it("hides the empty-run guide once metrics records exist", async () => {
     mock();
     render(<Dashboard />);
     await screen.findByRole("region", { name: "오늘 쓴 양" });

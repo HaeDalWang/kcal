@@ -1,7 +1,7 @@
 // 대시보드 창(docs/decisions/0010, 0015, 0016). 머리 아래 탭 두 개(0017 "화면 자리").
 // 사용량 탭 — 위: 고른 날(최근 7일)의 링·숫자 칸·시간대 막대. 가운데: 처방 효과(주간 요약·처방별 전후). 아래: 에이전트별 상세(지금 값).
 // 점검 탭 — 에이전트별 최적화·진단하기(`checks-tab.tsx`).
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { MetricLines, UsageBars } from "@/components/agent-metrics";
 import { AgentIcon } from "@/components/agent-icon";
@@ -28,6 +28,7 @@ import {
   type UsageSnapshot,
 } from "@/lib/ipc";
 import { t } from "@/lib/i18n";
+import { metricsStore } from "@/lib/snapshot-store";
 import { useSettings } from "@/lib/use-settings";
 
 /** 요일 줄에 보이는 날 수(오늘 포함). */
@@ -62,7 +63,9 @@ function UnreadableNotices({ settings, usage: state }: { settings: Settings; usa
   );
 }
 
-/** 읽은 값이 하나도 없는 첫 실행(이유도 없음). 빈 카드만 늘어서지 않게 무엇이 필요한지 한 줄과 할 일 하나를 맨 위에 둔다. */
+/** 기록(요청·막대)이 하나도 없는 첫 실행. 빈 카드만 늘어서지 않게 무엇이 필요한지 한 줄과 할 일 하나를 맨 위에 둔다.
+ * 지표는 `DailyActivity`가 이미 불러온 `metricsStore` 값을 읽기만 한다(다시 부르지 않는다).
+ * 사용량을 아직 확인하지 못한 줄(`checkedAt` null)이 있으면 불러오는 중이라 보이지 않는다. */
 function EmptyGuide({
   settings,
   usage: state,
@@ -72,13 +75,17 @@ function EmptyGuide({
   usage: UsageState;
   onRefresh: () => void;
 }) {
+  const { value: metrics } = useSyncExternalStore(metricsStore.subscribe, metricsStore.getSnapshot);
   const { snapshot } = state;
-  if (!snapshot) return null;
-  const isEmpty = settings.enabledAgents.every((agent) => {
-    const usage = snapshot.agents.find((a) => a.agent === agent);
-    return !usage || (usage.windows.length === 0 && !usage.reason);
+  if (!snapshot || metrics === undefined) return null;
+  const isChecking = settings.enabledAgents.some(
+    (agent) => snapshot.agents.find((a) => a.agent === agent)?.checkedAt === null,
+  );
+  const hasRecords = settings.enabledAgents.some((agent) => {
+    const m = metrics?.agents.find((a) => a.agent === agent);
+    return !!m && (m.bars.length > 0 || m.hourly.some((h) => h.requests > 0));
   });
-  if (!isEmpty) return null;
+  if (isChecking || hasRecords) return null;
   return (
     <section className={`${CARD} flex items-center justify-between gap-3 p-3`}>
       <p className="px-1 text-sm text-muted-foreground">{t.dashboard.emptyGuide}</p>
