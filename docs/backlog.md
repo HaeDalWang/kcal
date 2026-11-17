@@ -42,7 +42,7 @@
 
 - [ ] 영어 UI: 예전 변경 기록은 저장된 언어 그대로 보인다. pace ahead/behind와 "Setup"은 0009 용어표 그대로 남겼다.
 - [ ] 빈 환경 화면: 2026-11-17 빈 HOME 실제 창에서 기록 부족 문구, "estimate only", 빈 날 목표 숨김·단수/복수, Diagnose 제목 한 줄(폭 900), 영어 화면 한글 0, 빨간 글씨 0을 확인했다. Checks 탭 Claude Code 미설치 문구에 실행·설치 안내를 더했다. 남음(모름): 팝오버 라이트 모드, 한국어 라이트, 900보다 좁은 창의 Diagnose 제목, `context/scan.rs` "2.1.300 이상 필요" 문구가 버전 단정인지. 한도를 못 읽은 날 링이 "0 %"로 보인다("—"가 맞을 수 있음).
-- [ ] 800줄 한도를 넘는 파일(2026-11-17): `usage/sources.rs` 1416, `context/scan.rs` 1234, `tuning.rs` 952, `ipc_fixtures.rs` 911, `src/lib/ipc.test.ts` 903, `coach/checks/tests.rs` 830, `tray.rs` 814, `src/lib/ipc.ts` 802. `coach/edit.rs`는 테스트를 `edit_tests.rs`로 옮겨 풀었다.
+- [ ] 800줄 한도를 넘는 파일(2026-11-17): `usage/sources.rs` 1416, `context/scan.rs` 1290, `tuning.rs` 952, `ipc_fixtures.rs` 911, `src/lib/ipc.test.ts` 903, `coach/checks/tests.rs` 830, `tray.rs` 814, `src/lib/ipc.ts` 802. `coach/edit.rs`는 테스트를 `edit_tests.rs`로 옮겨 풀었다.
 - [ ] 설정 30칸을 접기, 숫자 단위(tokens·/14).
 - [ ] Claude 탭 ~735pt를 ~420pt로(상세는 대시보드), 시작 컨텍스트 누적 막대, 행 %의 분모 표시, 에이전트 아이콘을 불꽃 대신 글자 모노그램, 라이트 모드 선택 탭 덜 무겁게, 빈 대시보드에 한 문장 + 행동, 데모 데이터 스위치. 대담한 안: 메뉴바 아이콘을 링 + 숫자로(0012와 충돌).
 
@@ -77,12 +77,12 @@
   - "최적화" 칸이 빈 것은 범위 때문이다: 0017 "첫 점검"에서 끄기는 `/doctor` 몫이고 최적화 칸은 A~D만 다룬다.
   - 진단하기 칸의 구멍(코드로 확인):
     1. (해결, 결정 0022) 사용 기록 근거: Claude 플러그인·MCP는 최근 30일 시작 폴더별 사용 횟수를 읽고, 쓴 것은 끄기를 제안하지 않는다. 기록이 부족하면 판단 못 한다고 말한다. 남은 것: Codex·Kiro(위 "끄기 제안 정책").
-    2. **상위 폴더 `.mcp.json` 못 봄.** `claude_mcp_servers`(`context/scan.rs:199`)는 `workspace/.mcp.json`만 읽는다. 공식 MCP 문서(code.claude.com/docs/en/mcp, 2026-11-17)는 "프로젝트 루트의 `.mcp.json`"만 말하고 상위 폴더는 언급이 없다. 실제 동작(확인됨, Claude Code 2.1.326): `~/work/kcal`에서 `claude mcp list`가 `~/.mcp.json`(두 단계 위)의 `shadcn`을 프로젝트 서버(`⏸ Pending approval`)로 보인다. 사용자·local 범위에는 `shadcn`이 없다. 홈 위(루트)까지 올라가는지는 모름.
-    3. **승인 판정이 실제와 다름.** kcal은 파일에 승인 기록(`enabledMcpjsonServers`·`enableAllProjectMcpServers`)이 없으면 꺼진 것으로 본다(`project_approval`). 공식 문서(같은 페이지 "Project scope"): 대화형 세션은 승인을 묻지만, `claude -p`·SDK 세션과 `bypassPermissions` 모드 + 사용자 설정 `skipDangerousModePermissionPrompt`인 세션은 묻지 않고 싣는다. 막는 방법은 `disabledMcpjsonServers`(모든 모드), `--setting-sources`, `--strict-mcp-config`. 신뢰하지 않은 폴더에서는 프로젝트 `.claude/settings.json`의 승인이 무시된다(kcal은 이미 `hasTrustDialogAccepted`로 반영). 이 Mac(확인됨): `skipDangerousModePermissionPrompt: true`라 `claude mcp list`가 Pending으로 보이는 `shadcn`·`tauri`가 이 bypass 세션에는 실려 있다.
+    2. (해결, 2026-11-17) 상위 폴더 `.mcp.json`: 작업 폴더와 그 위 폴더를 모두 읽고 가까운 폴더가 덮는다. 근거: 공식 MCP 문서(code.claude.com/docs/en/mcp)는 "프로젝트 루트"만 말하지만, Claude Code 2.1.326 `claude mcp list`가 `~/.mcp.json`(두 단계 위)의 서버를 project 서버로 보였다. 덮는 순서와 루트까지 올라가는지는 추정.
+    3. (해결, 2026-11-17) 승인 판정: 공식 문서 "Project scope"대로 사용자 설정 `skipDangerousModePermissionPrompt: true`면 승인 기록이 없어도 실리는 쪽으로 센다(`disabledMcpjsonServers`는 계속 막음). 남은 한계: kcal은 세션 모드를 모르므로 이 설정이 켜진 Mac의 bypass 아닌 대화형 세션에서는 더 센다. `claude -p`·SDK 세션도 묻지 않고 싣는다(문서).
     4. **claude.ai 커넥터(Figma·Slack·Miro·Drive 등) 안 읽음.** 코드에 해당 경로가 없다. 공식 문서("Use MCP servers from claude.ai", "Disable claude.ai connectors"): claude.ai 구독 로그인일 때만 Claude Code가 직접 가져온다. 전부 끄기는 설정 `disableClaudeAiConnectors: true`(어느 범위든 true가 이김) 또는 환경 변수 `ENABLE_CLAUDEAI_MCP_SERVERS=false`, 하나씩은 `/mcp` 프로젝트별 끄기(`disabledMcpServers`에 `claude.ai Slack` 같은 표시 이름으로 적힘) 또는 `deniedMcpServers`. 데스크톱 앱 로컬·SSH 세션은 앱이 넣어 주므로 이 설정이 안 닿고 claude.ai 커넥터 설정에서 끊어야 한다. 커넥터 목록 자체는 로컬 파일에 없다(목록은 `claude mcp list` 출력으로만 봄, 추정). `/doctor` 기준 Figma 안내문은 약 0.9k.
     5. **스킬 단위 끄기 없음.** 플러그인 통째로만 끈다. `/doctor`는 `~/.claude/settings.json` `skillOverrides`에 `"off"`로 스킬만 껐다(동작 여부는 `/doctor`도 추정이라 함. 새 세션 스킬 목록으로 확인).
     6. **작업 폴더 하나만 봄.** 다른 프로젝트의 local MCP 같은 것은 안 보인다(최근 세션 cwd 하나 기준, 0017 "알려진 한계"와 같은 원인).
-  - 추천 순서(초안): 2·3·4(보이는 것 = 실제 실리는 것) → 5. 기준 일수는 tuning에 넣는다(0007). 틀은 0017 E에 붙인다.
+  - 추천 순서(초안): 4(커넥터, 사용자 결정 2026-11-17로 보류) → 5. 기준 일수는 tuning에 넣는다(0007). 틀은 0017 E에 붙인다.
 - [ ] **에이전트 선택에 따라 바뀌는 화면 + 에이전트 N개 대비 구조.** 범위는 아직 안 정함.
   - 요청: 지금 지원하는 에이전트 3개(Claude·Codex·Kiro) 중 무엇을 고르느냐에 따라 화면·대시보드가 그 에이전트에 맞게 바뀌어야 한다. 나중에 유명한 에이전트를 더 붙이므로 3개 고정이 아니라 N개를 전제로 디자인·데이터 화면을 짠다.
   - 지금 상태(코드로 확인):

@@ -247,7 +247,7 @@ pub(crate) fn enabled_plugin_ids(settings: &Value) -> Vec<String> {
         .collect()
 }
 
-/// 켜진 Claude MCP 서버와 `alwaysLoad`. scope: user(`~/.claude.json`) < project(`.mcp.json`, 승인된 것) < local.
+/// 켜진 Claude MCP 서버와 `alwaysLoad`. scope: user(`~/.claude.json`) < project(작업 폴더와 그 위 폴더의 `.mcp.json`, 승인된 것) < local.
 /// `/mcp`로 끈 서버(`disabledMcpServers`)는 뺀다. `~/.claude/mcp.json`은 Claude가 읽지 않아 보지 않는다.
 pub(crate) fn claude_mcp_servers(home: &Path, workspace: Option<&Path>) -> Vec<(String, bool)> {
     let state = read_json(&paths::claude_state_file(home)).unwrap_or(Value::Null);
@@ -257,10 +257,15 @@ pub(crate) fn claude_mcp_servers(home: &Path, workspace: Option<&Path>) -> Vec<(
         let key = workspace.to_string_lossy();
         let project = object(state.get("projects").and_then(|p| p.get(key.as_ref())));
         let is_approved = project_approval(home, workspace, &project);
-        let project_file = read_json(&workspace.join(".mcp.json")).unwrap_or(Value::Null);
-        for (name, config) in object(project_file.get("mcpServers")) {
-            if is_approved(&name) {
-                by_name.insert(name, config);
+        // 작업 폴더 위 폴더의 `.mcp.json`도 project 서버로 실린다(Claude Code 2.1.326 실측, 공식 문서에는 없음).
+        // 먼 폴더부터 읽어 가까운 폴더의 같은 이름이 덮는다(추정).
+        let dirs: Vec<&Path> = workspace.ancestors().collect();
+        for dir in dirs.into_iter().rev() {
+            let project_file = read_json(&dir.join(".mcp.json")).unwrap_or(Value::Null);
+            for (name, config) in object(project_file.get("mcpServers")) {
+                if is_approved(&name) {
+                    by_name.insert(name, config);
+                }
             }
         }
         by_name.extend(object(project.get("mcpServers")));
@@ -282,17 +287,24 @@ fn project_approval(
     workspace: &Path,
     project: &Map<String, Value>,
 ) -> impl Fn(&str) -> bool {
+    let user_settings = paths::claude_root(home).join("settings.json");
+    // 공식 문서(MCP "Project scope"): bypassPermissions 모드 + 사용자 설정 `skipDangerousModePermissionPrompt`면
+    // 승인을 묻지 않고 싣는다. 세션 모드는 kcal이 모르므로 이 설정이 켜져 있으면 실리는 쪽으로 센다.
+    // ponytail: 같은 Mac의 bypass 아닌 대화형 세션에서는 승인 전 서버를 더 센다. 세션 기록에서 모드를 읽으면 나눈다.
+    let skips_prompt = read_json(&user_settings)
+        .is_some_and(|s| s.get("skipDangerousModePermissionPrompt") == Some(&Value::Bool(true)));
     let mut files = vec![
-        paths::claude_root(home).join("settings.json"),
+        user_settings,
         workspace.join(".claude").join("settings.local.json"),
     ];
     if project.get("hasTrustDialogAccepted") == Some(&Value::Bool(true)) {
         files.push(workspace.join(".claude").join("settings.json"));
     }
     let settings: Vec<Value> = files.iter().filter_map(|f| read_json(f)).collect();
-    let approve_all = settings
-        .iter()
-        .any(|s| s.get("enableAllProjectMcpServers") == Some(&Value::Bool(true)));
+    let approve_all = skips_prompt
+        || settings
+            .iter()
+            .any(|s| s.get("enableAllProjectMcpServers") == Some(&Value::Bool(true)));
     let collect = |key: &str| -> HashSet<String> {
         strings(project.get(key))
             .into_iter()
@@ -1056,6 +1068,50 @@ mod tests {
                 ("user".to_owned(), false)
             ]
         );
+    }
+
+    #[test]
+    fn claude_mcp_reads_parent_folders_and_bypass_prompt_skip() {
+        let home = TempDir::new("scan-claude-mcp-parent");
+        let work = home.path().join("work/app");
+        home.write(
+            "work/.mcp.json",
+            r#"{"mcpServers": {"near": {}, "far": {}, "blocked": {}}}"#,
+        );
+        home.write(
+            ".mcp.json",
+            r#"{"mcpServers": {"far": {"alwaysLoad": true}}}"#,
+        );
+        home.write("work/app/.mcp.json", r#"{"mcpServers": {"here": {}}}"#);
+        let key = work.to_string_lossy().replace('\\', "\\\\");
+        home.write(
+            ".claude.json",
+            &format!(r#"{{"projects": {{"{key}": {{"enabledMcpjsonServers": ["near", "far", "here"]}}}}}}"#),
+        );
+        let mut servers = claude_mcp_servers(home.path(), Some(&work));
+        servers.sort();
+        // 가까운 폴더(work)의 far가 먼 폴더(홈)의 far를 덮는다. 승인 안 된 blocked는 빠진다.
+        assert_eq!(
+            servers,
+            [
+                ("far".to_owned(), false),
+                ("here".to_owned(), false),
+                ("near".to_owned(), false)
+            ]
+        );
+
+        // 승인 창을 건너뛰는 설정이면 승인 기록이 없어도 실린다. disabledMcpjsonServers는 그래도 막는다.
+        home.write(
+            ".claude/settings.json",
+            r#"{"skipDangerousModePermissionPrompt": true, "disabledMcpjsonServers": ["near"]}"#,
+        );
+        home.write(".claude.json", "{}");
+        let mut servers: Vec<String> = claude_mcp_servers(home.path(), Some(&work))
+            .into_iter()
+            .map(|(name, _)| name)
+            .collect();
+        servers.sort();
+        assert_eq!(servers, ["blocked", "far", "here"]);
     }
 
     #[test]
