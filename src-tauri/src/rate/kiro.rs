@@ -4,9 +4,11 @@
 //! 본문 줄은 JSON 파싱하지 않는다: 앞 300자 안에 `"payload":{"type":"usage_summary"`가 있는 줄만 읽는다.
 //! 턴 요약에는 모델이 없어 같은 폴더 `session.json`의 `modelId`를 쓴다(세션 중 모델을 바꾸면 마지막 값으로 묶인다).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::io::{BufRead, BufReader};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, LazyLock, Mutex};
+use std::time::SystemTime;
 
 use serde_json::Value;
 use time::OffsetDateTime;
@@ -50,8 +52,47 @@ fn turn_credits(row: &Value) -> Vec<f64> {
 /// 턴 하나: (그 `usage_summary` 줄의 `timestamp`(유닉스 초, 없거나 틀리면 `None`), 크레딧).
 pub type TimedCredit = (Option<f64>, f64);
 
-/// 파일 하나의 턴별 크레딧과 시각. 접두 검사를 통과한 줄만 JSON으로 읽는다.
+/// 파일별 파싱 결과: (수정 시각, 크기)가 같으면 다시 읽지 않는다. 환율·지표·검진이 같은 파일을 나눠 쓴다.
+// ponytail: 메모는 앱이 끝날 때까지 남고 없어진 파일의 항목도 안 지운다. 파일이 수천 개면 항목 수만큼 커진다(턴당 16B). 문제가 되면 호출마다 목록에 없는 경로를 지운다.
+#[allow(clippy::type_complexity)]
+static PARSED: LazyLock<Mutex<HashMap<PathBuf, (SystemTime, u64, Arc<Vec<TimedCredit>>)>>> =
+    LazyLock::new(Default::default);
+
+/// 테스트용: 경로별로 실제로 파일을 읽은 횟수.
+#[cfg(test)]
+static PARSE_COUNTS: LazyLock<Mutex<HashMap<PathBuf, usize>>> = LazyLock::new(Default::default);
+
+/// 파일 하나의 턴별 크레딧과 시각. 같은 파일은 바뀌기 전까지 한 번만 읽는다.
 pub fn timed_credits(file: &Path) -> Vec<TimedCredit> {
+    parsed(file).to_vec()
+}
+
+fn parsed(file: &Path) -> Arc<Vec<TimedCredit>> {
+    let key = std::fs::metadata(file)
+        .ok()
+        .and_then(|m| Some((m.modified().ok()?, m.len())));
+    if let Some((modified, len)) = key
+        && let Ok(map) = PARSED.lock()
+        && let Some((m, l, found)) = map.get(file)
+        && (*m, *l) == (modified, len)
+    {
+        return Arc::clone(found);
+    }
+    #[cfg(test)]
+    if let Ok(mut counts) = PARSE_COUNTS.lock() {
+        *counts.entry(file.to_path_buf()).or_default() += 1;
+    }
+    let parsed = Arc::new(read_credits(file));
+    if let Some((modified, len)) = key
+        && let Ok(mut map) = PARSED.lock()
+    {
+        map.insert(file.to_path_buf(), (modified, len, Arc::clone(&parsed)));
+    }
+    parsed
+}
+
+/// 접두 검사를 통과한 줄만 JSON으로 읽는다.
+fn read_credits(file: &Path) -> Vec<TimedCredit> {
     let Ok(handle) = std::fs::File::open(file) else {
         return Vec::new();
     };
@@ -80,7 +121,7 @@ pub fn timed_credits(file: &Path) -> Vec<TimedCredit> {
 }
 
 fn file_credits(file: &Path) -> Vec<f64> {
-    timed_credits(file).into_iter().map(|(_, c)| c).collect()
+    parsed(file).iter().map(|(_, c)| *c).collect()
 }
 
 fn session_model(session_dir: &Path) -> String {
@@ -183,6 +224,33 @@ mod tests {
         assert!((got[0].credits_per_turn - 0.5).abs() < 1e-12);
         assert_eq!((got[1].model.as_str(), got[1].turns), (UNKNOWN_MODEL, 1));
         assert_eq!(got[1].credits_per_turn, 2.0);
+    }
+
+    fn parse_count(file: &Path) -> usize {
+        PARSE_COUNTS.lock().unwrap().get(file).copied().unwrap_or(0)
+    }
+
+    #[test]
+    fn reparses_a_session_file_only_after_it_changes() {
+        let home = TempDir::new("rate-kiro-memo");
+        let credit = |v: f64| json!({"unit": "credit", "usage": v});
+        session(&home, "sess_a", Some("m"), &[summary(json!([credit(0.5)]))]);
+        let file = home.path().join(".kiro/sessions/h/sess_a/messages.jsonl");
+
+        assert_eq!(credits(home.path())[0].turns, 1);
+        assert_eq!(timed_credits(&file).len(), 1);
+        assert_eq!(parse_count(&file), 1);
+
+        home.write(
+            ".kiro/sessions/h/sess_a/messages.jsonl",
+            &[summary(json!([credit(0.5)])), summary(json!([credit(1.5)]))].join("\n"),
+        );
+        let got = credits(home.path());
+        assert_eq!(got[0].turns, 2);
+        assert!((got[0].credits_per_turn - 1.0).abs() < 1e-12);
+        assert_eq!(parse_count(&file), 2);
+        assert_eq!(timed_credits(&file).len(), 2);
+        assert_eq!(parse_count(&file), 2);
     }
 
     #[test]
