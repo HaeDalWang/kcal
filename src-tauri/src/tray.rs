@@ -33,8 +33,10 @@ const TRAY_ID: &str = "kcal";
 const QUIT_ID: &str = "quit";
 /// 팝오버가 열린 채 아이콘을 누르면 blur(숨김) 다음에 click이 온다. 그 click으로 다시 열지 않는다.
 const BLUR_CLICK_GUARD: Duration = Duration::from_millis(300);
-/// 첫 실행 팝오버는 트레이가 만들어진 뒤 아이콘 위치(rect)가 잡힐 때까지 한 번 기다렸다가 연다.
+/// 첫 실행 팝오버는 트레이가 만들어진 뒤 아이콘 위치(rect)가 잡힐 때까지 기다렸다가 연다.
+/// 0.5초 한 번으로는 빈 HOME 6번 중 1번 위치를 못 잡았다(2026-11-17 실제 창 점검). 최대 5초까지 다시 본다.
 const FIRST_RUN_DELAY: Duration = Duration::from_millis(500);
+const FIRST_RUN_TRIES: u32 = 10;
 
 /// macOS는 template(검정 + alpha)이라야 라이트·다크에 자동으로 맞는다.
 const ICON_IS_TEMPLATE: bool = cfg!(target_os = "macos");
@@ -325,32 +327,30 @@ fn toggle_popover<R: Runtime>(app: &AppHandle<R>, rect: Rect) {
     let _ = window.set_focus();
 }
 
-/// 첫 실행에 팝오버를 아이콘 아래에 한 번 연다(docs/backlog 첫 실행). 반복하지 않고 한 번만 기다린다.
-/// 아이콘 위치(rect)나 놓을 화면을 못 찾으면 아무것도 하지 않는다(엉뚱한 곳에 띄우지 않는다).
+/// 첫 실행에 팝오버를 아이콘 아래에 한 번 연다(docs/backlog 첫 실행). 위치가 잡힐 때까지 `FIRST_RUN_TRIES`번 다시 본다.
+/// 끝내 아이콘 위치(rect)나 놓을 화면을 못 찾으면 아무것도 하지 않는다(엉뚱한 곳에 띄우지 않는다).
 /// 보이는 팝오버는 포커스를 잃으면 숨으므로(`setup`), 열 때 포커스를 준다. 아이콘 클릭과 같다.
 pub fn show_once<R: Runtime>(app: &AppHandle<R>) {
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
-        tokio::time::sleep(FIRST_RUN_DELAY).await;
-        let Some(window) = app.get_webview_window(POPOVER) else {
-            return;
-        };
-        if window.is_visible().unwrap_or(false) {
-            return;
+        for _ in 0..FIRST_RUN_TRIES {
+            tokio::time::sleep(FIRST_RUN_DELAY).await;
+            let Some(window) = app.get_webview_window(POPOVER) else {
+                return;
+            };
+            if window.is_visible().unwrap_or(false) {
+                return;
+            }
+            let rect = app
+                .tray_by_id(TRAY_ID)
+                .and_then(|tray| tray.rect().ok().flatten());
+            if rect.is_some_and(|rect| place_under_icon(&app, &window, rect)) {
+                let _ = window.show();
+                let _ = window.set_focus();
+                return;
+            }
         }
-        let rect = app
-            .tray_by_id(TRAY_ID)
-            .and_then(|tray| tray.rect().ok().flatten());
-        let Some(rect) = rect else {
-            eprintln!("tray: first-run popover skipped, icon position unavailable");
-            return;
-        };
-        if !place_under_icon(&app, &window, rect) {
-            eprintln!("tray: first-run popover skipped, could not place it");
-            return;
-        }
-        let _ = window.show();
-        let _ = window.set_focus();
+        eprintln!("tray: first-run popover skipped, icon position unavailable");
     });
 }
 

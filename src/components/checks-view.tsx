@@ -244,7 +244,9 @@ export function AgentChecks({
         </p>
       )}
       {isListEmpty ? (
-        <p className="px-5 py-2.5 text-xs text-muted-foreground">{emptyText}</p>
+        <p className="px-5 py-2.5 text-xs text-muted-foreground wrap-break-word select-text">
+          {emptyText}
+        </p>
       ) : (
         <ProgressSummary agent={agent} fixed={fixed.length} left={visible} />
       )}

@@ -178,7 +178,7 @@ describe("English UI", () => {
     await screen.findByRole("tab", { name: "Usage" });
     fireEvent.click(screen.getByRole("tab", { name: "Checks" }));
     await screen.findAllByText(
-      "Nothing was checked: kcal didn't find Claude Code on this computer.",
+      "Nothing was checked: kcal didn't find Claude Code on this computer. Run claude once and sign in, then press Refresh. Not installed yet? https://code.claude.com/docs/en/setup",
     );
     expect(screen.queryByText("Nothing to fix right now.")).toBeNull();
     expect(hangulIn(container)).toEqual([]);

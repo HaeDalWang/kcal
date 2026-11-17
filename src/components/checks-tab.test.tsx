@@ -84,7 +84,8 @@ describe("ChecksTab", () => {
       get_switches: () => [],
     });
     render(<ChecksTab agents={["claude", "codex"]} focusKey={0} onShowEffect={() => {}} />);
-    const message = "점검하지 못했어요. 이 컴퓨터에서 Claude Code를 찾지 못했어요.";
+    const message =
+      "점검하지 못했어요. 이 컴퓨터에서 Claude Code를 찾지 못했어요. claude를 한 번 실행해 로그인한 뒤 새로고침하세요. 아직 설치 전이면: https://code.claude.com/docs/en/setup";
     await within(column("Claude", "최적화")).findByText(message);
     expect(await within(column("Claude", "진단하기")).findByText(message)).toBeTruthy();
     expect(screen.queryByText("지금 고칠 것이 없어요.")).toBeNull();

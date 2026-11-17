@@ -587,7 +587,8 @@ export const en: Messages = {
     keepNote:
       "Hides this card. Your settings stay the same, and kcal tells you again if things change.",
     empty: "Nothing to fix right now.",
-    notChecked: (name) => `Nothing was checked: kcal didn't find ${name} on this computer.`,
+    notChecked: (name) =>
+      `Nothing was checked: kcal didn't find ${name} on this computer. Run claude once and sign in, then press Refresh. Not installed yet? https://code.claude.com/docs/en/setup`,
     restore: "Show again",
     noChecks: (label) => `No optimization checks for ${label} yet.`,
     alert: (count) => `${count} to check`,

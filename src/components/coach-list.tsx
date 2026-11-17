@@ -357,7 +357,7 @@ function Summary({
               </p>
             </>
           ) : (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground wrap-break-word select-text">
               {isMissing
                 ? t.checks.notChecked(CLAUDE_CODE)
                 : switches.length === 0
