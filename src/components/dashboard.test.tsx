@@ -152,6 +152,22 @@ describe("Dashboard", () => {
     expect(screen.queryByText(/한 번 쓰고 새로고침하면/)).toBeNull();
   });
 
+  it("shows the rejection reason as an alert and keeps the dashboard when refresh_all fails", async () => {
+    const message = "새로고침을 시작하지 못했습니다.";
+    mockIPC(
+      (cmd) =>
+        cmd === "refresh_all"
+          ? Promise.reject({ kind: "internal", message })
+          : (FIXTURE[cmd] ?? null),
+      { shouldMockEvents: true },
+    );
+    render(<Dashboard />);
+    await screen.findByRole("tab", { name: "사용량" });
+    fireEvent.click(screen.getByRole("button", { name: "새로고침" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(message);
+    expect(screen.getByRole("tab", { name: "사용량" })).toBeTruthy();
+  });
+
   it("shows the no-data text instead of 0 % on a day with no usage at all", async () => {
     mockIPC((cmd) => (cmd === "get_metrics" ? null : (FIXTURE[cmd] ?? null)), {
       shouldMockEvents: true,

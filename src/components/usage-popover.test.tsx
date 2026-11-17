@@ -401,6 +401,26 @@ describe("UsagePopover", () => {
     expect(bar().querySelector(".bg-destructive")).not.toBeNull();
   });
 
+  it("shows the rejection reason as an alert instead of an endless loading state when get_usage fails", async () => {
+    const message = "사용량을 읽지 못했습니다.";
+    mockIPC(
+      (cmd) =>
+        cmd === "get_usage" ? Promise.reject({ kind: "internal", message }) : mockCommands(cmd),
+      { shouldMockEvents: true },
+    );
+    render(
+      <UsagePopover
+        agents={[...AGENTS]}
+        selected="claude"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+    expect((await screen.findByRole("alert")).textContent).toBe(message);
+    expect(screen.queryByText("불러오는 중…")).toBeNull();
+  });
+
   it("opens the dashboard from the chevron button in the agent header", async () => {
     mockIPC(mockCommands, { shouldMockEvents: true });
     const onOpenDashboard = vi.fn();

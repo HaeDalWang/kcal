@@ -337,6 +337,38 @@ describe("CoachPanel", () => {
     expect(screen.getByRole("group", { name: "바꿀 내용 확인" })).toBeTruthy();
   });
 
+  it("shows the reason and returns to the proposal list when the preview is rejected", async () => {
+    const message = "설정 파일을 읽지 못했습니다.";
+    mock({ preview_switch: () => Promise.reject({ kind: "invalid_input", message }) });
+    renderPanel("codex");
+    fireEvent.click(await screen.findByRole("button", { name: "big@m 끄기" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(message);
+    expect(screen.queryByRole("group", { name: "바꿀 내용 확인" })).toBeNull();
+    expect(screen.getByRole("button", { name: "big@m 끄기" })).toBeTruthy();
+  });
+
+  it("shows the reason and returns to the proposal list when the scope-move preview is rejected", async () => {
+    const message = "프로젝트 설정을 읽지 못했습니다.";
+    mock({ preview_scope_move: () => Promise.reject({ kind: "invalid_input", message }) });
+    renderPanel("claude", { switches: CLAUDE_SWITCHES });
+    fireEvent.click(screen.getByRole("button", { name: "niche@m 프로젝트에서만 켜기" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(message);
+    expect(screen.queryByRole("group", { name: "바꿀 내용 확인" })).toBeNull();
+    expect(screen.getByRole("button", { name: "niche@m 프로젝트에서만 켜기" })).toBeTruthy();
+  });
+
+  it("shows the reason, keeps the list and does not ask the tab to read again when undo is rejected", async () => {
+    const message = "되돌릴 백업을 찾지 못했습니다.";
+    mock({ undo_switch: () => Promise.reject({ kind: "not_found", message }) });
+    const onChanged = vi.fn();
+    renderPanel("codex", { log: [APPLIED], onChanged });
+    const recent = screen.getByRole("group", { name: "최근 바꾼 것" });
+    fireEvent.click(within(recent).getByRole("button", { name: "되돌리기" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(message);
+    expect(onChanged).not.toHaveBeenCalled();
+    expect(screen.getByRole("group", { name: "최근 바꾼 것" })).toBeTruthy();
+  });
+
   it("offers undo for recent applies of that agent, then asks the tab to read again", async () => {
     const calls = mock({
       undo_switch: () => ({ ...APPLIED, id: "2", action: "undo", enabled: true, undoOf: "1" }),

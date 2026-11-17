@@ -363,6 +363,55 @@ mod tests {
         );
     }
 
+    fn codex_reset(reset_at: Value) -> Result<Vec<LimitWindow>, Fail> {
+        let window = |reset_at: &Value| json!({"used_percent": 5.0, "reset_at": reset_at});
+        let body = json!({"rate_limit": {
+            "primary_window": window(&reset_at),
+            "secondary_window": window(&json!(1_794_300_000)),
+        }});
+        codex_api(&body, NOW)
+    }
+
+    #[test]
+    fn reset_epoch_reads_numeric_strings_and_treats_null_as_unknown() {
+        let w = codex_reset(json!("1794300000")).unwrap();
+        assert_eq!(w[0].resets_at, Some(datetime!(2026-11-10 8:40 UTC)));
+        assert_eq!(codex_reset(json!(null)).unwrap()[0].resets_at, None);
+    }
+
+    #[test]
+    fn reset_epoch_fails_with_field_name_instead_of_panicking_on_unusable_values() {
+        let unreadable = fail("primary_window: 리셋 시각을 읽을 수 없음");
+        for bad in [
+            json!("soon"),
+            json!(""),
+            json!("NaN"),
+            json!("inf"),
+            json!("-inf"),
+            json!("1e999"),
+            json!(1e30),
+            json!(-1e30),
+            json!(i64::MAX),
+            json!(true),
+            json!({}),
+            json!([]),
+        ] {
+            assert_eq!(codex_reset(bad.clone()), unreadable, "input {bad}");
+        }
+    }
+
+    #[test]
+    fn kiro_fails_as_unreadable_reset_when_date_is_impossible() {
+        for date in ["2026-13-45", "2026-02-30", "2026-00-10", "2026-12-00"] {
+            let out = format!("resets on {date}\nCredits (1 of 10 covered in plan), 10%");
+            assert_eq!(
+                kiro_cli(&out, NOW),
+                fail("credits: 리셋 시각을 읽을 수 없음"),
+                "date {date}"
+            );
+        }
+    }
+
     #[test]
     fn reads_retry_after_as_seconds_or_http_date() {
         assert_eq!(retry_after_seconds(Some(" 120 "), NOW), Some(120));
