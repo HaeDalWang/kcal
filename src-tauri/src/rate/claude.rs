@@ -42,7 +42,7 @@ impl Request {
 fn request(e: &Entry) -> Option<(Option<String>, Request)> {
     let usage = e.usage?;
     Some((
-        e.id.clone(),
+        e.id.as_deref().map(String::from),
         Request {
             ts: e.ts,
             input: usage.input_tokens,

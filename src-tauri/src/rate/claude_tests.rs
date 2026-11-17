@@ -296,6 +296,22 @@ fn real_claude_read_cost() {
 }
 
 #[test]
+fn log_files_drops_memo_of_deleted_files() {
+    let home = TempDir::new("rate-claude-prune");
+    let file = home.write(
+        ".claude/projects/-w/gone.jsonl",
+        &assistant(1_000.0, "m1", 3, 0, 0, 4),
+    );
+    let path = file.parent().unwrap().join("gone.jsonl");
+    let memoed = |p: &Path| crate::metrics::claude::memo_has(p);
+    assert_eq!(requests(&files(home.path())).len(), 1);
+    assert!(memoed(&path));
+    std::fs::remove_file(&path).unwrap();
+    files(home.path());
+    assert!(!memoed(&path));
+}
+
+#[test]
 fn rate_requests_reuse_the_parse_other_readers_made() {
     let home = TempDir::new("rate-claude-once");
     let line = assistant(1_000.0, "m1", 3, 0, 0, 4);

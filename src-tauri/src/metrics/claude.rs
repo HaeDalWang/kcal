@@ -72,10 +72,25 @@ impl Usage {
 #[derive(Clone, Debug)]
 pub(crate) struct Entry {
     pub(crate) ts: f64,
-    pub(crate) id: Option<String>,
+    pub(crate) id: Option<Box<str>>,
     pub(crate) usage: Option<Usage>,
-    pub(crate) model: Option<String>,
-    pub(crate) cwd: Option<String>,
+    /// model·cwd는 거의 모든 줄에서 같은 값이라 하나를 나눠 쓴다(`intern`).
+    pub(crate) model: Option<Arc<str>>,
+    pub(crate) cwd: Option<Arc<str>>,
+}
+
+/// 같은 문자열을 하나로 모은다. 서로 다른 model·cwd 값만큼만 커지고 줄 수에는 안 는다.
+fn intern(s: String) -> Arc<str> {
+    static POOL: LazyLock<Mutex<HashSet<Arc<str>>>> = LazyLock::new(Default::default);
+    let Ok(mut pool) = POOL.lock() else {
+        return s.into();
+    };
+    if let Some(found) = pool.get(s.as_str()) {
+        return Arc::clone(found);
+    }
+    let new: Arc<str> = s.into();
+    pool.insert(Arc::clone(&new));
+    new
 }
 
 /// 요청 하나: (시각(유닉스 초), `message.id`, usage).
@@ -100,20 +115,20 @@ fn entry(line: &[u8]) -> Option<Entry> {
     let value = |v: Option<f64>| v.unwrap_or(0.0);
     Some(Entry {
         ts: unix_secs(ts),
-        id: message.id,
+        id: message.id.map(String::into_boxed_str),
         usage: message.usage.map(|u| Usage {
             input_tokens: value(u.input_tokens),
             cache_creation_input_tokens: value(u.cache_creation_input_tokens),
             cache_read_input_tokens: value(u.cache_read_input_tokens),
             output_tokens: value(u.output_tokens),
         }),
-        model: message.model,
-        cwd: row.cwd,
+        model: message.model.map(intern),
+        cwd: row.cwd.map(intern),
     })
 }
 
 /// 파일별 파싱 결과: (수정 시각, 크기)가 같으면 다시 읽지 않는다. 환율·지표·검진 전후·점검이 같은 파일을 나눠 쓴다.
-// ponytail: 메모는 앱이 끝날 때까지 남고 없어진 파일의 항목도 안 지운다. 이 Mac(322파일·3.6만 줄)은 줄당 약 269B, 총 약 9.7MB(RSS +28.7MB는 읽기 중 버퍼·할당자 몫 포함). 10MB를 넘으면 model·cwd를 Arc<str>로 인터닝하고 호출마다 목록에 없는 경로를 지운다.
+/// 없어진 파일의 항목은 `log_files`가 목록을 훑을 때 지운다.
 #[allow(clippy::type_complexity)]
 static PARSED: LazyLock<Mutex<HashMap<PathBuf, (SystemTime, u64, Arc<Vec<Entry>>)>>> =
     LazyLock::new(Default::default);
@@ -127,12 +142,17 @@ pub(crate) fn memo_stats() -> (usize, usize, usize) {
         n += v.len();
         bytes += v.capacity() * std::mem::size_of::<Entry>();
         for e in v.iter() {
-            for s in [&e.id, &e.model, &e.cwd].into_iter().flatten() {
-                bytes += s.capacity();
-            }
+            // 인터닝된 model·cwd는 값마다 한 번만 세지 못하므로 id만 더한다(나머지는 공유 포인터).
+            bytes += e.id.as_ref().map_or(0, |s| s.len());
         }
     }
     (map.len(), n, bytes)
+}
+
+/// 테스트용: 이 경로의 파싱 결과가 메모에 있는가.
+#[cfg(test)]
+pub(crate) fn memo_has(path: &Path) -> bool {
+    PARSED.lock().unwrap().contains_key(path)
 }
 
 /// 테스트용: 경로별로 실제로 파일을 읽은 횟수.
@@ -171,7 +191,7 @@ pub(crate) type ModelRequest = (f64, Option<String>, String);
 fn read_requests(file: &Path) -> Vec<Request> {
     entries(file)
         .iter()
-        .filter_map(|e| Some((e.ts, e.id.clone(), e.usage?)))
+        .filter_map(|e| Some((e.ts, e.id.as_deref().map(String::from), e.usage?)))
         .collect()
 }
 
@@ -203,7 +223,16 @@ pub(crate) fn model_requests(home: &Path, since: f64) -> (Vec<ModelRequest>, Vec
             entries(f)
                 .iter()
                 .filter(|e| e.ts >= since)
-                .filter_map(|e| Some(((e.ts, e.id.clone(), e.model.clone()?), e.cwd.clone())))
+                .filter_map(|e| {
+                    Some((
+                        (
+                            e.ts,
+                            e.id.as_deref().map(String::from),
+                            e.model.as_deref()?.to_owned(),
+                        ),
+                        e.cwd.as_deref().map(String::from),
+                    ))
+                })
                 .collect::<Vec<_>>()
         })
         .collect();
@@ -215,18 +244,27 @@ pub(crate) fn model_requests(home: &Path, since: f64) -> (Vec<ModelRequest>, Vec
     (requests, workspaces.into_iter().collect())
 }
 
+/// `root` 아래 메모 항목 중 지금 목록에 없는(지워진) 파일을 뺀다.
+fn prune_memo(root: &Path, present: &[PathBuf]) {
+    if let Ok(mut map) = PARSED.lock() {
+        let present: HashSet<&PathBuf> = present.iter().collect();
+        map.retain(|path, _| !path.starts_with(root) || present.contains(path));
+    }
+}
+
 /// `since` 뒤에 바뀐 기록 파일, 최근에 바뀐 순으로 `limit`개.
 // ponytail: 파일을 통째로 읽는다(이 Mac 5시간 안 9개 약 45MB). 무거우면 파일별 (mtime, 크기)·읽은 위치를 캐시한다.
 pub(crate) fn log_files(home: &Path, since: f64, limit: usize) -> Vec<PathBuf> {
     let root = paths::claude_root(home).join("projects");
-    let mut files: Vec<(PathBuf, f64)> =
-        fsutil::walk_files(&root, &|p| p.extension().is_some_and(|e| e == "jsonl"))
-            .into_iter()
-            .filter_map(|p| {
-                let modified = modified_secs(&p)?;
-                (modified >= since).then_some((p, modified))
-            })
-            .collect();
+    let walked = fsutil::walk_files(&root, &|p| p.extension().is_some_and(|e| e == "jsonl"));
+    prune_memo(&root, &walked);
+    let mut files: Vec<(PathBuf, f64)> = walked
+        .into_iter()
+        .filter_map(|p| {
+            let modified = modified_secs(&p)?;
+            (modified >= since).then_some((p, modified))
+        })
+        .collect();
     files.sort_by(|a, b| b.1.total_cmp(&a.1));
     files.into_iter().take(limit).map(|(p, _)| p).collect()
 }
