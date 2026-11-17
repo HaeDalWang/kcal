@@ -1,9 +1,8 @@
 // 지표 줄(대시보드)·최근 구간 막대·시작 컨텍스트 한 줄(트레이). 설명 문장 없이 값만 둔다.
 // 트레이 에이전트 탭은 시작 컨텍스트 한 줄만 둔다(요청 수·캐시·구간 막대·구성 목록은 대시보드, 0023).
 // 모르는 값은 줄을 숨긴다. 값은 저장소(`metricsStore`·`contextStore`)와 Rust 갱신 event로 바뀐다.
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
-import { measuredTitle } from "@/components/info-section";
 import { formatShare, formatTokens } from "@/components/rate-line";
 import type { Agent, AgentContext, AgentMetrics, UsageBar } from "@/lib/ipc";
 import { contextStore, metricsStore, useSnapshot } from "@/lib/snapshot-store";
@@ -96,9 +95,9 @@ export function metricLines(metrics: AgentMetrics): Line[] {
   return lines;
 }
 
-/** 지표 2열 카드(작은 라벨 / 큰 값). 대시보드 전용: 트레이는 `StartupSummary`만 둔다. */
+/** 지표 2열 카드(작은 라벨 / 큰 값). 대시보드 전용. 조회는 옆의 `UsageBars`가 하고 여기서는 읽기만 한다. */
 export function MetricLines({ agent }: { agent: Agent }) {
-  const { value: metrics } = useSnapshot(metricsStore, agent);
+  const { value: metrics } = useSyncExternalStore(metricsStore.subscribe, metricsStore.getSnapshot);
   const agentMetrics = metrics?.agents.find((a) => a.agent === agent);
   const lines = agentMetrics ? metricLines(agentMetrics) : [];
   if (lines.length === 0) return null;
@@ -155,10 +154,11 @@ function barHeight(value: number, unit: AgentMetrics["barUnit"], max: number): n
 
 /**
  * 최근 구간 막대. 지금 구간은 진하게 + 위에 점(색만으로 구분하지 않는다), 지난 구간은 조금 옅게. `className`으로 높이를 바꾼다(트레이 58px, 대시보드 더 크게).
- * 조회는 옆의 `MetricLines`가 하고 여기서는 읽기만 한다.
+ * 커서를 올린 막대의 시각·값을 제목 줄 오른쪽("최고 …" 자리)에 바로 보인다. 지표 조회는 여기서 한다(트레이·대시보드 공통).
  */
 export function UsageBars({ agent, className = "h-[58px]" }: { agent: Agent; className?: string }) {
-  const { value: metrics } = useSyncExternalStore(metricsStore.subscribe, metricsStore.getSnapshot);
+  const { value: metrics } = useSnapshot(metricsStore, agent);
+  const [hovered, setHovered] = useState<UsageBar | null>(null);
   const agentMetrics = metrics?.agents.find((a) => a.agent === agent);
   if (!agentMetrics || agentMetrics.bars.length === 0) return null;
   const { bars, barUnit } = agentMetrics;
@@ -171,19 +171,22 @@ export function UsageBars({ agent, className = "h-[58px]" }: { agent: Agent; cla
     <div className="flex flex-col gap-[10px] px-[20px]">
       <div className="flex items-baseline justify-between text-[10px] text-muted-foreground tabular-nums">
         <span>{isPercent ? t.metrics.recentWindows : t.metrics.dailyCredits}</span>
-        <span>{maxText}</span>
+        <span aria-live="polite" title={t.info.measured}>
+          {hovered ? barTitle(hovered, barUnit) : maxText}
+        </span>
       </div>
       <ul
         aria-label={isPercent ? t.metrics.recentWindowsUsage : t.metrics.dailyCredits}
         className={`flex items-end gap-1 ${className}`}
+        onPointerLeave={() => setHovered(null)}
       >
         {bars.map((bar) => {
           const title = barTitle(bar, barUnit);
           return (
             <li
               key={bar.startsAt}
-              title={measuredTitle(title)}
               aria-label={title}
+              onPointerEnter={() => setHovered(bar)}
               aria-current={bar.isCurrent || undefined}
               className="flex h-full flex-1 items-end"
             >

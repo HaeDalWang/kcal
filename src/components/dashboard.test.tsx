@@ -207,7 +207,7 @@ describe("Dashboard", () => {
     expect(await within(kiro).findByRole("group", { name: "질문당 크레딧" })).toBeTruthy();
   });
 
-  it("shows the request count, cache hit rate and recent window bars moved off the tray", async () => {
+  it("shows the request count and cache hit rate moved off the tray, beside the window bars", async () => {
     mock();
     render(<Dashboard />);
     // 트레이 에이전트 탭에서 뺀 값(0023). Codex 픽스처에 값이 있다.

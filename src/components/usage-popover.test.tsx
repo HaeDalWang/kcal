@@ -334,12 +334,35 @@ describe("UsagePopover", () => {
     const value = await screen.findByTitle(/바이트 ÷ 4/);
     expect(value.textContent).toBe("~8.5% (~34.2K / 400K 토큰)");
     expect(value.parentElement?.textContent).toBe("시작 컨텍스트~8.5% (~34.2K / 400K 토큰)");
-    // 트레이에서 뺀 것: 구성 목록·한도 몫 문장·요청 수·캐시·최근 구간 막대(대시보드에 있음, 0023).
+    // 트레이에서 뺀 것: 구성 목록·한도 몫 문장·요청 수·캐시(대시보드에 있음, 0023).
     expect(screen.queryByRole("list", { name: "시작 컨텍스트 구성" })).toBeNull();
     expect(screen.queryByText(/요청마다 다시 실려서/)).toBeNull();
     expect(screen.queryByRole("list", { name: "지표" })).toBeNull();
-    expect(screen.queryByRole("list", { name: "최근 5시간 구간 사용량" })).toBeNull();
     expect(document.querySelector("details")).toBeNull();
+  });
+
+  it("keeps the recent window bars in the agent tab and shows a bar's value while the cursor is on it", async () => {
+    mockIPC(mockCommands, { shouldMockEvents: true });
+    render(
+      <UsagePopover
+        agents={[...AGENTS]}
+        selected="claude"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+    const bars = await screen.findByRole("list", { name: "최근 5시간 구간 사용량" });
+    const items = within(bars).getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items[1].getAttribute("aria-current")).toBe("true");
+    expect(screen.getByText("최고 31%")).toBeTruthy();
+
+    fireEvent.pointerEnter(items[1]);
+    expect(screen.getByText(/^\d\d\/\d\d \d\d:\d\d 시작 · 12%$/)).toBeTruthy();
+    expect(screen.queryByText("최고 31%")).toBeNull();
+    fireEvent.pointerLeave(bars);
+    expect(screen.getByText("최고 31%")).toBeTruthy();
   });
 
   it("keeps behavior lists off the tray even when sessions and Kiro credits are known", async () => {
