@@ -201,7 +201,7 @@ fn keychain_item_not_found_says_sign_in() {
     let reason = keychain_reason_en("#!/bin/sh\nexit 44\n", Duration::from_secs(5));
     assert_eq!(
         reason,
-        "Can't read your Claude Code login. Run claude and sign in, then press Refresh. If you use an API key, Bedrock or Vertex, there is no limit to show."
+        "No Claude subscription login found. With an API key, Bedrock or Vertex there is no limit to show; Startup context and Checks still work. On Pro or Max, run claude and sign in, then press Refresh."
     );
 }
 

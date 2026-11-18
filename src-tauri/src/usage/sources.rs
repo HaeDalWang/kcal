@@ -382,8 +382,8 @@ async fn read_keychain(
 
 fn claude_sign_in() -> &'static str {
     pick(
-        "Claude Code 로그인을 읽지 못했어요. claude를 실행해 로그인한 뒤 새로고침하세요. API 키·Bedrock·Vertex를 쓰면 보여 줄 한도가 없어요.",
-        "Can't read your Claude Code login. Run claude and sign in, then press Refresh. If you use an API key, Bedrock or Vertex, there is no limit to show.",
+        "Claude 구독 로그인이 없어요. API 키·Bedrock·Vertex를 쓰면 보여 줄 한도가 없고, 시작 컨텍스트와 점검은 그대로 쓸 수 있어요. Pro·Max라면 claude를 실행해 로그인한 뒤 새로고침하세요.",
+        "No Claude subscription login found. With an API key, Bedrock or Vertex there is no limit to show; Startup context and Checks still work. On Pro or Max, run claude and sign in, then press Refresh.",
     )
 }
 
