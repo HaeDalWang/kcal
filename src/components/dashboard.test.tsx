@@ -267,6 +267,34 @@ describe("Dashboard", () => {
     }
   });
 
+  it("shows a confirmed 0 for a past day with requests, since pending only applies to today", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-05T14:00:00Z"));
+    try {
+      const pastDay = {
+        ...metrics,
+        agents: metrics.agents.map((a) =>
+          a.agent === "claude"
+            ? {
+                ...a,
+                bars: metrics.agents.find((o) => o.agent === "codex")?.bars ?? [],
+                hourly: [{ startsAt: "2026-11-04T11:00:00Z", requests: 908, used: 0 }],
+              }
+            : a,
+        ),
+      };
+      mockIPC((cmd) => (cmd === "get_metrics" ? pastDay : (FIXTURE[cmd] ?? null)), {
+        shouldMockEvents: true,
+      });
+      render(<Dashboard />);
+      fireEvent.click(await screen.findByRole("button", { name: "이전 날" }));
+      const card = await screen.findByRole("region", { name: "오늘 쓴 양" });
+      expect(within(card).queryByText("집계 전")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("effect button in diagnosis goes to the usage tab and scrolls to prescription effects", async () => {
     mock();
     const scrolled: Element[] = [];
