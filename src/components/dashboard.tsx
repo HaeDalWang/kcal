@@ -14,7 +14,8 @@ import { RateLine } from "@/components/rate-line";
 import { reasonStateKind, StateText } from "@/components/state-text";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AGENT_LABEL, AgentSection, useUsageSnapshot } from "@/components/usage-popover";
+import { AgentSection, useUsageSnapshot } from "@/components/usage-popover";
+import { AGENT_LABEL } from "@/lib/agents";
 import { kiroMonthlyLimit } from "@/lib/breakdown";
 import { recentDays } from "@/lib/daily";
 import {

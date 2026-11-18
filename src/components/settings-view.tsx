@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 import { CAPTION_CLASS, GROUP_CLASS, ROW_CLASS, TuningForm } from "@/components/tuning-form";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AGENT_LABEL } from "@/components/usage-popover";
+import { AGENT_LABEL } from "@/lib/agents";
 import { LANGUAGE_CHOICES, t, type LanguageChoice } from "@/lib/i18n";
 import {
   AGENTS,

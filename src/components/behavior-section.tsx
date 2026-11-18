@@ -4,9 +4,9 @@
 // 값이 없으면 섹션을 숨긴다(빈 자리·0 없음).
 import { useSyncExternalStore } from "react";
 
-import { AGENT_COLOR } from "@/components/agent-metrics";
 import { InfoSection } from "@/components/info-section";
 import { formatShare, formatTokens } from "@/components/rate-line";
+import { AGENT_COLOR } from "@/lib/agents";
 import { compositionOf, type Composition } from "@/lib/breakdown";
 import type { CodexRate, CodexSession } from "@/lib/ipc";
 import { contextStore, ratesStore } from "@/lib/snapshot-store";

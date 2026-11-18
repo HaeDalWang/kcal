@@ -4,12 +4,12 @@
 import { Check, ChevronRight } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
-import { AGENT_COLOR } from "@/components/agent-metrics";
 import { CopyCommand } from "@/components/coach-view";
 import { SUMMARY_CLASS } from "@/components/info-section";
 import { Inline } from "@/components/rules-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AGENT_COLOR } from "@/lib/agents";
 import {
   appliedName,
   checkChips,

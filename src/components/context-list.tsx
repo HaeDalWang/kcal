@@ -1,11 +1,12 @@
 import { ChevronDown } from "lucide-react";
 import { useState, useSyncExternalStore, type ReactNode } from "react";
 
-import { AGENT_COLOR, startupTitle, startupValue } from "@/components/agent-metrics";
+import { startupTitle, startupValue } from "@/components/agent-metrics";
 import { InfoSection, SUMMARY_CLASS } from "@/components/info-section";
 import { formatShare } from "@/components/rate-line";
 import { SnapshotAge } from "@/components/snapshot-age";
 import { StateText } from "@/components/state-text";
+import { AGENT_COLOR } from "@/lib/agents";
 import { shareOf, tokenRateOf, type Share } from "@/lib/breakdown";
 import {
   type Agent,

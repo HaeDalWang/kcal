@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 
 import { AgentIcon } from "@/components/agent-icon";
 import {
-  AGENT_COLOR,
   startupShortValue,
   StartupSummary,
   startupTitle,
@@ -11,6 +10,7 @@ import {
 } from "@/components/agent-metrics";
 import { Dial } from "@/components/dial";
 import { reasonStateKind, StateText } from "@/components/state-text";
+import { AGENT_COLOR, AGENT_DESCRIPTORS, AGENT_LABEL } from "@/lib/agents";
 import { trimText } from "@/lib/check-copy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -27,17 +27,6 @@ import { numberFormat, t } from "@/lib/i18n";
 import { formatDuration, paceOf } from "@/lib/pace";
 import { contextStore, useSnapshot } from "@/lib/snapshot-store";
 
-export const AGENT_LABEL: Record<Agent, string> = {
-  claude: "Claude",
-  codex: "Codex",
-  kiro: "Kiro",
-};
-/** 사용자가 쓰는 앱 이름(첫 실행 안내). */
-const APP_NAME: Record<Agent, string> = {
-  claude: "Claude Code",
-  codex: "Codex",
-  kiro: "Kiro",
-};
 const MINUTE_MS = 60_000;
 
 const integer = numberFormat({ maximumFractionDigits: 0 });
@@ -194,7 +183,9 @@ function StatusLines({ usage }: { usage: AgentUsage }) {
     <>
       {isPending && <StateText kind="loading" />}
       {!isPending && hasNoValue && !usage.reason && (
-        <StateText kind="empty">{t.popover.firstRun(APP_NAME[usage.agent])}</StateText>
+        <StateText kind="empty">
+          {t.popover.firstRun(AGENT_DESCRIPTORS[usage.agent].appName)}
+        </StateText>
       )}
       {usage.reason &&
         (hasNoValue ? (

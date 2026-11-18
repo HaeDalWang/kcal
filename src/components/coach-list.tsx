@@ -5,11 +5,11 @@ import { ChevronRight } from "lucide-react";
 import { cn } from "cn";
 import { useEffect, useRef, useState } from "react";
 
-import { AGENT_COLOR } from "@/components/agent-metrics";
 import { SUMMARY_CLASS } from "@/components/info-section";
 import { formatShare } from "@/components/rate-line";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AGENT_COLOR } from "@/lib/agents";
 import { shareOf } from "@/lib/breakdown";
 import { CLAUDE_CODE, isSuggested, trimSummary } from "@/lib/check-copy";
 import { numberFormat, t } from "@/lib/i18n";

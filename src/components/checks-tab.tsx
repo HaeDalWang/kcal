@@ -7,7 +7,8 @@ import { AgentChecks, HiddenRow, type HandoffContext } from "@/components/checks
 import { CoachPanel } from "@/components/coach-view";
 import { CARD } from "@/components/daily-activity";
 import { StateText } from "@/components/state-text";
-import { AGENT_LABEL, minRemaining, useUsageSnapshot } from "@/components/usage-popover";
+import { minRemaining, useUsageSnapshot } from "@/components/usage-popover";
+import { AGENT_LABEL } from "@/lib/agents";
 import { t } from "@/lib/i18n";
 import { useSettings } from "@/lib/use-settings";
 import { alertCount, isCheckedAgent, noChecksText } from "@/lib/check-copy";

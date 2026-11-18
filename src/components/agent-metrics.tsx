@@ -4,16 +4,10 @@
 import { useState, useSyncExternalStore } from "react";
 
 import { formatShare, formatTokens } from "@/components/rate-line";
+import { AGENT_COLOR } from "@/lib/agents";
 import type { Agent, AgentContext, AgentMetrics, UsageBar } from "@/lib/ipc";
 import { contextStore, metricsStore, useSnapshot } from "@/lib/snapshot-store";
 import { numberFormat, t } from "@/lib/i18n";
-
-/** 에이전트별 브랜드색(index.css 토큰). 막대·다이얼·탭 색에 공용으로 쓴다. */
-export const AGENT_COLOR: Record<Agent, string> = {
-  claude: "var(--agent-claude)",
-  codex: "var(--agent-codex)",
-  kiro: "var(--agent-kiro)",
-};
 
 const integer = numberFormat({ maximumFractionDigits: 0 });
 const credits = numberFormat({ maximumFractionDigits: 2 });

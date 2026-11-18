@@ -1,9 +1,8 @@
 // 대시보드 "처방 효과"(docs/decisions/0016): 위 주간 요약(최근 N일 vs 그 전 N일), 아래 적용 기록마다 전후.
 // 값은 Rust `get_health`와 `health-updated` event로만 바뀐다(타이머 없음). 숫자는 모두 기록에서 잰 값이다.
-import { AGENT_COLOR } from "@/components/agent-metrics";
 import { CARD } from "@/components/daily-activity";
 import { StateText } from "@/components/state-text";
-import { AGENT_LABEL } from "@/components/usage-popover";
+import { AGENT_COLOR, AGENT_LABEL } from "@/lib/agents";
 import { appliedName } from "@/lib/check-copy";
 import {
   getHealth,

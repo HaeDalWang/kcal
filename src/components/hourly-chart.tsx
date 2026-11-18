@@ -1,5 +1,5 @@
 // 0~24시 시간별 요청 막대(docs/decisions/0015). 높이는 그날 가장 많은 시간 기준.
-import { AGENT_COLOR } from "@/components/agent-metrics";
+import { AGENT_COLOR } from "@/lib/agents";
 import { HOURS_PER_DAY, hourText } from "@/lib/daily";
 import { numberFormat, t } from "@/lib/i18n";
 import type { Agent } from "@/lib/ipc";

@@ -3,11 +3,10 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { ActivityRings, type Ring } from "@/components/activity-rings";
-import { AGENT_COLOR } from "@/components/agent-metrics";
 import { HourlyChart } from "@/components/hourly-chart";
 import { measuredTitle } from "@/components/info-section";
-import { AGENT_LABEL } from "@/components/usage-popover";
 import { Button } from "@/components/ui/button";
+import { AGENT_COLOR, AGENT_LABEL } from "@/lib/agents";
 import {
   busiestHour,
   dailyGoal,

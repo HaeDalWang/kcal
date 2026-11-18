@@ -11,11 +11,11 @@ import {
   ProgressSummary,
   type HandoffContext,
 } from "@/components/checks-list";
-import { AGENT_COLOR } from "@/components/agent-metrics";
 import { AgentIcon } from "@/components/agent-icon";
 import { ChangePanel, DonePanel, LiveStatus, usePanelFocus } from "@/components/coach-view";
 import { RulesPanel } from "@/components/rules-panel";
 import { Button } from "@/components/ui/button";
+import { AGENT_COLOR } from "@/lib/agents";
 import {
   checkCopy,
   fixedEntries,

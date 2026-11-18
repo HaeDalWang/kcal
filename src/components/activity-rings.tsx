@@ -1,5 +1,5 @@
 // 동심원 링(docs/decisions/0015). 바깥부터 주어진 순서로 하나씩, 채움 = 오늘 쓴 양 ÷ 하루 몫(넘치면 꽉 찬 링).
-import { AGENT_COLOR } from "@/components/agent-metrics";
+import { AGENT_COLOR } from "@/lib/agents";
 import type { Agent } from "@/lib/ipc";
 
 export type Ring = {
