@@ -92,6 +92,8 @@ export function App() {
   const { settings, setSettings, error: settingsError } = useSettings();
   const [actionError, setActionError] = useState<string | null>(null);
   const [view, setView] = useState<View>("usage");
+  // 설정에서 돌아오면 메뉴의 "설정" 버튼이 새로 그려진다. 키보드 사용자를 그 자리로 돌려보낸다.
+  const isBackFromSettings = useRef(false);
   // 마지막으로 보던 탭. 메모리에만 둔다(팝오버를 닫았다 열어도 유지).
   const [selected, setSelected] = useState<PopoverTab>("overview");
   const checks = useOnFocus<CoachCheck[]>(getChecks, "get_checks");
@@ -161,7 +163,14 @@ export function App() {
       )}
       {!settingsError && !settings && <StateText kind="loading" className="p-3" />}
       {settings && view === "settings" && (
-        <SettingsView settings={settings} onSaved={setSettings} onBack={() => setView("usage")} />
+        <SettingsView
+          settings={settings}
+          onSaved={setSettings}
+          onBack={() => {
+            isBackFromSettings.current = true;
+            setView("usage");
+          }}
+        />
       )}
       {settings && view === "usage" && (
         <UsagePopover
@@ -201,7 +210,17 @@ export function App() {
             <button type="button" onClick={() => run(refreshAll)} className={MENU_ITEM}>
               <MenuLabel icon={<RefreshCw />} label={t.app.refresh} shortcut={hint("R")} />
             </button>
-            <button type="button" onClick={() => setView("settings")} className={MENU_ITEM}>
+            <button
+              type="button"
+              ref={(el) => {
+                if (el && isBackFromSettings.current) {
+                  isBackFromSettings.current = false;
+                  el.focus();
+                }
+              }}
+              onClick={() => setView("settings")}
+              className={MENU_ITEM}
+            >
               <MenuLabel icon={<Settings />} label={t.app.settings} shortcut={hint(",")} />
             </button>
           </>

@@ -122,6 +122,19 @@ describe("popover menu", () => {
     );
   });
 
+  it("puts focus back on the settings row after leaving settings with Escape", async () => {
+    mock(THIS_MAC_CHECKS);
+    render(<App />);
+    await checksItem();
+    fireEvent.click(within(menu()).getByRole("button", { name: /^설정/ }));
+    fireEvent.keyDown(await waitFor(() => document.activeElement as HTMLElement), {
+      key: "Escape",
+    });
+    await waitFor(() =>
+      expect(document.activeElement).toBe(within(menu()).getByRole("button", { name: /^설정/ })),
+    );
+  });
+
   it("opens the dashboard with the D shortcut shown on its row", async () => {
     const calls = mock(THIS_MAC_CHECKS);
     render(<App />);
