@@ -7,7 +7,6 @@
 // ponytail: 매번 기간 안 파일을 통째로 읽는다(이 Mac 14일 Claude 약 300MB). 무거우면 파일별 (mtime, 크기)·결과를 캐시한다.
 
 use std::collections::HashSet;
-use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
@@ -141,32 +140,22 @@ struct Row {
 
 /// rollout 하나의 압축 (원문 timestamp, 시각). 접두 검사를 통과한 줄만 JSON으로 읽는다.
 pub(super) fn compaction_times(file: &Path) -> Vec<(String, f64)> {
-    let Ok(handle) = std::fs::File::open(file) else {
-        return Vec::new();
-    };
-    let mut reader = BufReader::new(handle);
-    let mut line = Vec::new();
     let mut times = Vec::new();
-    loop {
-        line.clear();
-        match reader.read_until(b'\n', &mut line) {
-            Ok(0) | Err(_) => break,
-            Ok(_) => {}
+    rollout::for_each_line(file, |line| {
+        if !contains(char_prefix(line, PREFIX_CHARS), COMPACTED_MARK) {
+            return;
         }
-        if !contains(char_prefix(&line, PREFIX_CHARS), COMPACTED_MARK) {
-            continue;
-        }
-        let Ok(row) = serde_json::from_slice::<Row>(&line) else {
-            continue;
+        let Ok(row) = serde_json::from_slice::<Row>(line) else {
+            return;
         };
         if row.kind.as_deref() != Some("compacted") {
-            continue;
+            return;
         }
         if let Some(tsr) = row.timestamp
             && let Ok(ts) = OffsetDateTime::parse(&tsr, &Rfc3339)
         {
             times.push((tsr, unix_secs(ts)));
         }
-    }
+    });
     times
 }

@@ -230,6 +230,22 @@ fn counts_codex_compacted_lines_once_and_ignores_lookalikes() {
     assert_eq!(period(&with_requests, t - 7.0 * D, t).compactions, Some(2));
 }
 
+#[test]
+fn compaction_times_reads_zst_rollouts() {
+    let home = TempDir::new("compact-zst");
+    let line = r#"{"timestamp":"2026-11-03T05:51:31.889Z","type":"compacted","payload":{}}"#;
+    let path = home.path().join("rollout-z.jsonl.zst");
+    std::fs::write(
+        &path,
+        ruzstd::encoding::compress_to_vec(
+            line.as_bytes(),
+            ruzstd::encoding::CompressionLevel::Fastest,
+        ),
+    )
+    .unwrap();
+    assert_eq!(compaction_times(&path).len(), 1);
+}
+
 /// 이 Mac의 실제 기록으로 주간 요약을 낸다(숫자만). 결과를 `/tmp/kcal-health-real.txt`에 쓴다.
 /// `cargo test -- --ignored real_health_on_this_mac --nocapture`.
 #[test]

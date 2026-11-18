@@ -45,6 +45,8 @@ pub struct Event {
 
 /// Codex가 오래된 rollout을 압축한 이름 끝(이 Mac 실측, 2026-11-18).
 const ZST: &str = ".jsonl.zst";
+/// 한 줄의 상한. 깨진 압축 파일이 개행 없이 수 GB로 풀려도 메모리를 다 쓰지 않게 한다.
+const MAX_LINE_BYTES: usize = 16 << 20;
 
 fn is_rollout(path: &Path) -> bool {
     path.file_name()
@@ -155,6 +157,36 @@ fn event(row: &Value, file: &str) -> Option<Event> {
     })
 }
 
+/// rollout 한 파일의 줄을 차례로 `f`에 준다(`.jsonl.zst`는 풀어서). 열 수 없거나 압축 머리가 깨졌으면 아무것도 주지 않고,
+/// 중간에 깨지면 그 앞 줄까지만 준다.
+pub(crate) fn for_each_line(file: &Path, f: impl FnMut(&[u8])) {
+    for_each_line_capped(file, MAX_LINE_BYTES, f);
+}
+
+fn for_each_line_capped(file: &Path, _cap: usize, mut f: impl FnMut(&[u8])) {
+    let Ok(handle) = std::fs::File::open(file) else {
+        return;
+    };
+    let zst = file.to_str().is_some_and(|n| n.ends_with(ZST));
+    let source: Box<dyn std::io::Read> = if zst {
+        match ruzstd::decoding::StreamingDecoder::new(handle) {
+            Ok(decoder) => Box::new(decoder),
+            Err(_) => return,
+        }
+    } else {
+        Box::new(handle)
+    };
+    let mut reader = BufReader::new(source);
+    let mut line = Vec::new();
+    loop {
+        line.clear();
+        match reader.read_until(b'\n', &mut line) {
+            Ok(0) | Err(_) => break,
+            Ok(_) => f(&line),
+        }
+    }
+}
+
 /// 파일 하나의 이벤트. 접두 검사를 통과한 줄만 JSON으로 읽는다. 잘린 줄은 건너뛴다.
 pub fn read_events(file: &Path) -> Vec<Event> {
     read_rollout(file).0
@@ -166,41 +198,22 @@ pub(super) fn read_rollout(file: &Path) -> (Vec<Event>, Option<String>) {
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let Ok(handle) = std::fs::File::open(file) else {
-        return (Vec::new(), None);
-    };
-    let source: Box<dyn std::io::Read> = if name.ends_with(ZST) {
-        // 압축 머리가 깨졌으면 읽을 것이 없다. 중간에 깨지면 그 앞 줄까지만 쓴다(아래 Err에서 멈춤).
-        match ruzstd::decoding::StreamingDecoder::new(handle) {
-            Ok(decoder) => Box::new(decoder),
-            Err(_) => return (Vec::new(), None),
-        }
-    } else {
-        Box::new(handle)
-    };
-    let mut reader = BufReader::new(source);
-    let mut line = Vec::new();
     let mut events = Vec::new();
     let mut session = None;
     let mut is_first = true;
-    loop {
-        line.clear();
-        match reader.read_until(b'\n', &mut line) {
-            Ok(0) | Err(_) => break,
-            Ok(_) => {}
-        }
+    for_each_line(file, |line| {
         if std::mem::take(&mut is_first) {
-            session = super::behavior::session_cwd(&line);
+            session = super::behavior::session_cwd(line);
         }
-        if !contains(char_prefix(&line, PREFIX_CHARS), TOKEN_COUNT_MARK) {
-            continue;
+        if !contains(char_prefix(line, PREFIX_CHARS), TOKEN_COUNT_MARK) {
+            return;
         }
-        if let Ok(row) = serde_json::from_slice::<Value>(&line)
+        if let Ok(row) = serde_json::from_slice::<Value>(line)
             && let Some(e) = event(&row, &name)
         {
             events.push(e);
         }
-    }
+    });
     (events, session)
 }
 
