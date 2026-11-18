@@ -137,9 +137,14 @@ function Comparison({
   before: PeriodStats;
   after: PeriodStats;
 }) {
+  const metrics = metricsOf(agent);
+  // 전후 모두 값이 없으면 "— → —" 줄을 늘어놓지 않고 "기록 없음" 한 줄만 둔다.
+  if (metrics.every((m) => m.pick(before) === null && m.pick(after) === null)) {
+    return <p className="text-sm text-muted-foreground">{t.common.noRecord}</p>;
+  }
   return (
     <dl className="grid grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] gap-x-4 gap-y-1.5">
-      {metricsOf(agent).map((metric) => (
+      {metrics.map((metric) => (
         <MetricValue key={metric.label} metric={metric} before={before} after={after} />
       ))}
     </dl>

@@ -38,6 +38,17 @@ export function ActivityRings({ rings, size, stroke, gap, label, className }: Pr
       className={`shrink-0 -rotate-90 ${className ?? ""}`}
     >
       <title>{label}</title>
+      {/* 그릴 링이 없으면(한도를 못 읽음·몫 모름) 빈 자리 대신 회색 트랙 하나를 둔다. */}
+      {rings.length === 0 && (
+        <circle
+          cx={center}
+          cy={center}
+          r={center - stroke / 2}
+          fill="none"
+          strokeWidth={stroke}
+          stroke="var(--border)"
+        />
+      )}
       {rings.map((ring, i) => {
         const radius = center - stroke / 2 - i * (stroke + gap);
         if (radius <= 0) return null;

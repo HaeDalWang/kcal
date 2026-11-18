@@ -41,15 +41,16 @@ describe("health compare", () => {
     expect(isPartial(report.weekly[2].before, report.weekly[2].after)).toBe(false);
   });
 
-  it("renders weekly rows with unknown values as dashes and an empty prescription list", async () => {
+  it("renders weekly rows with no values as one no-data line and an empty prescription list", async () => {
     serve({ ...report, prescriptions: [] });
     render(<HealthCompare refreshKey="7" />);
     expect(await screen.findByText("아직 적용한 처방이 없어요.", { exact: false })).toBeTruthy();
     const rows = screen.getAllByRole("listitem");
     expect(rows).toHaveLength(3);
     expect(within(rows[0]).getByText("기록 일부만")).toBeTruthy();
-    // Kiro는 기록이 없어 0이 아니라 —로 보인다.
-    expect(within(rows[2]).getAllByText("—")).toHaveLength(4);
+    // Kiro는 기록이 없어 0이나 "— → —" 줄이 아니라 "기록 없음" 한 줄로 보인다.
+    expect(within(rows[2]).getByText("기록 없음")).toBeTruthy();
+    expect(within(rows[2]).queryByText("—")).toBeNull();
     expect(within(rows[2]).queryByText("0")).toBeNull();
   });
 
