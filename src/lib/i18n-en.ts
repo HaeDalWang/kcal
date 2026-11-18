@@ -191,7 +191,8 @@ export const en: Messages = {
     totalRequests: "Total requests",
     kiroNote: "Kiro counts questions",
     busiest: "Busiest hour",
-    busiestAt: (range) => `Busiest hour: ${range}`,
+    busiestAt: (range, count, isQuestion) =>
+      `Busiest hour: ${range} · ${ns(count, isQuestion ? "question" : "request")}`,
     activeHours: "Hours with requests",
     hours: (count) => `${count}h`,
     usedToday: "Used today",

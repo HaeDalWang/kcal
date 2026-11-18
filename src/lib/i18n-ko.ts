@@ -181,7 +181,8 @@ export const ko = {
     totalRequests: "총 요청 수",
     kiroNote: "Kiro는 질문 수",
     busiest: "가장 바빴던 시간대",
-    busiestAt: (range: string) => `가장 바빴던 시간대: ${range}`,
+    busiestAt: (range: string, count: string, isQuestion: boolean) =>
+      `가장 바빴던 시간대: ${range} · ${isQuestion ? "질문" : "요청"} ${count}회`,
     activeHours: "요청이 있던 시간",
     hours: (count: number) => `${count}시간`,
     usedToday: "오늘 쓴 양",

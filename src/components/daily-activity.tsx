@@ -301,7 +301,11 @@ function HourlyCard({ values }: { values: readonly AgentDay[] }) {
         const summary =
           busiest === null
             ? t.daily.noneThisDay(v.agent === "kiro")
-            : t.daily.busiestAt(hourRangeText(busiest));
+            : t.daily.busiestAt(
+                hourRangeText(busiest),
+                integer.format(v.activity.requests[busiest]),
+                v.agent === "kiro",
+              );
         return (
           <div key={v.agent} className="flex flex-col gap-2">
             <div>
