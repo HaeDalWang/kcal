@@ -133,6 +133,8 @@ Dev setup, commands, project layout and design decisions are in [CONTRIBUTING.md
 
 [MIT](LICENSE)
 
+Claude, OpenAI Codex and Kiro names and marks belong to Anthropic, OpenAI and Amazon. kcal shows them only to label whose usage you are looking at and is not affiliated with them. The mark outlines come from [CodexBar](https://github.com/steipete/CodexBar) (MIT).
+
 ---
 
 If this helped you, a star helps others find it.
