@@ -77,6 +77,7 @@ export const en: Messages = {
     trim: (count, tokens) =>
       `${n(count, "thing")} you could trim${tokens ? ` · ${tokens} tokens at startup` : ""}`,
     trimReview: "Review",
+    firstRun: (app) => `No limits yet. Use ${app} once, then press Refresh.`,
   },
   pace: {
     onPace: "On pace",

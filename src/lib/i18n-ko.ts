@@ -66,6 +66,7 @@ export const ko = {
     trim: (count: number, tokens: string | null) =>
       `줄일 수 있는 것 ${count}개${tokens ? ` · 시작 때 ${tokens} 토큰` : ""}`,
     trimReview: "보기",
+    firstRun: (app: string) => `아직 한도 값이 없어요. ${app}를 한 번 쓰고 새로고침하세요.`,
   },
   pace: {
     onPace: "예상 속도",

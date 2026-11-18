@@ -8,7 +8,7 @@ import type { AgentUsage } from "@/lib/ipc";
 
 const CLASS = {
   loading: "text-[11px] text-muted-foreground",
-  empty: "text-[11px] text-muted-foreground",
+  empty: "text-[11px] text-pretty text-muted-foreground",
   error: "text-[11px] text-destructive",
   // 할 일이 남은 상태(설치·로그인·허용). 고장이 아니므로 붉게 쓰지 않고 알림 역할도 주지 않는다.
   setup: "flex items-start gap-1 text-[11px] text-muted-foreground",
@@ -21,13 +21,18 @@ export function reasonStateKind(usage: Pick<AgentUsage, "reasonKind">): "setup" 
 
 type StateTextProps = {
   kind: keyof typeof CLASS;
-  /** 오류·할 일 문구. 불러오는 중·빈 값은 정해진 문구를 쓴다. */
+  /** 오류·할 일 문구. 빈 값은 주면 그 문구(첫 실행 안내 등), 없으면 "값 없음". 불러오는 중은 정해진 문구. */
   children?: ReactNode;
   className?: string;
 };
 
 export function StateText({ kind, children, className = "" }: StateTextProps) {
-  const text = kind === "loading" ? t.state.loading : kind === "empty" ? t.state.noValue : children;
+  const text =
+    kind === "loading"
+      ? t.state.loading
+      : kind === "empty"
+        ? (children ?? t.state.noValue)
+        : children;
   // key: 글자가 바뀌면 새 <p>로 갈아 끼운다. 숨은 팝오버에서 role="alert" 안의 글자만 바꾸면 WebKit이
   // 표시 갱신(display link)을 초당 ~60번 계속 깨운다(첫 실행 유휴 CPU 0.7%). 새로 끼운 요소는 괜찮다.
   return (

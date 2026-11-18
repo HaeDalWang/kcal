@@ -32,6 +32,12 @@ export const AGENT_LABEL: Record<Agent, string> = {
   codex: "Codex",
   kiro: "Kiro",
 };
+/** 사용자가 쓰는 앱 이름(첫 실행 안내). */
+const APP_NAME: Record<Agent, string> = {
+  claude: "Claude Code",
+  codex: "Codex",
+  kiro: "Kiro",
+};
 const MINUTE_MS = 60_000;
 
 const integer = numberFormat({ maximumFractionDigits: 0 });
@@ -187,7 +193,9 @@ function StatusLines({ usage }: { usage: AgentUsage }) {
   return (
     <>
       {isPending && <StateText kind="loading" />}
-      {!isPending && hasNoValue && !usage.reason && <StateText kind="empty" />}
+      {!isPending && hasNoValue && !usage.reason && (
+        <StateText kind="empty">{t.popover.firstRun(APP_NAME[usage.agent])}</StateText>
+      )}
       {usage.reason &&
         (hasNoValue ? (
           <StateText kind={reasonStateKind(usage)}>{usage.reason}</StateText>
