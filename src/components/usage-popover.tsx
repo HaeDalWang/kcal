@@ -418,7 +418,7 @@ export type PopoverTab = "overview" | Agent;
 
 /** 고른 탭은 개요·에이전트 모두 같은 회색 칸(메뉴 hover와 같은 accent). 에이전트 색은 아래 사용량 막대에만 쓴다. */
 const TRIGGER =
-  "h-auto flex-col gap-1 px-1.5 py-1 text-[11px] hover:bg-accent/50 group-data-[variant=default]/tabs-list:data-active:shadow-none data-active:bg-accent data-active:text-accent-foreground dark:data-active:border-transparent dark:data-active:bg-accent";
+  "h-auto flex-col gap-1 px-1.5 py-1 text-[11px] hover:bg-accent/50 group-data-[variant=default]/tabs-list:data-active:shadow-none data-active:border-border data-active:bg-accent data-active:text-accent-foreground dark:data-active:border-transparent dark:data-active:bg-accent";
 
 type UsagePopoverProps = {
   /** 탭·개요에 보여 줄 에이전트(설정에서 켠 것). */
