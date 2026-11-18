@@ -227,7 +227,7 @@ export const en: Messages = {
     undone: (time) => `Undone ${time}`,
     passed: (days) => `${n(days, "day")} passed`,
     day: (day) => `Day ${day}`,
-    partialTitle: "The start of the period has no data. Calculated from what's there.",
+    partialTitle: "The start of the period has no data. Calculated from what’s there.",
     partial: "Partial data",
     applied: (time, after) => ` · applied ${time} · ${after}`,
     title: "Change effects",
