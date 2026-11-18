@@ -18,12 +18,12 @@ concurrency:
 jobs:
   macos:
     runs-on: macos-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GH_REPO: ${{ github.repository }}
+    # GH_TOKEN(contents: write) only on the steps that call gh, not on install/build steps.
     steps:
       # 서드파티 action은 ci.yml과 같은 commit SHA로 고정한다(공급망). 주석의 태그는 참고용.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false # keep the token out of .git/config during build
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0 (package.json packageManager 사용)
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -41,6 +41,8 @@ jobs:
       - name: Resolve tag
         id: tag
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ github.ref_name }}
         run: |
@@ -75,6 +77,8 @@ jobs:
       # 수동 실행이라 태그가 아직 없으면, 초안을 게시할 때 이 commit에 태그가 생긴다.
       - name: Create draft release
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
           # 버전별 릴리스 노트가 있으면 그것을, 없으면 자동 생성 노트를 쓴다.
