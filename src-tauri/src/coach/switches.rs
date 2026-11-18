@@ -12,6 +12,7 @@ use serde_json::Value;
 use super::contents::{self, PluginContents};
 use super::edit::{self, Edit};
 use super::scope::{self, ProjectSettings, ScopeMove, SwitchScope};
+use super::skills::{self, SkillInfo};
 use super::usage::{SwitchUsage, UsageIndex, plugin_name};
 use crate::context::{
     AgentContext, ContextKind, ContextSnapshot, Loading, fsutil, paths, scan, shape,
@@ -32,6 +33,11 @@ pub fn claude_mcp_instruction() -> &'static str {
 pub enum SwitchKind {
     Plugin,
     Mcp,
+    /// Claude 개인 스킬(`~/.claude/skills`). 설명을 숨기는 것이고 끄는 것이 아니다(0022 "스킬 단위").
+    Skill,
+    /// Claude 프로젝트 스킬(작업 폴더 `.claude/skills`).
+    #[serde(rename = "projectSkill")]
+    ProjectSkill,
 }
 
 /// 어떻게 바꾸나. `Manual`: kcal이 쓰지 않고 `instruction`만 보여 준다.
@@ -81,6 +87,8 @@ pub struct CoachSwitch {
     pub scope_move: Option<ScopeMove>,
     /// 끄면 함께 꺼지는 것(플러그인 폴더의 스킬·에이전트·명령·MCP 서버 이름). MCP 스위치·폴더를 못 읽으면 `None`.
     pub contents: Option<PluginContents>,
+    /// 스킬 스위치(개인·프로젝트)의 현재 값과 프로젝트 이름. 스킬이 아니면 `None`.
+    pub skill: Option<SkillInfo>,
     pub format: SwitchFormat,
     /// 고칠 파일. `Manual`이면 `None`.
     pub file: Option<String>,
@@ -161,10 +169,12 @@ fn tool_server_name(name: &str) -> String {
         .collect()
 }
 
-fn base(agent: Agent, kind: SwitchKind, name: &str, enabled: bool) -> CoachSwitch {
+pub(super) fn base(agent: Agent, kind: SwitchKind, name: &str, enabled: bool) -> CoachSwitch {
     let kind_id = match kind {
         SwitchKind::Plugin => "plugin",
         SwitchKind::Mcp => "mcp",
+        SwitchKind::Skill => "skill",
+        SwitchKind::ProjectSkill => "project-skill",
     };
     CoachSwitch {
         target: format!("{}/{kind_id}:{name}", agent.id()),
@@ -179,6 +189,7 @@ fn base(agent: Agent, kind: SwitchKind, name: &str, enabled: bool) -> CoachSwitc
         scope: None,
         scope_move: None,
         contents: None,
+        skill: None,
         format: SwitchFormat::Manual,
         file: None,
         instruction: None,
@@ -186,7 +197,7 @@ fn base(agent: Agent, kind: SwitchKind, name: &str, enabled: bool) -> CoachSwitc
     }
 }
 
-fn file_switch(
+pub(super) fn file_switch(
     mut switch: CoachSwitch,
     format: SwitchFormat,
     file: &Path,
@@ -265,6 +276,7 @@ fn with_usage(
     let used = match switch.kind {
         SwitchKind::Plugin => index.for_plugin(&switch.name, names),
         SwitchKind::Mcp => index.for_server(&tool_server_name(&switch.name)),
+        SwitchKind::Skill | SwitchKind::ProjectSkill => return switch,
     };
     if switch.kind == SwitchKind::Plugin {
         switch.scope = Some(projects.scope(&switch.name, switch.enabled));
@@ -340,10 +352,14 @@ fn claude(
         loading: Some(Loading::Startup),
         ..manual(&name)
     }));
-    switches
+    let mut switches: Vec<CoachSwitch> = switches
         .into_iter()
         .map(|s| with_usage(s, home, usage, &projects, &names))
-        .collect()
+        .collect();
+    // 스킬 단위(0022): 개인 스킬 + 가장 최근 세션의 작업 폴더의 프로젝트 스킬. 플러그인 스킬은 넣지 않는다.
+    let workspace = sent.as_ref().and_then(|s| s.cwd.as_deref()).map(Path::new);
+    switches.extend(skills::list(home, Some(&settings), usage, workspace));
+    switches
 }
 
 /// 전체 스위치 목록. `snapshot`: 전역 컨텍스트 측정(없으면 토큰을 모른다). `usage`: Claude 사용 기록(없으면 Claude는
@@ -374,6 +390,10 @@ pub fn list(
             Some(u) => u.total == 0 && !u.is_partial && u.sessions >= u.min_sessions,
             None => false,
         };
+        // 스킬은 크기를 몰라 토큰 조건이 없다: `skills::skill_switch`가 같은 근거 기준으로 이미 정했다.
+        if skills::is_skill(switch) {
+            continue;
+        }
         switch.is_proposed = switch.enabled
             && switch.loading == Some(Loading::Startup)
             && switch.tokens.is_some_and(|t| t > 0)

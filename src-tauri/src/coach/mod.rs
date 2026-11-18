@@ -8,6 +8,7 @@ pub(crate) mod contents;
 pub(crate) mod edit;
 pub(crate) mod log;
 pub(crate) mod scope;
+pub(crate) mod skills;
 pub(crate) mod switches;
 pub(crate) mod usage;
 
@@ -123,6 +124,9 @@ pub fn preview(
     enabled: bool,
 ) -> Result<SwitchPreview, AppError> {
     let (switch, path) = switch_and_file(home, snapshot, usage, tuning, target)?;
+    if skills::is_skill(&switch) {
+        return skills::preview(&switch, enabled);
+    }
     let (bytes, text) = read_text(&path)?;
     let edit = switch.plan(&text, enabled).map_err(refuse)?;
     Ok(SwitchPreview {
@@ -277,6 +281,9 @@ pub fn apply(
     validate_hash(before_hash)?;
     let _guard = WRITE_LOCK.lock().map_err(|_| AppError::Internal)?;
     let (switch, path) = switch_and_file(home, snapshot, usage, tuning, target)?;
+    if skills::is_skill(&switch) {
+        return skills::apply(&switch, log_file, enabled, before_hash, now);
+    }
     let text = read_unchanged(&path, before_hash)?;
     let edit = switch.plan(&text, enabled).map_err(refuse)?;
     if !edit.changed {
@@ -367,6 +374,13 @@ pub fn undo(
             "이미 되돌린 기록이에요.",
             "This change was already undone.",
         )));
+    }
+    // 스킬 설명 숨기기(0022 "스킬 단위"): 파일을 새로 만들었을 수 있어 따로 되돌린다.
+    if skills::is_skill_target(&applied.target) {
+        let entry = skills::undo(home, applied, now)?;
+        log::append(log_file, &entry)
+            .map_err(|e| io_refusal(pick("기록 쓰기", "write the change log"), &e))?;
+        return Ok(entry);
     }
     // 프로젝트에서만 켜기(0022): 여러 파일을 한 기록으로 함께 되돌린다.
     if !applied.files.is_empty() || applied.target.starts_with(scope::SCOPE_TARGET_PREFIX) {

@@ -17,6 +17,7 @@ fn coach_types_match_fixture() {
         scope: None,
         scope_move: None,
         contents: None,
+        skill: None,
         format: SwitchFormat::Toml,
         file: Some("/synthetic/.codex/config.toml".into()),
         instruction: None,
@@ -119,7 +120,46 @@ fn coach_types_match_fixture() {
         is_proposed: false,
         ..switch.clone()
     };
-    check("coach-switches", &[switch, manual, json, claude_plugin]);
+    let skill = CoachSwitch {
+        target: "claude/skill:synthetic-skill".into(),
+        kind: SwitchKind::Skill,
+        name: "synthetic-skill".into(),
+        tokens: None,
+        loading: None,
+        is_proposed: true,
+        skill: Some(SkillInfo {
+            state: None,
+            project: None,
+        }),
+        file: Some("/synthetic/.claude/settings.json".into()),
+        scope: None,
+        scope_move: None,
+        contents: None,
+        ..claude_plugin.clone()
+    };
+    let project_skill = CoachSwitch {
+        target: "claude/project-skill:synthetic-local".into(),
+        kind: SwitchKind::ProjectSkill,
+        name: "synthetic-local".into(),
+        enabled: false,
+        is_proposed: false,
+        skill: Some(SkillInfo {
+            state: Some("name-only".into()),
+            project: Some("alpha".into()),
+        }),
+        format: SwitchFormat::Manual,
+        file: None,
+        instruction: Some("synthetic instruction".into()),
+        usage: None,
+        scope: None,
+        scope_move: None,
+        contents: None,
+        ..skill.clone()
+    };
+    check(
+        "coach-switches",
+        &[switch, manual, json, claude_plugin, skill, project_skill],
+    );
     check(
         "scope-move-preview",
         &ScopeMovePreview {

@@ -103,12 +103,12 @@ pub struct ScopeMovePreview {
     pub before_hash: String,
 }
 
-fn is_plain_absolute(path: &Path) -> bool {
+pub(super) fn is_plain_absolute(path: &Path) -> bool {
     path.is_absolute() && !path.components().any(|c| c == Component::ParentDir)
 }
 
 /// 설정을 쓸 수 있는 프로젝트 폴더: 지금 있고, 홈 자체가 아니다(홈의 `.claude`는 사용자 설정 폴더다).
-fn is_project_dir(home: &Path, path: &Path) -> bool {
+pub(super) fn is_project_dir(home: &Path, path: &Path) -> bool {
     is_plain_absolute(path) && path != home && path.parent().is_some() && path.is_dir()
 }
 
@@ -198,13 +198,13 @@ pub fn proposal(home: &Path, user: bool, usage: &SwitchUsage) -> Option<ScopeMov
 }
 
 /// 쓸 파일 하나.
-struct Planned {
-    path: PathBuf,
+pub(super) struct Planned {
+    pub(super) path: PathBuf,
     /// 지금 내용. `None`이면 새로 만든다.
-    original: Option<Vec<u8>>,
-    content: String,
-    change: ScopeFileChange,
-    creates_dir: bool,
+    pub(super) original: Option<Vec<u8>>,
+    pub(super) content: String,
+    pub(super) change: ScopeFileChange,
+    pub(super) creates_dir: bool,
 }
 
 fn local_file(project: &Path) -> PathBuf {
@@ -217,7 +217,7 @@ fn is_link(path: &Path) -> bool {
 
 /// 프로젝트 쪽 `.claude` 폴더나 설정 파일이 링크면 쓰지 않는다(낯선 저장소가 프로젝트 밖 파일을 가리켜 덮게 하지 못하게).
 /// 사용자 설정 파일의 링크(dotfiles)는 대상이 아니라 계속 따라간다.
-fn has_project_link(file: &Path) -> bool {
+pub(super) fn has_project_link(file: &Path) -> bool {
     is_link(file) || file.parent().is_some_and(is_link)
 }
 
@@ -320,7 +320,7 @@ fn plan(switch: &CoachSwitch) -> Result<(Vec<Planned>, &ScopeMove), AppError> {
 }
 
 /// 모든 대상 파일의 경로와 지금 내용(없으면 표시)으로 만든 해시.
-fn plan_hash(planned: &[Planned]) -> String {
+pub(super) fn plan_hash(planned: &[Planned]) -> String {
     let mut all = Vec::new();
     for p in planned {
         all.extend(p.path.to_string_lossy().as_bytes());
@@ -345,12 +345,12 @@ pub fn preview(switch: &CoachSwitch) -> Result<ScopeMovePreview, AppError> {
 }
 
 /// 쓴 것 하나(실패하면 거꾸로 되돌린다).
-enum Done {
+pub(super) enum Done {
     Replaced { path: PathBuf, backup: PathBuf },
     Created { path: PathBuf, created_dir: bool },
 }
 
-fn create_file(planned: &Planned) -> Result<Done, AppError> {
+pub(super) fn create_file(planned: &Planned) -> Result<Done, AppError> {
     let dir = planned.path.parent().ok_or(AppError::Internal)?;
     if planned.creates_dir {
         std::fs::create_dir(dir)
@@ -411,7 +411,7 @@ fn remove_command(path: &Path, dir: Option<&Path>) -> String {
 }
 
 /// 사용자 설정을 먼저, 그다음 프로젝트 파일(만든 순의 반대)을 되돌리는 명령.
-fn undo_command(done: &[Done]) -> String {
+pub(super) fn undo_command(done: &[Done]) -> String {
     done.iter()
         .rev()
         .map(|step| match step {
@@ -517,7 +517,7 @@ pub fn apply(
 }
 
 /// 기록의 프로젝트 파일이 kcal이 쓰는 모양인가: `<절대 경로>/.claude/settings.local.json`, 백업은 그 옆.
-fn is_known_project_file(logged: &LoggedFile) -> bool {
+pub(super) fn is_known_project_file(logged: &LoggedFile) -> bool {
     let file = Path::new(&logged.file);
     let is_local_file = is_plain_absolute(file)
         && file.file_name() == Some(LOCAL_FILE.as_ref())
@@ -530,7 +530,7 @@ fn is_known_project_file(logged: &LoggedFile) -> bool {
             .is_none_or(|b| is_backup_of(Path::new(b), file))
 }
 
-fn current_hash(path: &Path) -> Option<String> {
+pub(super) fn current_hash(path: &Path) -> Option<String> {
     std::fs::read(path).ok().map(|b| edit::content_hash(&b))
 }
 

@@ -4,7 +4,7 @@
 //! 세는 것: `assistant` 줄의 `tool_use` 이름 `mcp__<서버>__*`(플러그인 MCP는 `mcp__plugin_<이름>_<서버>__*`),
 //! `Skill` `input.skill`·`Agent`/`Task` `input.subagent_type`의 `<플러그인 이름>:`, `user` 줄
 //! `<command-name>/<플러그인 이름>:…</command-name>`. 이름과 횟수만 들고 있고 내용 문장은 남기지 않는다.
-//! 접두사 없는 `/<이름>`은 설치된 플러그인(`installed_plugins.json`)의 `skills/`·`commands/`에서 그 이름이 정확히 한 플러그인에만 있고
+//! 접두사 없는 `/<이름>`·`Skill` 이름은 개인·그 프로젝트의 `skills/<이름>/SKILL.md`가 있으면 그 스킬 사용이다. 없으면(`/<이름>`만) 설치된 플러그인(`installed_plugins.json`)의 `skills/`·`commands/`에서 그 이름이 정확히 한 플러그인에만 있고
 //! 사용자·그 프로젝트의 `.claude/skills`·`commands`에 같은 이름이 없을 때만 그 플러그인 사용으로 센다.
 //! `api-request-blob` 줄은 보낸 요청을 다시 적은 것이라 세지 않는다. 같은 호출은 `tool_use.id`(명령은 줄 `uuid`)로 한 번만.
 
@@ -42,8 +42,12 @@ enum Key {
     Server(String),
     /// 스킬·명령·에이전트의 `<플러그인 이름>:`.
     Plugin(String),
-    /// 접두사 없는 `/<이름>`. 읽는 동안에만 있고(`BareNames`가 플러그인으로 바꾸거나 버린다) 집계에는 안 남는다.
-    Bare(String),
+    /// 접두사 없는 `/<이름>`·`Skill` 입력. 읽는 동안에만 있고(`BareNames`가 스킬·플러그인으로 바꾸거나 버린다) 집계에는 안 남는다.
+    /// `plugins`: 플러그인 사용으로도 풀어도 되는가(`<command-name>`만, `Skill` 입력은 스킬로만).
+    Bare { name: String, plugins: bool },
+    /// 개인(`~/.claude/skills/<이름>/`)·프로젝트(`<폴더>/.claude/skills/<이름>/`) 스킬. 개인 스킬은 모든 폴더 합계,
+    /// 프로젝트 스킬은 그 폴더 값만 쓴다.
+    Skill(String),
 }
 
 /// 프로젝트 하나에서의 한 키 사용: 횟수와 마지막 사용 시각(초).
@@ -66,6 +70,8 @@ pub struct UsageIndex {
     /// tuning `scopeMinUses`.
     pub scope_min_uses: usize,
     counts: HashMap<Key, HashMap<PathBuf, Stat>>,
+    /// 시작 폴더별 기간 안 세션 수(하위 에이전트 기록 제외). 프로젝트 스킬의 근거 양이다.
+    project_sessions: HashMap<PathBuf, usize>,
     /// 기간 안 세션을 시작한 폴더 전부(쓴 것이 없어도).
     pub projects: BTreeSet<PathBuf>,
 }
@@ -160,6 +166,24 @@ impl UsageIndex {
         self.summary(per_project)
     }
 
+    /// 개인 스킬(`project` 없음, 모든 폴더 합계) 또는 그 폴더의 프로젝트 스킬. 프로젝트 스킬은 세션 수도 그 폴더 것만 센다
+    /// (다른 폴더에서 안 쓴 것은 이 스킬을 안 쓴다는 근거가 아니다).
+    pub fn for_skill(&self, name: &str, project: Option<&Path>) -> SwitchUsage {
+        let mut per_project = HashMap::new();
+        Self::add(
+            &mut per_project,
+            self.counts.get(&Key::Skill(name.to_owned())),
+        );
+        if let Some(only) = project {
+            per_project.retain(|path, _| path == only);
+        }
+        let mut usage = self.summary(per_project);
+        if let Some(only) = project {
+            usage.sessions = self.project_sessions.get(only).copied().unwrap_or(0);
+        }
+        usage
+    }
+
     /// 플러그인 `<이름>@<마켓>`: 스킬·명령·에이전트 + 그 플러그인의 MCP 도구. `names`는 목록의 플러그인 이름 전부로,
     /// `mcp__plugin_<이름>_`이 더 긴 이름의 것과 겹치면 긴 쪽에 붙인다.
     pub fn for_plugin(&self, id: &str, names: &[&str]) -> SwitchUsage {
@@ -169,7 +193,7 @@ impl UsageIndex {
         for (key, counts) in &self.counts {
             let is_mine = match key {
                 Key::Plugin(p) => p == name,
-                Key::Bare(_) => false,
+                Key::Bare { .. } | Key::Skill(_) => false,
                 Key::Server(s) => {
                     is_from(s, name) && !names.iter().any(|n| n.len() > name.len() && is_from(s, n))
                 }
@@ -241,14 +265,22 @@ fn command_key(text: &str) -> Option<Key> {
     (!plugin.is_empty() && !rest.is_empty()).then(|| Key::Plugin(plugin.to_owned()))
 }
 
-/// 접두사 없는 `/<이름>`(`<command-name>`에서만). 공백·`:`·`/`가 든 것은 이름이 아니다.
-fn bare_key(text: &str) -> Option<Key> {
-    let name = text.trim().strip_prefix('/')?;
+/// 접두사 없는 이름. 공백·`:`·`/`가 든 것은 이름이 아니다.
+fn bare_name(name: &str) -> Option<&str> {
     let is_name = !name.is_empty()
         && name
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'));
-    is_name.then(|| Key::Bare(name.to_owned()))
+    is_name.then_some(name)
+}
+
+/// 접두사 없는 `/<이름>`(`<command-name>`에서만).
+fn bare_key(text: &str) -> Option<Key> {
+    let name = bare_name(text.trim().strip_prefix('/')?)?;
+    Some(Key::Bare {
+        name: name.to_owned(),
+        plugins: true,
+    })
 }
 
 /// 설치된 플러그인의 `skills/<이름>/`·`commands/<이름>.md` 이름 → 가진 플러그인 id들.
@@ -282,18 +314,31 @@ impl BareNames {
         }
     }
 
-    /// 이름이 정확히 한 플러그인에만 있고 사용자·프로젝트의 같은 이름 스킬·명령이 없을 때만 그 플러그인.
-    fn resolve(&self, name: &str, project: &Path) -> Option<Key> {
+    /// 이 이름의 개인 스킬이 있거나 그 프로젝트의 스킬이 있으면 그 스킬 사용이다.
+    ///
+    /// Ruling: 같은 이름이 플러그인 스킬에도 있으면 스킬이 이긴다 — 접두사 없는 이름은 스킬 자신의 이름이고 플러그인 스킬은
+    /// `<플러그인>:` 이름공간이라(0017 사실표), 예전에는 겹치면 아무것도 세지 않았다. 스킬이 있는 이름은 센 쪽이 숨기기 제안을 덜
+    /// 하는 안전한 쪽이다 — 틀리면 플러그인 사용이 그 스킬 사용으로 잡혀 제안이 하나 줄 뿐이다.
+    /// 스킬이 없으면(`plugins`일 때만) 이름이 정확히 한 플러그인에만 있고 사용자·프로젝트의 같은 이름 명령이 없을 때 그 플러그인.
+    fn resolve(&self, name: &str, project: &Path, plugins: bool) -> Option<Key> {
+        let roots = [&self.claude_root, &project.join(".claude")];
+        if roots
+            .iter()
+            .any(|root| root.join("skills").join(name).join("SKILL.md").is_file())
+        {
+            return Some(Key::Skill(name.to_owned()));
+        }
+        if !plugins {
+            return None;
+        }
         let mut ids = self.owners.get(name)?.iter();
         let (id, None) = (ids.next()?, ids.next()) else {
             return None;
         };
-        let is_shadowed = [&self.claude_root, &project.join(".claude")]
-            .iter()
-            .any(|root| {
-                root.join("skills").join(name).exists()
-                    || root.join("commands").join(format!("{name}.md")).exists()
-            });
+        let is_shadowed = roots.iter().any(|root| {
+            root.join("skills").join(name).exists()
+                || root.join("commands").join(format!("{name}.md")).exists()
+        });
         (!is_shadowed).then(|| Key::Plugin(plugin_name(id).to_owned()))
     }
 }
@@ -309,7 +354,17 @@ fn tool_key(block: &Block) -> Option<Key> {
         "Agent" | "Task" => input.subagent_type.as_ref(),
         _ => None,
     }?;
-    command_key(value.as_str()?).filter(|k| matches!(k, Key::Plugin(_)))
+    let text = value.as_str()?;
+    match command_key(text) {
+        Some(key @ Key::Plugin(_)) => Some(key),
+        Some(_) => None,
+        // `Skill` 입력의 접두사 없는 이름은 개인·프로젝트 스킬로만 푼다(플러그인 스킬은 늘 접두사가 붙는다).
+        None if name == "Skill" => Some(Key::Bare {
+            name: bare_name(text.trim().trim_start_matches('/'))?.to_owned(),
+            plugins: false,
+        }),
+        None => None,
+    }
 }
 
 fn command_keys(content: &Content) -> Vec<Key> {
@@ -365,13 +420,14 @@ fn line_uses(line: &[u8], since: f64) -> Vec<Use> {
     }
 }
 
+/// 읽은 기록의 시작 폴더(첫 `cwd`). 없으면 `None`.
 fn read_file(
     file: &Path,
     since: f64,
     bare: &BareNames,
     seen: &mut HashSet<String>,
     index: &mut UsageIndex,
-) {
+) -> Option<PathBuf> {
     let first_cwd = RefCell::new(None::<String>);
     let uses: Vec<Use> = claude::read_lines(file, |line| {
         if first_cwd.borrow().is_none() {
@@ -385,15 +441,13 @@ fn read_file(
     .into_iter()
     .flatten()
     .collect();
-    let Some(project) = first_cwd.into_inner().map(PathBuf::from) else {
-        return;
-    };
+    let project = first_cwd.into_inner().map(PathBuf::from)?;
     for (key, id, at) in uses {
         if id.is_some_and(|id| !seen.insert(id)) {
             continue;
         }
         let key = match key {
-            Key::Bare(name) => match bare.resolve(&name, &project) {
+            Key::Bare { name, plugins } => match bare.resolve(&name, &project, plugins) {
                 Some(key) => key,
                 None => continue,
             },
@@ -408,7 +462,8 @@ fn read_file(
         stat.count += 1;
         stat.last = stat.last.max(at);
     }
-    index.projects.insert(project);
+    index.projects.insert(project.clone());
+    Some(project)
 }
 
 /// 최근 `diagnoseUsageDays`일에 바뀐 기록을 최근 순으로 `diagnoseUsageFiles`개, 합계 `diagnoseUsageMaxMib`까지 읽는다.
@@ -434,10 +489,13 @@ pub fn read(home: &Path, tuning: &Tuning, now: f64) -> UsageIndex {
             break;
         }
         read_bytes += size;
+        let project = read_file(file, since, &bare, &mut seen, &mut index);
         if !file.components().any(|c| c.as_os_str() == "subagents") {
             index.sessions += 1;
+            if let Some(project) = project {
+                *index.project_sessions.entry(project).or_default() += 1;
+            }
         }
-        read_file(file, since, &bare, &mut seen, &mut index);
     }
     index
 }

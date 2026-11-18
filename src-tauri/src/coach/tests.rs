@@ -409,6 +409,8 @@ fn real_usage_read_only() {
             match s.kind {
                 switches::SwitchKind::Plugin => "플러그인",
                 switches::SwitchKind::Mcp => "MCP",
+                switches::SwitchKind::Skill => "스킬",
+                switches::SwitchKind::ProjectSkill => "프로젝트 스킬",
             },
             s.name,
             if s.kind == switches::SwitchKind::Plugin {

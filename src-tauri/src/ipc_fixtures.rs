@@ -15,6 +15,7 @@ use crate::coach::log::{AppliedSwitch, CoachAction, LoggedFile};
 use crate::coach::scope::{
     ProjectRef, ProjectScope, ScopeFile, ScopeFileChange, ScopeMove, ScopeMovePreview, SwitchScope,
 };
+use crate::coach::skills::SkillInfo;
 use crate::coach::switches::{CoachSwitch, Field, SwitchFormat, SwitchKind};
 use crate::coach::usage::{ProjectUsage, SwitchUsage};
 use crate::context::{

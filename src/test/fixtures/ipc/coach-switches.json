@@ -12,6 +12,7 @@
     "name": "synthetic@m",
     "scope": null,
     "scopeMove": null,
+    "skill": null,
     "target": "codex/plugin:synthetic@m",
     "tokens": 900,
     "usage": null
@@ -29,6 +30,7 @@
     "name": "synthetic",
     "scope": null,
     "scopeMove": null,
+    "skill": null,
     "target": "claude/mcp:synthetic",
     "tokens": null,
     "usage": null
@@ -46,6 +48,7 @@
     "name": "synthetic",
     "scope": null,
     "scopeMove": null,
+    "skill": null,
     "target": "kiro/mcp:synthetic",
     "tokens": null,
     "usage": null
@@ -104,6 +107,7 @@
       ],
       "skipped": ["gone"]
     },
+    "skill": null,
     "target": "claude/plugin:synthetic@m",
     "tokens": 900,
     "usage": {
@@ -131,5 +135,71 @@
       "sessions": 24,
       "total": 15
     }
+  },
+  {
+    "agent": "claude",
+    "contents": null,
+    "enabled": true,
+    "file": "/synthetic/.claude/settings.json",
+    "format": "json",
+    "instruction": null,
+    "isProposed": true,
+    "kind": "skill",
+    "loading": null,
+    "name": "synthetic-skill",
+    "scope": null,
+    "scopeMove": null,
+    "skill": {
+      "project": null,
+      "state": null
+    },
+    "target": "claude/skill:synthetic-skill",
+    "tokens": null,
+    "usage": {
+      "days": 30,
+      "isPartial": false,
+      "lastProject": "alpha",
+      "lastUsed": 1793000000,
+      "minSessions": 10,
+      "projectCount": 2,
+      "projects": [
+        {
+          "count": 12,
+          "exists": true,
+          "name": "alpha",
+          "path": "/synthetic/alpha"
+        },
+        {
+          "count": 3,
+          "exists": false,
+          "name": "gone",
+          "path": "/synthetic/gone"
+        }
+      ],
+      "scopeMinUses": 3,
+      "sessions": 24,
+      "total": 15
+    }
+  },
+  {
+    "agent": "claude",
+    "contents": null,
+    "enabled": false,
+    "file": null,
+    "format": "manual",
+    "instruction": "synthetic instruction",
+    "isProposed": false,
+    "kind": "projectSkill",
+    "loading": null,
+    "name": "synthetic-local",
+    "scope": null,
+    "scopeMove": null,
+    "skill": {
+      "project": "alpha",
+      "state": "name-only"
+    },
+    "target": "claude/project-skill:synthetic-local",
+    "tokens": null,
+    "usage": null
   }
 ]
