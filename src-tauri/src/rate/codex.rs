@@ -3,7 +3,7 @@
 //!
 //! 본문 줄은 JSON 파싱조차 하지 않는다: 앞 400자 안에 `"token_count"`가 있는 줄만 파싱하고,
 //! 그 줄에서도 숫자 필드(`timestamp`, `info.*_token_usage`, `rate_limits.primary`)만 꺼낸다.
-//! `.jsonl.zst`는 건너뛴다(0003 열린 것).
+//! Codex가 열흘쯤 지나 압축한 `.jsonl.zst`도 풀어 읽는다(0026).
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::{BufRead, BufReader};
@@ -43,10 +43,13 @@ pub struct Event {
     pub weekly_resets_at: Option<f64>,
 }
 
+/// Codex가 오래된 rollout을 압축한 이름 끝(이 Mac 실측, 2026-11-18).
+const ZST: &str = ".jsonl.zst";
+
 fn is_rollout(path: &Path) -> bool {
     path.file_name()
         .and_then(|n| n.to_str())
-        .is_some_and(|n| n.starts_with("rollout-") && n.ends_with(".jsonl"))
+        .is_some_and(|n| n.starts_with("rollout-") && (n.ends_with(".jsonl") || n.ends_with(ZST)))
 }
 
 /// `sessions/`·`archived_sessions/` 아래 `rollout-*.jsonl`. 전체 경로 문자열 순(파이썬 `sorted`).
@@ -166,7 +169,16 @@ pub(super) fn read_rollout(file: &Path) -> (Vec<Event>, Option<String>) {
     let Ok(handle) = std::fs::File::open(file) else {
         return (Vec::new(), None);
     };
-    let mut reader = BufReader::new(handle);
+    let source: Box<dyn std::io::Read> = if name.ends_with(ZST) {
+        // 압축 머리가 깨졌으면 읽을 것이 없다. 중간에 깨지면 그 앞 줄까지만 쓴다(아래 Err에서 멈춤).
+        match ruzstd::decoding::StreamingDecoder::new(handle) {
+            Ok(decoder) => Box::new(decoder),
+            Err(_) => return (Vec::new(), None),
+        }
+    } else {
+        Box::new(handle)
+    };
+    let mut reader = BufReader::new(source);
     let mut line = Vec::new();
     let mut events = Vec::new();
     let mut session = None;

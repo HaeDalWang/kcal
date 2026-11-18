@@ -27,6 +27,7 @@ time = { version = "0.3", features = ["parsing", "formatting", "serde", "macros"
 regex = "1"
 # 개발 전용 MCP bridge. `--features mcp`일 때만 컴파일된다(docs/decisions/0001).
 tauri-plugin-mcp-bridge = { version = "0.13.2", optional = true }
+ruzstd = "0.9.1"
 
 [features]
 mcp = ["dep:tauri-plugin-mcp-bridge"]

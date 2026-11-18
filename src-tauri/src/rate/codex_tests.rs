@@ -48,10 +48,32 @@ fn reads_only_codex_token_counts_without_parsing_other_lines() {
     ]
     .join("\n");
     home.write(".codex/sessions/2026/11/04/rollout-a.jsonl", &text);
-    home.write(".codex/sessions/2026/11/04/rollout-b.jsonl.zst", &text);
+    let zst = home
+        .path()
+        .join(".codex/sessions/2026/11/04/rollout-b.jsonl.zst");
+    std::fs::write(
+        &zst,
+        ruzstd::encoding::compress_to_vec(
+            text.as_bytes(),
+            ruzstd::encoding::CompressionLevel::Fastest,
+        ),
+    )
+    .unwrap();
+    home.write(
+        ".codex/sessions/2026/11/04/rollout-broken.jsonl.zst",
+        "not zstd",
+    );
     home.write(".codex/archived_sessions/rollout-c.jsonl", &text);
     let files = rollout_files(home.path());
-    assert_eq!(files.len(), 2);
+    assert_eq!(files.len(), 4);
+    let tokens = |f: &Path| {
+        read_events(f)
+            .iter()
+            .map(|e| (e.ts, e.input, e.output))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(tokens(&files[2]), tokens(&files[1]));
+    assert!(read_events(&files[3]).is_empty());
     let got = read_events(&files[1]);
     assert_eq!(got.len(), 1);
     assert_eq!(
