@@ -1,6 +1,6 @@
 [package]
 name = "kcal"
-version = "0.1.0"
+version = "0.1.1"
 description = "macOS menu bar app that shows what your AI coding agent loads at startup and how much usage limit is left"
 edition = "2024"
 rust-version = "1.90"
