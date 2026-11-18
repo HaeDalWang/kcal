@@ -152,7 +152,3 @@ rm -rf /Applications/kcal.app "$HOME/Applications/kcal.app" \
 ## 라이선스
 
 [MIT](LICENSE)
-
----
-
-도움이 됐다면 스타를 눌러 주세요. 다른 사람이 찾는 데 도움이 됩니다.
