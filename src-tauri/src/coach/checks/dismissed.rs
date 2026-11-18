@@ -121,10 +121,12 @@ pub fn dismiss(
             "Only cards that recommend keeping things as they are can be hidden.",
         )));
     }
-    let ids = read(path);
+    let mut ids = read(path);
     if ids.iter().any(|d| d == id) {
         return Ok(());
     }
+    // 이제 없는 점검의 id는 화면에서 되돌릴 수 없으니 쌓아 두지 않는다.
+    ids.retain(|d| checks.iter().any(|c| &c.id == d));
     if ids.len() >= MAX_IDS {
         return Err(refuse(pick(
             "숨긴 카드가 너무 많아요. 맨 아래 숨긴 카드에서 몇 개를 다시 알린 뒤 하세요.",
@@ -235,6 +237,18 @@ mod tests {
             marked(&home, &path),
             [(EFFORT.into(), false), (GIT.into(), false)]
         );
+    }
+
+    #[test]
+    fn dismiss_drops_ids_of_checks_that_no_longer_exist() {
+        let home = home_with("dismiss-stale", MAC_SETTINGS);
+        home.write(".claude/rules/git.md", GIT_RULE);
+        let path = home.path().join(FILE_NAME);
+        // 목록이 꽉 찼어도 지금 없는 점검의 id뿐이면(화면에서 되돌릴 수 없다) 새로 숨길 수 있다.
+        let stale: Vec<String> = (0..MAX_IDS).map(|i| format!("gone-{i}")).collect();
+        write(&path, &stale).unwrap();
+        run(&home, &path, GIT).unwrap();
+        assert_eq!(read(&path), [GIT]);
     }
 
     #[test]
