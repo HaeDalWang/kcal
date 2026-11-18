@@ -124,7 +124,7 @@ lsof -nP -iTCP:9224 -sTCP:LISTEN   # while dev:mcp runs: 127.0.0.1:9224
 - The theme-flash script is a file (`public/theme-init.js`), not inline, so `script-src 'self'` allows it without relaxing CSP.
 - macOS `tauri dev` opens the Vite server directly, so CSP doesn't apply there. Check CSP behavior against the `tauri:build` output. `devCsp` is a relaxed policy for platforms that proxy the dev server (untested on Windows).
 - `withGlobalTauri` is false by default (true only in the MCP overlay).
-- Don't put secrets in code or config. See the README privacy table for what the app reads and sends.
+- Don't put secrets in code or config. See [docs/privacy.md](docs/privacy.md) for what the app reads and sends.
 
 ## Build output
 

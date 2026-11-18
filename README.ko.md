@@ -4,7 +4,7 @@
 
 <h1 align="center">kcal</h1>
 
-<p align="center"><b>Claude Code, Codex, Kiro용 macOS 메뉴 막대 앱: 입력하기 전에 에이전트가 무엇을 싣는지, 사용 한도가 얼마나 남았는지 보여 줍니다.</b><br/>로컬에서만 동작합니다. 에이전트 설정은 확인을 받은 뒤에만 고칩니다.</p>
+<p align="center"><b>Claude Code, Codex, Kiro용 macOS 메뉴 막대 앱: 입력하기 전에 에이전트가 무엇을 싣는지, 사용 한도가 얼마나 남았는지 보여 줍니다.</b><br/>로컬에서만 동작합니다. 에이전트 설정은 확인을 받은 뒤에만, 백업과 되돌리기를 두고 고칩니다.</p>
 
 <p align="center">
   <img src="docs/assets/demo.gif" alt="demo 데이터로 만든 kcal 시연: 메뉴 막대 팝오버에서 남은 한도와 시작 컨텍스트, Claude 탭에서 최근 5시간 구간 막대(막대에 커서를 올리면 시작 시각과 사용량)와 시작 컨텍스트 한 줄 요약, 이어서 점검 → 진단에서 플러그인을 끄며 바뀌는 줄을 보여 주고 되돌리기로 원래대로" width="720">
@@ -17,7 +17,7 @@
 
 ## 설치
 
-macOS와 Claude Code가 필요합니다(Codex와 Kiro는 선택, 자세한 내용은 [요구 사항](#요구-사항)). 한 줄입니다.
+macOS와 Claude Code가 필요합니다. Claude Pro 또는 Max로 로그인하면 남은 한도와 시작 컨텍스트가 보이고, API 키·Bedrock·Vertex면 시작 컨텍스트만 보입니다. Codex와 Kiro는 선택입니다. 자세한 내용과 제가 시험하지 못한 것은 [요구 사항](#요구-사항)에 있습니다. 한 줄입니다.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | sh
@@ -25,16 +25,21 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 
 스크립트는 최신 릴리스를 받아 SHA-256을 확인하고, `kcal.app`을 `/Applications`에 설치한 뒤 실행합니다. 쓸 수 없으면 `~/Applications`에 설치합니다(sudo 없음). 다시 실행하면 업데이트됩니다. 짧으니 먼저 [`install.sh`](install.sh)를 읽어 봐도 됩니다.
 
-**처음 30초.** kcal은 Dock 아이콘도 창도 없습니다. 처음 실행하면 메뉴 막대 아이콘 아래에 팝오버가 한 번 열리고, 그다음부터는 아이콘을 누르세요. 아이콘이 보이지 않으면 메뉴 막대가 가득 찼거나 노치에 가려진 것일 수 있으니 다른 메뉴 막대 앱을 종료해 보세요. kcal은 찾은 에이전트(Claude Code, Codex, Kiro)를 켜고, 하나도 없으면 Claude만 켭니다.
+**무엇이 보이나.** kcal은 Dock 아이콘도 창도 없습니다. 처음 실행하면 메뉴 막대 아이콘 아래에 팝오버가 한 번 열리고, 그다음부터는 아이콘을 누르세요. 아이콘이 보이지 않으면 메뉴 막대가 가득 찼거나 노치에 가려진 것일 수 있으니 다른 메뉴 막대 앱을 종료해 보세요. kcal은 찾은 에이전트(Claude Code, Codex, Kiro)를 켜고, 하나도 없으면 Claude만 켭니다. 변경을 확인하기 전에는 읽기만 합니다.
 
-첫 한도 확인 때 kcal은 macOS Keychain에서 Claude Code 로그인 정보를 읽습니다([무엇을 보내는지](#개인정보와-읽는-것)). Claude Code가 이 항목을 kcal과 같은 `/usr/bin/security`로 저장했으므로, 시험한 Mac 한 대에서는 macOS가 묻지 않았습니다(새 Mac에서는 확인하지 못했습니다). macOS가 묻는다면 창에는 kcal이 아니라 `security`가 뜨니 허용을 누르면 됩니다. Claude Code에 로그인하지 않았다면 팝오버가 `claude`를 실행해 로그인하라고 알려 주고 Claude 한도는 보이지 않습니다. 시작 컨텍스트는 로그인이 필요 없지만, Claude Code 세션을 처음 열기 전에는 예상값뿐입니다.
+<details>
+<summary>Keychain 창, 로그인, 서명이 없는 이유</summary>
+
+**Keychain과 로그인.** 첫 한도 확인 때 kcal은 macOS Keychain에서 Claude Code 로그인 정보를 읽습니다([무엇을 보내는지](#개인정보와-읽는-것)). macOS가 묻는다면 창에는 kcal이 아니라 `security`가 뜨니 허용을 누르면 됩니다. 새 Mac에서 묻는지는 [아직 시험하지 못한 것](#아직-시험하지-못한-것)에 있습니다. Claude Code에 로그인하지 않았다면 팝오버가 `claude`를 실행해 로그인하라고 알려 주고 Claude 한도는 보이지 않습니다. 시작 컨텍스트는 로그인이 필요 없지만, Claude Code 세션을 처음 열기 전에는 예상값뿐입니다.
 
 **kcal은 Apple 서명과 공증이 없습니다.** Apple Developer 계정이 없어서 ad-hoc 서명만 했습니다. 뜻은 다음과 같습니다.
 
-- 한 줄 설치는 `curl`로 받습니다. `curl`은 격리(quarantine) 표시를 붙이지 않습니다. 스크립트도 설치한 `kcal.app`에서 그 표시를 직접 지웁니다([`install.sh`](install.sh)의 `xattr -dr com.apple.quarantine` 줄). 그래서 macOS가 Gatekeeper 창을 띄우지 않습니다. 표시가 없기 때문이지 Apple이 앱을 확인해서가 아닙니다. `curl` 쪽은 2026-11-11에 한 대의 Mac에서 봤고 새 Mac에서는 확인하지 못했으며, macOS가 바꿀 수 있습니다. [결정 0020](docs/decisions/0020-unsigned-macos-release.md)(한국어)을 보세요.
+- 한 줄 설치는 `curl`로 받습니다. `curl`은 격리(quarantine) 표시를 붙이지 않습니다. 스크립트도 설치한 `kcal.app`에서 그 표시를 직접 지웁니다([`install.sh`](install.sh)의 `xattr -dr com.apple.quarantine` 줄). 그래서 macOS가 Gatekeeper 창을 띄우지 않습니다. 표시가 없기 때문이지 Apple이 앱을 확인해서가 아닙니다. macOS가 `curl` 동작을 바꿀 수 있습니다. [아직 시험하지 못한 것](#아직-시험하지-못한-것)과 [결정 0020](docs/decisions/0020-unsigned-macos-release.md)(한국어)을 보세요.
 - 브라우저로 [Releases](https://github.com/HaeDalWang/kcal/releases/latest)에서 `kcal-macos-universal.dmg`를 받으면 첫 실행을 macOS가 막습니다. 한 번 열어 본 뒤 **시스템 설정 → 개인정보 보호 및 보안 → 그래도 열기**를 누르세요. 스크립트로 설치한 뒤에 창이 뜨더라도 같은 방법을 쓰면 됩니다.
 - SHA-256 확인은 깨진 다운로드를 잡습니다. 누가 만들었는지는 증명하지 않습니다. 그게 중요하면 [소스에서 빌드](CONTRIBUTING.md)하세요.
 - 이 모두의 해결책은 유료 Apple Developer ID와 공증이고, kcal에는 그것이 없습니다.
+
+</details>
 
 ## 무엇을 측정하나
 
@@ -61,16 +66,21 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 
 ## 개인정보와 읽는 것
 
-텔레메트리, 분석, 자동 업데이트, kcal 서버가 없습니다. 이 표는 kcal이 읽고, 보내고, 쓰는 것 전부입니다. 각 행은 소스에서 도출했고, 파일과 함수는 마지막 열에 있습니다(줄 번호는 금방 어긋나서 함수 이름을 씁니다). 요약:
+텔레메트리, 분석, 자동 업데이트, kcal 서버가 없습니다. 요약:
 
-- Claude Code 로그인 토큰은 한도를 묻기 위해 `api.anthropic.com`으로만 갑니다(Codex는 켠 경우에만 `chatgpt.com`). 저장도 갱신도 하지 않습니다.
+- Claude Code 로그인 토큰은 한도를 묻기 위해 `api.anthropic.com`으로만 갑니다(Codex는 켠 경우에만 `chatgpt.com`). 저장도 갱신도 하지 않습니다. 이 확인은 앱이 실행 중일 때 기본으로 5분마다 합니다.
 - 세션 로그, 에이전트 설정, 프로젝트 파일은 당신의 Mac에서 읽고, kcal은 크기·이름·횟수만 남기고 메시지 본문은 남기지 않습니다.
 - 그 밖에 보내는 것은 Claude 넘기기 버튼뿐이고 누를 때만 동작합니다. 지침 파일 하나가 당신의 Claude Code를 거쳐 Anthropic으로 갑니다.
 - kcal은 자기 설정 폴더와, 당신이 확인한 설정 수정(`.bak` 백업과 되돌리기 포함)만 씁니다.
 
+<details>
+<summary>kcal이 읽고, 보내고, 쓰는 것 전부(표)</summary>
+
+이 표는 kcal이 읽고, 보내고, 쓰는 것 전부입니다. 각 행은 소스에서 도출했고, 파일과 함수는 마지막 열에 있습니다(줄 번호는 금방 어긋나서 함수 이름을 씁니다). 영어판은 [docs/privacy.md](docs/privacy.md)입니다.
+
 | 무엇                                                                                                                                                                                                                                                                         | 왜                                                                                                 | 어디로 가나                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | 소스                                                                                                                                                                           |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| macOS Keychain 항목 `Claude Code-credentials`(`/usr/bin/security find-generic-password`로 읽음)                                                                                                                                                                              | 한도를 물으려고 Claude Code 액세스 토큰을 얻음                                                     | 토큰은 확인할 때마다 한 번, bearer 헤더로 `https://api.anthropic.com/api/oauth/usage`에 보냅니다. 저장하지 않고, 로그에 남기지 않고, 갱신하지 않습니다. macOS가 묻는지는 상황에 따라 다릅니다(처음 30초 참고).                                                                                                                                                                                                                                                                                                                                                                                        | `src-tauri/src/usage/sources.rs`: `claude_credentials`, `read_keychain`, `claude`                                                                                              |
+| macOS Keychain 항목 `Claude Code-credentials`(`/usr/bin/security find-generic-password`로 읽음)                                                                                                                                                                              | 한도를 물으려고 Claude Code 액세스 토큰을 얻음                                                     | 토큰은 확인할 때마다 한 번, bearer 헤더로 `https://api.anthropic.com/api/oauth/usage`에 보냅니다. 저장하지 않고, 로그에 남기지 않고, 갱신하지 않습니다. macOS가 묻는지는 상황에 따라 다릅니다([아직 시험하지 못한 것](#아직-시험하지-못한-것) 참고).                                                                                                                                                                                                                                                                                                                                                  | `src-tauri/src/usage/sources.rs`: `claude_credentials`, `read_keychain`, `claude`                                                                                              |
 | `~/.codex/auth.json`(액세스 토큰, 계정 id). Codex를 켠 경우만                                                                                                                                                                                                                | 같은 이유, Codex용                                                                                 | `https://chatgpt.com/backend-api/wham/usage`로 보냅니다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `usage/sources.rs`: `codex_tokens`, `codex`                                                                                                                                    |
 | `kiro-cli chat --v2 --no-interactive /usage`. Kiro를 켠 경우만                                                                                                                                                                                                               | Kiro 크레딧을 얻음                                                                                 | kcal이 당신의 `kiro-cli`를 실행해 출력을 읽습니다. kcal이 Kiro 네트워크를 직접 부르지는 않습니다. `kiro-cli`가 평소 하던 일을 합니다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `usage/sources.rs`: `kiro`                                                                                                                                                     |
 | `~/.local/share/agent-usage-audit/data/claude-ratelimits.jsonl`, 파일이 있을 때만(Claude Code가 아닌 별도 개인 도구가 만든 파일)                                                                                                                                             | Keychain을 읽지 못하거나 사용량 요청이 실패할 때 Claude 한도                                       | 당신의 Mac을 떠나지 않습니다. 마지막 rate limit 줄을 읽습니다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `usage/paths.rs`: `claude_statusline_log`; `usage/sources.rs`: `with_log_fallback`                                                                                             |
@@ -82,12 +92,20 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 
 네트워크 요약: 앱은 실행 중에 기본으로 5분마다 `api.anthropic.com`에 접속합니다(Codex를 켜면 `chatgpt.com`도, Kiro는 `kiro-cli`를 통해 10분마다. 두 간격 모두 설정입니다). rate limit 응답을 받으면 간격이 두 배로 늘어 기본 최대 60분까지 가고, 새로고침을 누르면 그때도 확인합니다. 켠 에이전트만 조회합니다(`usage/schedule.rs`: `plan`). Rust와 프론트엔드 소스에서 다른 URL, HTTP 클라이언트, 플러그인을 찾아봤고, 테스트 데이터와 UI가 글자로만 보여 주는 문서 링크 말고는 없었습니다. 웹뷰의 Content Security Policy는 로컬 IPC만 허용합니다(`src-tauri/tauri.conf.json`의 `app.security.csp`). 직접 확인해 보세요: `git grep -nE 'https?://' -- src src-tauri/src`.
 
+</details>
+
 ## 요구 사항
 
-- macOS. 범용 바이너리(arm64와 x86_64)로 빌드합니다. 개발과 실행은 Apple Silicon의 macOS 27에서만 했고, Intel Mac에서는 실행해 보지 않았습니다. 앱이 선언한 최소 버전은 macOS 10.13(Tauri 기본값)입니다. 개발용 Mac보다 오래된 버전은 시험하지 않았습니다.
+- macOS. 범용 바이너리(arm64와 x86_64)로 빌드합니다. 앱이 선언한 최소 버전은 macOS 10.13(Tauri 기본값)입니다.
 - [Claude Code](https://code.claude.com)를 Claude Pro 또는 Max 계정으로 로그인해야 합니다(한도는 구독 요금제에만 있습니다). API 키, Bedrock, Vertex를 쓰면 시작 컨텍스트는 보이지만 한도는 보이지 않습니다.
 - Codex CLI와 Kiro CLI는 선택입니다. kcal은 설정에서 켠 에이전트만 보여 주고, 처음 실행할 때 찾은 에이전트를 켭니다.
 - Windows: 아직 없습니다. CI에서 빌드와 테스트는 통과하지만 앱을 macOS에서만 실행해 봤고 설치 파일도 없습니다.
+
+### 아직 시험하지 못한 것
+
+- 하드웨어와 macOS: 개발과 실행은 Apple Silicon의 macOS 27에서만 했습니다. Intel Mac에서는 실행해 보지 않았고, 선언한 최소 버전을 포함해 개발용 Mac보다 오래된 버전은 시험하지 않았습니다.
+- Keychain 창: 시험한 Mac 한 대에서는 macOS가 묻지 않았습니다. Claude Code가 로그인 항목을 kcal과 같은 `/usr/bin/security`로 저장했기 때문입니다. 새 Mac에서는 확인하지 못했습니다.
+- Gatekeeper: `curl`이 격리 표시를 붙이지 않는 것을 2026-11-11에 Mac 한 대에서 봤습니다. 새 Mac에서는 확인하지 못했고, macOS가 바꿀 수 있습니다.
 
 ## FAQ
 
@@ -95,7 +113,7 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 읽을 수 있는 소스만큼 안전합니다. 이 저장소를 GitHub의 [`release.yml`](.github/workflows/release.yml)이 빌드합니다. 서명이 없다는 것은 Apple이 검증하지 않았고, 인증서로 제작자를 증명할 수 없다는 뜻입니다. 믿고 싶지 않다면 개인정보 표를 읽고, 소스를 grep하고, 직접 빌드하세요.
 
 **데이터를 어딘가로 보내나요?**
-kcal은 세션, 프롬프트, 설정 내용을 올리지 않습니다. 네트워크 호출은 위의 사용량 endpoint와, 누른 경우의 Claude 넘기기 버튼뿐입니다. 표를 보세요.
+kcal은 세션, 프롬프트, 설정 내용을 올리지 않습니다. 네트워크 호출은 위의 사용량 endpoint와, 누른 경우의 Claude 넘기기 버튼뿐입니다. [개인정보 표](docs/privacy.md)를 보세요.
 
 **왜 토큰이 필요한가요?**
 남은 한도는 Claude Code가 쓰는 것과 같은 사용량 endpoint 뒤에 있고, 그 endpoint는 당신의 로그인을 요구합니다. kcal은 Keychain에서 토큰을 읽어 그 요청 한 번에만 쓰고, 갱신하지도 저장하지도 않습니다. Keychain을 읽지 못하거나 사용량 요청이 실패하면(예: Keychain 창에서 거부) kcal은 Claude 한도를 보여 주지 않습니다.
