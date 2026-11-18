@@ -22,7 +22,8 @@ export const healthStore = createSnapshotStore<HealthReport>({
   computedAt: (report) => report.computedAt,
 });
 
-const compact = numberFormat({ notation: "compact", maximumFractionDigits: 1 });
+// 토큰 수는 언어와 상관없이 K·M으로(다른 화면의 "~34.2K 토큰"과 같게). 한국어 축약("6만")은 섞지 않는다.
+const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 const amount = numberFormat({ maximumFractionDigits: 1 });
 /** 이보다 작은 변화(%)는 "비슷"으로 본다. */
 const SAME_PERCENT = 1;
