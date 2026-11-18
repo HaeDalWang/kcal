@@ -64,23 +64,21 @@ function RuleRow({
           {w}
         </p>
       ))}
-      {applied ? (
-        <p role="status" className="text-[10px] font-medium text-foreground">
-          {`✓ ${text.done}`}
-        </p>
-      ) : (
-        copy.canApply && (
-          <Button
-            size="xs"
-            variant="outline"
-            className="mt-0.5 w-fit"
-            disabled={isBusy}
-            aria-label={`${rule.name} ${text.apply}`}
-            onClick={() => onApply(rule)}
-          >
-            {text.apply}
-          </Button>
-        )
+      {/* 알림 영역은 먼저 비워 둔 채 그려 두고 글자만 채운다(글자와 함께 새로 붙은 영역은 읽히지 않을 수 있다). */}
+      <p role="status" className={applied ? "text-[10px] font-medium text-foreground" : "sr-only"}>
+        {applied ? `✓ ${text.done}` : ""}
+      </p>
+      {!applied && copy.canApply && (
+        <Button
+          size="xs"
+          variant="outline"
+          className="mt-0.5 w-fit"
+          disabled={isBusy}
+          aria-label={`${rule.name} ${text.apply}`}
+          onClick={() => onApply(rule)}
+        >
+          {text.apply}
+        </Button>
       )}
     </li>
   );

@@ -176,9 +176,7 @@ export function UsageBars({ agent, className = "h-[58px]" }: { agent: Agent; cla
         <span title={isPercent ? t.metrics.recentWindowsHint : undefined}>
           {isPercent ? t.metrics.recentWindows : t.metrics.dailyCredits}
         </span>
-        <span aria-live="polite" title={t.info.measured}>
-          {hovered ? barTitle(hovered, barUnit) : maxText}
-        </span>
+        <span title={t.info.measured}>{hovered ? barTitle(hovered, barUnit) : maxText}</span>
       </div>
       <ul
         aria-label={isPercent ? t.metrics.recentWindowsUsage : t.metrics.dailyCredits}
