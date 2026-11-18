@@ -136,7 +136,7 @@ function AgentPanels({ settings, usage: state }: { settings: Settings; usage: Us
           </div>
           {/* 2열일 때 오른쪽 첫 칸은 위 구분선 없이 왼쪽 첫 줄과 같은 높이에서 시작한다. */}
           <div className="min-w-0 min-[900px]:[&>section:first-child]:border-t-0">
-            <ContextList agent={agent} charsPerToken={bytesPerToken} maxItems={Infinity} />
+            <ContextList agent={agent} charsPerToken={bytesPerToken} />
           </div>
         </div>
       </section>

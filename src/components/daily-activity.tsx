@@ -13,6 +13,7 @@ import {
   dailyGoal,
   dayActivity,
   hourRangeText,
+  isSameLocalDay,
   ringFraction,
   type DayActivity,
 } from "@/lib/daily";
@@ -62,9 +63,14 @@ function agentDays(
       isCredits,
       // 5시간 막대(`bars`)는 한도 표본으로만 생긴다. 비어 있으면 그날 %도 읽지 못한 것이다.
       isUnread,
-      // 한도 %는 표본(앱이 켜져 있을 때만 기록)의 증가분이라, 요청이 있어도 0일 수 있다(0015). 확정된 "0"으로 보이지 않는다.
+      // 한도 %는 표본(앱이 켜져 있을 때만 기록)의 1%p 단위 증가분이라, 오늘은 요청이 있어도 아직 0일 수 있다(0015).
+      // 지난날의 0은 확정값이라 오늘만 "집계 전"으로 보인다.
       isPending:
-        !isCredits && !isUnread && activity.used === 0 && activity.requests.some((n) => n > 0),
+        isSameLocalDay(day, new Date()) &&
+        !isCredits &&
+        !isUnread &&
+        activity.used === 0 &&
+        activity.requests.some((n) => n > 0),
     };
   });
 }

@@ -322,15 +322,7 @@ function shareFor(rate: CodexRate | null): ShareOf {
  * `charsPerToken`: 문자 수 → 토큰 추정 비율(settings `tuning.bytesPerToken`).
  * 한도 몫(%)은 `ratesStore`의 1%당 토큰·사용 패턴(Codex·Claude)으로 계산한다. 조회는 옆의 `RateLine`이 하고 여기서는 읽기만 한다.
  */
-export function ContextList({
-  agent,
-  charsPerToken,
-}: {
-  agent: Agent;
-  charsPerToken: number;
-  /** @deprecated 쓰지 않는다. 묶음마다 `TOP_PER_GROUP`줄만 보이고 나머지는 펼친다. 호출하는 쪽에서 지운다. */
-  maxItems?: number;
-}) {
+export function ContextList({ agent, charsPerToken }: { agent: Agent; charsPerToken: number }) {
   const { value: snapshot, error } = useSnapshot(contextStore, agent);
   const { value: rates } = useSyncExternalStore(ratesStore.subscribe, ratesStore.getSnapshot);
   const share = shareFor(tokenRateOf(rates, agent));
