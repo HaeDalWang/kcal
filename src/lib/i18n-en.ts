@@ -692,7 +692,7 @@ export const en: Messages = {
       "advanced.minSamplesPerVar": { label: "Min 5-hour windows of data per factor" },
       "advanced.cacheMissRatio": { label: "Cache miss threshold" },
     },
-    defaultValue: (value) => ` · default ${value}`,
+    defaultValue: (value) => `default ${value}`,
     number: "Enter a number.",
     integer: "Enter a whole number.",
     range: (range) => `Must be within ${range}.`,

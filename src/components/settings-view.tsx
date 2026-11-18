@@ -1,7 +1,7 @@
 import { ChevronLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { TuningForm } from "@/components/tuning-form";
+import { CAPTION_CLASS, GROUP_CLASS, ROW_CLASS, TuningForm } from "@/components/tuning-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AGENT_LABEL } from "@/components/usage-popover";
 import { LANGUAGE_CHOICES, t, type LanguageChoice } from "@/lib/i18n";
@@ -92,51 +92,65 @@ export function SettingsView({ settings, onSaved, onBack }: SettingsViewProps) {
         settings={settings}
         isSaving={isSaving}
         onSave={(tuning) => save(enabled, tuning)}
+        footer={
+          version && (
+            <p className="pb-0.5 text-center text-xs text-muted-foreground tabular-nums">
+              kcal {version}
+            </p>
+          )
+        }
       >
-        <div className="flex flex-col gap-2">
-          <fieldset className="flex flex-col gap-1.5">
-            <legend className="mb-1 text-xs font-medium text-muted-foreground">
-              {t.settings.agents}
-            </legend>
-            {AGENTS.map((agent) => {
-              const isChecked = enabled.includes(agent);
-              return (
-                <label key={agent} className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={isChecked}
-                    disabled={isSaving || (isChecked && isLastOne)}
-                    onCheckedChange={(checked) => toggle(agent, checked)}
-                  />
-                  {AGENT_LABEL[agent]}
-                </label>
-              );
-            })}
+        <div className="flex flex-col gap-3">
+          <fieldset className="flex flex-col">
+            <legend className={CAPTION_CLASS}>{t.settings.agents}</legend>
+            <div className={GROUP_CLASS}>
+              {AGENTS.map((agent) => {
+                const isChecked = enabled.includes(agent);
+                return (
+                  <label key={agent} className={`${ROW_CLASS} text-sm`}>
+                    <span className="flex-1">{AGENT_LABEL[agent]}</span>
+                    <Checkbox
+                      checked={isChecked}
+                      disabled={isSaving || (isChecked && isLastOne)}
+                      onCheckedChange={(checked) => toggle(agent, checked)}
+                    />
+                  </label>
+                );
+              })}
+            </div>
+            {isLastOne && (
+              <p className="mt-1 px-1.5 text-xs text-muted-foreground">{t.settings.minOne}</p>
+            )}
           </fieldset>
-          {isLastOne && <p className="text-xs text-muted-foreground">{t.settings.minOne}</p>}
-          <label className="flex items-center gap-2 text-sm">
-            <span className="flex-1">{t.lang.title}</span>
-            <select
-              value={settings.language}
-              disabled={isSaving}
-              onChange={(event) => pickLanguage(event.target.value as LanguageChoice)}
-              className="h-7 rounded-lg border border-ring bg-transparent px-2 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring disabled:opacity-50 dark:bg-input/30"
-            >
-              {LANGUAGE_CHOICES.map((choice) => (
-                <option key={choice} value={choice}>
-                  {t.lang[choice]}
-                </option>
-              ))}
-            </select>
-          </label>
-          {settings.reason && <p className="text-xs text-muted-foreground">{settings.reason}</p>}
+          <div className="flex flex-col">
+            <div className={GROUP_CLASS}>
+              <label className={`${ROW_CLASS} text-sm`}>
+                <span className="flex-1">{t.lang.title}</span>
+                <select
+                  value={settings.language}
+                  disabled={isSaving}
+                  onChange={(event) => pickLanguage(event.target.value as LanguageChoice)}
+                  className="h-6 rounded-md border border-input bg-background px-1.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring disabled:opacity-50"
+                >
+                  {LANGUAGE_CHOICES.map((choice) => (
+                    <option key={choice} value={choice}>
+                      {t.lang[choice]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {settings.reason && (
+              <p className="mt-1 px-1.5 text-xs text-muted-foreground">{settings.reason}</p>
+            )}
+          </div>
           {error && (
-            <p role="alert" className="text-xs text-destructive">
+            <p role="alert" className="px-1.5 text-xs text-destructive">
               {error}
             </p>
           )}
         </div>
       </TuningForm>
-      {version && <p className="px-3 pb-2.5 text-xs text-muted-foreground">kcal {version}</p>}
     </div>
   );
 }
