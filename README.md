@@ -80,7 +80,7 @@ The full table of what kcal reads, sends and writes, with the source file and fu
 - macOS. Built as a universal binary (arm64 and x86_64). The app's declared minimum is macOS 10.13 (Tauri's default).
 - [Claude Code](https://code.claude.com) signed in with a Claude Pro or Max account (limits exist only for subscription plans). With an API key, Bedrock or Vertex you still get startup context, but no limit.
 - Codex CLI and Kiro CLI are optional. kcal shows only the agents you enable in Settings, and enables the ones it finds on first run.
-- Windows: not yet. It builds and passes tests on CI, but the app has only been run on macOS and there is no installer.
+- Windows: not yet. It builds and passes tests on CI, and a build has run on one Windows 11 PC (tray, tooltip, popover), but there is no released installer and install and light mode are untested.
 
 ### Not yet tested
 

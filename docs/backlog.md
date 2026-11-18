@@ -140,6 +140,8 @@ Windows에서 확인할 것:
 - [ ] 32px 메뉴바 막대 화면 확인.
 - [ ] 배율이 다른 다중 모니터에서 팝오버 위치.
 - [ ] 코칭 경로·권한, 6층 검진.
+- [ ] `\\?\C:\…` 형태 `cwd`: `fsutil::is_inside`는 소문자만 맞추고 경로 앞머리(`\\?\`)는 맞추지 않아 그 세션이 작업 폴더에서 빠질 수 있다(추정, 2026-11-18 점검). 확인 = Windows `~\.codex\sessions` rollout 첫 줄 `payload.cwd` 형태.
+- [ ] 테스트 격리: Windows `kiro_cli_candidates`가 테스트 home과 상관없이 실제 `%LOCALAPPDATA%`를 봐서 kiro-cli가 깔린 PC에서 테스트 4개가 실패한다(확인됨, `windows-log.md` 11-16). CI runner는 통과. 고치는 방향: LOCALAPPDATA 주입.
 - 빌드는 GitHub CI(`windows-latest`)에 둔다. 공개 저장소에서는 self-hosted runner를 붙이지 않는다(fork PR이 자체 서버에서 실행될 수 있음).
 
 ## 나중에

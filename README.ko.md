@@ -99,7 +99,7 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 - macOS. 범용 바이너리(arm64와 x86_64)로 빌드합니다. 앱이 선언한 최소 버전은 macOS 10.13(Tauri 기본값)입니다.
 - [Claude Code](https://code.claude.com)를 Claude Pro 또는 Max 계정으로 로그인해야 합니다(한도는 구독 요금제에만 있습니다). API 키, Bedrock, Vertex를 쓰면 시작 컨텍스트는 보이지만 한도는 보이지 않습니다.
 - Codex CLI와 Kiro CLI는 선택입니다. kcal은 설정에서 켠 에이전트만 보여 주고, 처음 실행할 때 찾은 에이전트를 켭니다.
-- Windows: 아직 없습니다. CI에서 빌드와 테스트는 통과하지만 앱을 macOS에서만 실행해 봤고 설치 파일도 없습니다.
+- Windows: 아직 없습니다. CI에서 빌드와 테스트는 통과하고 Windows 11 PC 한 대에서 실행해 봤지만(트레이·툴팁·팝오버), 배포한 설치 파일이 없고 설치 과정과 라이트 모드는 확인하지 않았습니다.
 
 ### 아직 시험하지 못한 것
 
