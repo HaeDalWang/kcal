@@ -213,6 +213,32 @@ static PARSED: LazyLock<Mutex<HashMap<PathBuf, (SystemTime, u64, Arc<Rollout>)>>
 pub(crate) static PARSE_COUNTS: LazyLock<Mutex<HashMap<PathBuf, usize>>> =
     LazyLock::new(Default::default);
 
+/// 첫 계산에서 동시에 파싱할 최대 스레드 수. 나머지 코어는 앱·다른 작업에 남긴다.
+const WARM_THREADS: usize = 4;
+
+/// 메모에 없는 rollout을 여러 스레드로 미리 읽는다. 결과는 `read_rollout`의 메모에 남는다.
+pub(super) fn warm(files: &[PathBuf]) {
+    let threads = std::thread::available_parallelism()
+        .map_or(1, |n| n.get())
+        .min(WARM_THREADS)
+        .min(files.len());
+    if threads < 2 {
+        return;
+    }
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    std::thread::scope(|scope| {
+        for _ in 0..threads {
+            scope.spawn(|| {
+                while let Some(file) =
+                    files.get(next.fetch_add(1, std::sync::atomic::Ordering::Relaxed))
+                {
+                    read_rollout(file);
+                }
+            });
+        }
+    });
+}
+
 /// `parse_rollout`의 결과. 같은 파일은 바뀌기 전까지 한 번만 읽는다.
 pub(super) fn read_rollout(file: &Path) -> Arc<Rollout> {
     let key = std::fs::metadata(file)
@@ -545,6 +571,7 @@ pub fn pattern(
 
 /// 모든 rollout을 읽어 중복을 지운 이벤트.
 pub fn events(files: &[PathBuf]) -> Vec<Event> {
+    warm(files);
     let raw: Vec<Event> = files.iter().flat_map(|f| read_events(f)).collect();
     dedup(&raw)
 }

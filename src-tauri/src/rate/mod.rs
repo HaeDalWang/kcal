@@ -192,7 +192,7 @@ pub struct RateSnapshot {
 
 pub const RATES_UPDATED_EVENT: &str = "rates-updated";
 
-// Codex rollout·Claude 기록은 파일별 (mtime, 크기) 메모로 바뀐 파일만 다시 읽는다(Codex 154개: 첫 계산 약 5초, 그 뒤 약 15ms, release).
+// Codex rollout·Claude 기록은 파일별 (mtime, 크기) 메모로 바뀐 파일만 다시 읽는다(Codex 154개, release). 첫 계산은 메모에 없는 파일을 최대 4스레드로 미리 읽는다(같은 디스크 캐시에서 2.6초 → 1.5초), 그 뒤 약 10ms.
 // ponytail: Kiro 세션은 매번 전체를 읽는다. 무거워지면 같은 메모를 둔다.
 fn compute(home: &Path, history_file: &Path, tuning: &Tuning) -> RateSnapshot {
     let now = OffsetDateTime::now_utc();

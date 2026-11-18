@@ -44,6 +44,7 @@ fn file_label(file: &str) -> String {
 
 /// 중복을 지운 이벤트와 rollout 파일 이름 → 작업 폴더 경로(`session_meta`에 cwd가 있는 파일만).
 pub fn events_and_cwds(files: &[PathBuf]) -> (Vec<Event>, HashMap<String, String>) {
+    codex::warm(files);
     let mut raw = Vec::new();
     let mut cwds = HashMap::new();
     for file in files {

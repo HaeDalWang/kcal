@@ -400,3 +400,20 @@ fn rereads_a_rollout_only_after_it_changes_and_forgets_deleted_ones() {
     assert!(rollout_files(home.path()).is_empty());
     assert!(!PARSED.lock().unwrap().contains_key(&file));
 }
+
+#[test]
+fn events_reads_each_rollout_once_after_parallel_warm() {
+    let home = TempDir::new("rate-codex-warm");
+    for i in 0..6 {
+        let ts = format!("2026-11-04T01:0{i}:00Z");
+        let line = token_line(&ts, 10, 10, "codex", 5.0, 1_800_000_000);
+        home.write(
+            &format!(".codex/sessions/2026/11/04/rollout-w{i}.jsonl"),
+            &line,
+        );
+    }
+    let files = rollout_files(home.path());
+    assert_eq!(events(&files).len(), 6);
+    let counts = PARSE_COUNTS.lock().unwrap();
+    assert!(files.iter().all(|f| counts.get(f) == Some(&1)));
+}
