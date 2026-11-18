@@ -1,5 +1,7 @@
 <p align="right"><a href="README.md">English</a></p>
 
+<p align="center"><img src="docs/assets/icon-512.png" alt="" width="112"></p>
+
 <h1 align="center">kcal</h1>
 
 <p align="center"><b>Claude Code, Codex, Kiro용 macOS 메뉴 막대 앱: 입력하기 전에 에이전트가 무엇을 싣는지, 사용 한도가 얼마나 남았는지 보여 줍니다.</b><br/>로컬에서만 동작합니다. 에이전트 설정은 확인을 받은 뒤에만 고칩니다.</p>

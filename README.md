@@ -1,5 +1,7 @@
 <p align="right"><a href="README.ko.md">한국어</a></p>
 
+<p align="center"><img src="docs/assets/icon-512.png" alt="" width="112"></p>
+
 <h1 align="center">kcal</h1>
 
 <p align="center"><b>A macOS menu bar app for Claude Code, Codex and Kiro: see what your agent loads before you type, and how much usage limit is left.</b><br/>Local only. Changes your agent config only after you confirm.</p>
