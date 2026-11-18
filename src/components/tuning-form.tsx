@@ -1,6 +1,6 @@
+import { ChevronRight } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { SUMMARY_CLASS } from "@/components/info-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -93,6 +93,17 @@ const FIELDS: Record<TuningKey, FieldInfo> = {
   "advanced.cacheMissRatio": { unit: "ratio", section: "advanced" },
 };
 
+/** 설정 묶음(macOS 설정 모양): 작은 캡션 + 둥근 면 + 가는 구분선으로 나뉜 줄. 팝오버 폭은 그대로. */
+export const GROUP_CLASS =
+  "flex flex-col divide-y divide-border/60 rounded-lg bg-muted/50 [&>*]:px-2.5";
+export const ROW_CLASS = "flex min-h-8 items-center gap-2 py-1";
+export const CAPTION_CLASS = "mb-1 px-1.5 text-xs font-medium text-muted-foreground";
+/** 접는 줄(`<summary>`): 묶음과 같은 면. 화살표는 열리면 돌아간다(motion-reduce면 바로). */
+const DISCLOSURE_CLASS =
+  "flex min-h-8 cursor-default list-none items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 text-sm hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none active:translate-y-px [&::-webkit-details-marker]:hidden";
+const CHEVRON_CLASS =
+  "size-4 shrink-0 text-muted-foreground transition-transform group-open/disclosure:rotate-90 motion-reduce:transition-none";
+
 const unitLabel = (unit: Unit) => t.tuning.units[unit];
 const KEYS = Object.keys(FIELDS) as TuningKey[];
 const ADVANCED_PREFIX = "advanced.";
@@ -157,10 +168,12 @@ type TuningFormProps = {
   onSave: (tuning: Tuning) => Promise<void>;
   /** 스크롤 영역 맨 위(에이전트 토글 등). */
   children: ReactNode;
+  /** 스크롤 영역 맨 아래(버전 줄). */
+  footer?: ReactNode;
 };
 
 /** tuning 전 필드 편집. 바꾼 필드만 문자열로 들고 있다가 "저장" 때 검사·변환한다. */
-export function TuningForm({ settings, isSaving, onSave, children }: TuningFormProps) {
+export function TuningForm({ settings, isSaving, onSave, children, footer }: TuningFormProps) {
   const [edits, setEdits] = useState<Edits>({});
   const [errors, setErrors] = useState<Edits>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -235,30 +248,39 @@ export function TuningForm({ settings, isSaving, onSave, children }: TuningFormP
     const info = { ...FIELDS[key], ...t.tuning.fields[key] };
     const id = `tuning-${key}`;
     const error = errors[key];
+    const shown = edits[key] ?? current(key);
+    const defaultText = toDisplay(key, spec.default);
+    // 기본값과 다를 때만 기본값을 보인다. 범위는 입력란 title과 오류 문구에만 둔다.
+    const sub = [info.hint, shown !== defaultText ? t.tuning.defaultValue(defaultText) : null]
+      .filter(Boolean)
+      .join(" · ");
+    const unit = unitLabel(info.unit);
     return (
-      <div key={key} className="flex flex-col gap-0.5">
-        {/* 이름·입력란·단위 한 줄, 그 아래 범위·도움말은 전체 폭(좁은 이름 칸에서 세 줄로 접히지 않게). */}
-        <div className="flex items-center gap-2">
+      <div key={key} className="flex flex-col py-1">
+        <div className="flex min-h-6 items-center gap-2">
           <label htmlFor={id} className="min-w-0 flex-1 text-sm">
             {info.label}
           </label>
           <Input
             id={id}
             inputMode={spec.isInteger ? "numeric" : "decimal"}
-            value={edits[key] ?? current(key)}
+            value={shown}
             onChange={(event) => change(key, event.target.value)}
             disabled={isSaving}
+            title={rangeText(spec)}
             aria-invalid={error ? true : undefined}
-            aria-describedby={error ? `${id}-range ${id}-error` : `${id}-range`}
-            className="h-7 w-20 text-right tabular-nums select-text"
+            aria-describedby={
+              [sub && `${id}-sub`, error && `${id}-error`].filter(Boolean).join(" ") || undefined
+            }
+            className="h-6 w-16 bg-background px-1.5 text-right tabular-nums select-text dark:bg-background"
           />
-          <span className="w-10 text-xs text-muted-foreground">{unitLabel(info.unit)}</span>
+          <span className="w-9 text-xs text-muted-foreground">{unit}</span>
         </div>
-        <p id={`${id}-range`} className="text-xs text-pretty text-muted-foreground tabular-nums">
-          {rangeText(spec)}
-          {t.tuning.defaultValue(toDisplay(key, spec.default))}
-          {info.hint && ` · ${info.hint}`}
-        </p>
+        {sub && (
+          <p id={`${id}-sub`} className="text-xs text-pretty text-muted-foreground tabular-nums">
+            {sub}
+          </p>
+        )}
         {error && (
           <p id={`${id}-error`} className="text-xs text-destructive">
             {error}
@@ -281,35 +303,32 @@ export function TuningForm({ settings, isSaving, onSave, children }: TuningFormP
         <details
           open={isTuningOpen}
           onToggle={(event) => setIsTuningOpen(event.currentTarget.open)}
-          className="flex flex-col"
+          className="group/disclosure flex flex-col gap-3"
         >
-          <summary className={`${SUMMARY_CLASS} text-xs text-muted-foreground`}>
-            {t.tuning.title}
+          <summary className={DISCLOSURE_CLASS}>
+            <span className="flex-1">{t.tuning.title}</span>
+            <ChevronRight className={CHEVRON_CLASS} aria-hidden />
           </summary>
-          <div className="mt-1.5 flex flex-col gap-3">
-            {SECTIONS.map((section) => (
-              <fieldset key={section} className="flex flex-col gap-1.5">
-                <legend className="mb-1 text-xs font-medium text-muted-foreground">
-                  {t.tuning.sections[section]}
-                </legend>
-                {keysOf(section).map(renderField)}
-              </fieldset>
-            ))}
-            <details
-              open={isAdvancedOpen}
-              onToggle={(event) => setIsAdvancedOpen(event.currentTarget.open)}
-              className="flex flex-col"
-            >
-              <summary className={`${SUMMARY_CLASS} text-xs text-muted-foreground`}>
-                {t.tuning.advanced}
-              </summary>
-              <div className="mt-1.5 flex flex-col gap-1.5">
-                <p className="text-xs text-muted-foreground">{t.tuning.advancedNote}</p>
-                {keysOf("advanced").map(renderField)}
-              </div>
-            </details>
-          </div>
+          {SECTIONS.map((section) => (
+            <fieldset key={section} className="flex flex-col">
+              <legend className={CAPTION_CLASS}>{t.tuning.sections[section]}</legend>
+              <div className={GROUP_CLASS}>{keysOf(section).map(renderField)}</div>
+            </fieldset>
+          ))}
+          <details
+            open={isAdvancedOpen}
+            onToggle={(event) => setIsAdvancedOpen(event.currentTarget.open)}
+            className="group/disclosure flex flex-col gap-1.5"
+          >
+            <summary className={DISCLOSURE_CLASS}>
+              <span className="flex-1">{t.tuning.advanced}</span>
+              <ChevronRight className={CHEVRON_CLASS} aria-hidden />
+            </summary>
+            <p className="px-1.5 text-xs text-muted-foreground">{t.tuning.advancedNote}</p>
+            <div className={GROUP_CLASS}>{keysOf("advanced").map(renderField)}</div>
+          </details>
         </details>
+        {footer}
       </div>
       {isTuningOpen && (
         <div className="flex flex-col gap-1.5 border-t px-3 py-2">

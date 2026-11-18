@@ -678,7 +678,7 @@ export const ko = {
       TuningKey,
       { label: string; hint?: string }
     >,
-    defaultValue: (value: string) => ` · 기본 ${value}`,
+    defaultValue: (value: string) => `기본 ${value}`,
     number: "숫자를 입력하세요.",
     integer: "정수로 입력하세요.",
     range: (range: string) => `${range} 안이어야 해요.`,
