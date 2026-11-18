@@ -1,10 +1,10 @@
 // 5층 코칭 "진단하기"(docs/decisions/0014, 자리는 대시보드 점검 탭 — 0017 "화면 자리"): 끄면 아낄 수 있는 스위치 → 바꿀 줄 미리보기 → 확인 → 적용(백업) → 되돌리기.
 // 값은 열 때와 적용·되돌리기 뒤에만 읽는다(타이머 없음). 쓰기는 Rust가 대상 ID로만 한다.
 // Claude는 최근 N일 사용 기록과 지금 범위를 같이 보이고, 쓴 것은 끄기 대신 "그대로"나 "프로젝트에서만 켜기"(0022). 목록 모양은 `coach-list.tsx`.
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { Button } from "@/components/ui/button";
-import { GROUP_TITLE, SwitchLists } from "@/components/coach-list";
+import { GROUP_TITLE, SwitchLists, groupOf } from "@/components/coach-list";
 import { appliedName } from "@/lib/check-copy";
 import {
   CHECK_TARGET_PREFIX,
@@ -361,6 +361,10 @@ export function CoachPanel({
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const rates = useSnapshot(ratesStore, "coach");
+  // 패널을 닫으면 그 줄의 버튼으로 포커스를 돌려준다(줄이 없어졌거나 버튼이 없으면 이 칸 맨 위로).
+  const [returnTarget, setReturnTarget] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const onReturned = useCallback(() => setReturnTarget(null), []);
 
   const pick = (item: CoachSwitch) => {
     setError(null);
@@ -418,15 +422,22 @@ export function CoachPanel({
     write(() => applyScopeMove(target.target, preview.beforeHash));
   };
   const undo = (id: string) => write(() => undoSwitch(id));
-  const toList = () => setStep({ kind: "list" });
-
   const shown = switches.filter((s) => s.agent === agent);
+  const toList = () => {
+    const opener =
+      step.kind === "done" ? step.applied.target : "target" in step ? step.target.target : null;
+    const row = shown.find((s) => s.target === opener);
+    // "그대로 둠" 줄은 접힌 목록 안이라 포커스를 못 받는다: 이 칸 맨 위로.
+    if (row && groupOf(row) !== "keep") setReturnTarget(row.target);
+    else rootRef.current?.focus();
+    setStep({ kind: "list" });
+  };
   // 최적화 점검 기록은 최적화 칸의 고친 줄에서 되돌린다(같은 되돌리기를 두 칸에 두지 않는다).
   const shownLog = log.filter(
     (e) => e.agent === agent && !e.target.startsWith(CHECK_TARGET_PREFIX),
   );
   return (
-    <div className="flex flex-col">
+    <div ref={rootRef} tabIndex={-1} className="flex flex-col outline-none">
       <LiveStatus text={step.kind === "done" ? doneTitle(step.applied) : null} />
       {error && (
         <p role="alert" className="px-5 pt-1.5 text-[10px] text-destructive">
@@ -443,6 +454,8 @@ export function CoachPanel({
             onPick={pick}
             onMove={pickMove}
             openRow={openRow}
+            returnTarget={returnTarget}
+            onReturned={onReturned}
           />
           <RecentLog log={shownLog} isBusy={isBusy} onUndo={undo} onShowEffect={onShowEffect} />
         </>

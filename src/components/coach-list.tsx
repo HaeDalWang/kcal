@@ -3,7 +3,7 @@
 // 펼친 줄의 버튼만 강조 버튼이다(design.md 6절 3). 묶음은 점 + 글자로 알린다(색만으로 알리지 않는다).
 import { ChevronRight } from "lucide-react";
 import { cn } from "cn";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AGENT_COLOR } from "@/components/agent-metrics";
 import { SUMMARY_CLASS } from "@/components/info-section";
@@ -145,17 +145,20 @@ function actionLabel(item: CoachSwitch): string {
 function ActionButton({
   item,
   isStrong,
+  buttonRef,
   onPick,
   onMove,
 }: {
   item: CoachSwitch;
   isStrong: boolean;
+  buttonRef: React.Ref<HTMLButtonElement>;
   onPick: (item: CoachSwitch) => void;
   onMove: (item: CoachSwitch) => void;
 }) {
   const action = actionLabel(item);
   return (
     <Button
+      ref={buttonRef}
       size="xs"
       variant={isStrong ? "default" : "outline"}
       className="relative z-10"
@@ -166,6 +169,19 @@ function ActionButton({
     </Button>
   );
 }
+
+/** 이 줄에서 연 패널이 방금 닫혔다(`isReturn`): 줄의 버튼으로 포커스를 돌려주고 부모에 알린다. */
+function useReturnFocus<T extends HTMLElement>(isReturn: boolean, onReturned: () => void) {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    if (!isReturn) return;
+    ref.current?.focus();
+    onReturned();
+  }, [isReturn, onReturned]);
+  return ref;
+}
+
+type ReturnProps = { isReturn: boolean; onReturned: () => void };
 
 const KindChip = ({ item }: { item: CoachSwitch }) => (
   <Badge
@@ -181,6 +197,8 @@ function SuggestRow({
   item,
   rate,
   isOpen,
+  isReturn,
+  onReturned,
   onToggle,
   onPick,
   onMove,
@@ -191,7 +209,8 @@ function SuggestRow({
   onToggle: () => void;
   onPick: (item: CoachSwitch) => void;
   onMove: (item: CoachSwitch) => void;
-}) {
+} & ReturnProps) {
+  const actionRef = useReturnFocus<HTMLButtonElement>(isReturn, onReturned);
   const detailsId = `${item.target}-details`;
   const share = codexShare(item, rate);
   const loses = isOpen ? contentsText(item) : null;
@@ -225,7 +244,13 @@ function SuggestRow({
             {item.tokens === null ? t.coach.sizeUnknown : `~${integer.format(item.tokens)}`}
           </span>
         </button>
-        <ActionButton item={item} isStrong={isOpen} onPick={onPick} onMove={onMove} />
+        <ActionButton
+          item={item}
+          isStrong={isOpen}
+          buttonRef={actionRef}
+          onPick={onPick}
+          onMove={onMove}
+        />
       </div>
       {isOpen && (
         <div id={detailsId} className="flex flex-col gap-1 pl-[18px] text-[10px] tabular-nums">
@@ -253,13 +278,16 @@ function SuggestRow({
 /** "그대로 둠" 줄: 이름 + 짧은 사유 한 줄. 끄는 버튼은 kcal이 권하지 않을 뿐 둔다(0022). */
 function KeepRow({
   item,
+  isReturn,
+  onReturned,
   onPick,
   onMove,
 }: {
   item: CoachSwitch;
   onPick: (item: CoachSwitch) => void;
   onMove: (item: CoachSwitch) => void;
-}) {
+} & ReturnProps) {
+  const actionRef = useReturnFocus<HTMLButtonElement>(isReturn, onReturned);
   const title = [
     item.usage ? usageText(item.usage) : null,
     hasTooFewUses(item) ? t.coach.tooFewUses : null,
@@ -284,7 +312,13 @@ function KeepRow({
         </span>
       )}
       {!isKept(item) && (
-        <ActionButton item={item} isStrong={false} onPick={onPick} onMove={onMove} />
+        <ActionButton
+          item={item}
+          isStrong={false}
+          buttonRef={actionRef}
+          onPick={onPick}
+          onMove={onMove}
+        />
       )}
     </li>
   );
@@ -396,6 +430,8 @@ export function SwitchLists({
   onPick,
   onMove,
   openRow,
+  returnTarget = null,
+  onReturned = () => {},
 }: {
   agent: Agent;
   /** 에이전트를 이 컴퓨터에서 못 찾았다: 점검을 못 한 것이지 끌 것이 없는 게 아니다. */
@@ -406,6 +442,9 @@ export function SwitchLists({
   onMove: (item: CoachSwitch) => void;
   /** 점검 탭 전체의 펼친 줄(키 "switch:<target>"). 없으면 이 칸 안에서만 하나. */
   openRow?: OpenRow;
+  /** 방금 닫힌 패널을 연 줄의 target. 그 줄의 버튼으로 포커스를 돌려준다. */
+  returnTarget?: string | null;
+  onReturned?: () => void;
 }) {
   // 펼친 줄은 하나만(강조 버튼 하나, design.md 6절 3). 기본은 모두 접힘.
   const open = useOpenRow(openRow);
@@ -419,6 +458,8 @@ export function SwitchLists({
       item={s}
       rate={rate}
       isOpen={open.key === switchRowKey(s.target)}
+      isReturn={returnTarget === s.target}
+      onReturned={onReturned}
       onToggle={() => open.toggle(switchRowKey(s.target))}
       onPick={onPick}
       onMove={onMove}
@@ -474,7 +515,14 @@ export function SwitchLists({
           )}
           <ul className="flex flex-col gap-1.5 pt-1.5">
             {keep.map((s) => (
-              <KeepRow key={s.target} item={s} onPick={onPick} onMove={onMove} />
+              <KeepRow
+                key={s.target}
+                item={s}
+                isReturn={returnTarget === s.target}
+                onReturned={onReturned}
+                onPick={onPick}
+                onMove={onMove}
+              />
             ))}
           </ul>
         </details>

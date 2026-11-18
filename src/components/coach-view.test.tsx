@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { describe, expect, it, vi } from "vitest";
 
@@ -314,6 +314,18 @@ describe("CoachPanel", () => {
       enabled: false,
       beforeHash: PREVIEW.beforeHash,
     });
+  });
+
+  it("returns focus to the row's action button when a Diagnose panel closes with Escape", async () => {
+    mock();
+    renderPanel("codex");
+    fireEvent.click(await screen.findByRole("button", { name: "big@m 끄기" }));
+    const panel = await screen.findByRole("group", { name: "바꿀 내용 확인" });
+    await waitFor(() => expect(document.activeElement).toBe(panel));
+    fireEvent.keyDown(panel, { key: "Escape" });
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "big@m 끄기" })),
+    );
   });
 
   it("shows instruction instead of preview for Claude MCP", async () => {
