@@ -123,7 +123,7 @@ export const ko = {
     busy: (requests: string, misses: string) =>
       `바쁠 때(상위 10%): 요청 ${requests}번 · 캐시되지 않은 요청 ${misses}번`,
     typical: (misses: string, windows: number) =>
-      `보통: 캐시되지 않은 요청 ${misses}번 (요청 수와 중앙값끼리 나눈 값) · 5시간 구간 ${windows}개`,
+      `보통: 캐시되지 않은 요청 ${misses}번 (비율은 중앙값끼리 나눈 근사값) · 5시간 구간 ${windows}개`,
     perQuestion: "질문당 크레딧",
     perQuestionHint: "질문 1번당 쓰는 크레딧이에요. 모델마다 달라요.",
     perQuestionEmpty: "질문을 몇 번 하면 보여 줘요.",
@@ -134,7 +134,7 @@ export const ko = {
   context: {
     whenNeeded: "필요할 때만",
     range: (point: string, low: string, high: string) =>
-      `보통 ~${point}%, 범위 ~${low}~${high}% (바쁠 때(상위 10%) 포함)`,
+      `보통 ~${point}%, 범위 ~${low}–${high}% (바쁠 때(상위 10%) 포함)`,
     description: "첫 메시지 전에 기본으로 실리는 지시문·도구 설명이에요.",
     sources: (measured: string, estimated: string) =>
       `측정한 값 ${measured} 토큰 · 예상한 값 ${estimated} 토큰`,
@@ -143,7 +143,7 @@ export const ko = {
     firstRequest: (tokens: string) => `첫 요청 ${tokens} 토큰(첫 메시지 포함)`,
     remainder: (tokens: string, range: string) =>
       `내장 도구·첫 메시지 ~${tokens} 토큰 · 한도 몫 ${range}`,
-    assembled: (chars: string, tokens: string) => `시작 조립 ${chars}자(~${tokens} 토큰)`,
+    assembled: (chars: string, tokens: string) => `시작 때 조립한 글 ${chars}자(~${tokens} 토큰)`,
     rest: (count: number, tokens: string) => `나머지 ${count}개 · 시작 ${tokens} 토큰`,
     nothingFound: "찾은 설정 없음",
   },
@@ -156,7 +156,7 @@ export const ko = {
     largeContext: "큰 컨텍스트",
     sessions: "많이 쓴 세션",
     requests: (count: string) => `${count}번`,
-    composition: "5시간 한도는 보통 무엇으로 찼나",
+    composition: "5시간 한도는 보통 무엇으로 채워지나요",
     caption: (days: number | null) =>
       [days === null ? null : `최근 ${days}일`, "5시간 한도 % 합"].filter(Boolean).join(" · "),
     validation: (used: string, predicted: string) => `실제 ${used}% · 예상 ${predicted}%`,
@@ -169,7 +169,7 @@ export const ko = {
   daily: {
     date: (day: Date) => `${day.getMonth() + 1}월 ${day.getDate()}일 (${WEEKDAY[day.getDay()]})`,
     weekday: (day: Date) => WEEKDAY[day.getDay()],
-    amount: (value: string, isCredits: boolean) => `${value}${isCredits ? "크레딧" : "%"}`,
+    amount: (value: string, isCredits: boolean) => `${value}${isCredits ? " 크레딧" : "%"}`,
     unit: (isCredits: boolean): string => (isCredits ? "크레딧" : "% (주간 한도)"),
     goal: (goal: string) => ` / 하루 몫 ${goal}`,
     goalLabel: (goal: string) => `하루 몫 ${goal}`,
@@ -227,12 +227,12 @@ export const ko = {
     description: (days: number) =>
       `적용 전 ${days}일과 뒤 ${days}일을 같은 기준으로 비교해요. 모두 기록에서 잰 값이에요.`,
     descriptionLoading: "적용 전과 뒤를 같은 기준으로 비교해요.",
-    weekly: (days: number) => `주간 요약 · 최근 ${days}일 vs 그 전 ${days}일`,
+    weekly: (days: number) => `주간 요약 · 최근 ${days}일, 그 전 ${days}일과 비교`,
     byChange: "처방별",
     none: "아직 적용한 처방이 없어요. 점검 탭의 진단하기에서 끌 수 있는 스위치를 찾아보세요.",
   },
   coach: {
-    restart: "에이전트를 다시 시작해야 반영됩니다.",
+    restart: "에이전트를 다시 시작해야 반영돼요.",
     howToOff: "끄는 법",
     turnOff: "끄기",
     turnOn: "켜기",
@@ -243,7 +243,7 @@ export const ko = {
     previewing: "미리 보는 중…",
     unchanged: "이미 그 값이라 바꿀 것이 없어요.",
     switchTitle: (name: string, enabled: boolean) => `${name} ${enabled ? "켜기" : "끄기"}`,
-    switchNote: "아래 한 줄만 바꿉니다. 바꾸기 전에 원본 옆에 백업을 만들어요.",
+    switchNote: "아래 한 줄만 바꿔요. 바꾸기 전에 원본 옆에 백업을 만들어요.",
     confirm: (enabled: boolean) => `확인하고 ${enabled ? "켜기" : "끄기"}`,
     manual: "직접 끄는 법",
     close: "닫기",
@@ -320,7 +320,7 @@ export const ko = {
     moveToProjects: "프로젝트에서만 켜기",
     moveTitle: (name: string) => `${name} 프로젝트에서만 켜기`,
     moveNote:
-      "아래 파일을 한 번에 바꿉니다. 바꾸기 전에 원본 옆에 백업을 만들고, 되돌리기 한 번으로 모두 되돌려요.",
+      "아래 파일을 한 번에 바꿔요. 바꾸기 전에 원본 옆에 백업을 만들고, 되돌리기 한 번으로 모두 되돌려요.",
     skipped: (names: string) => `폴더가 없어져 건너뛰어요: ${names}`,
     newFile: "새 파일",
     confirmMove: "확인하고 옮기기",
@@ -361,22 +361,22 @@ export const ko = {
       `남은 ${count}개 · 그중 ${known}개를 고치면 세션마다 ${tokens} 토큰 덜 실려요`,
     allFixed: "남은 것이 없어요",
     legend:
-      "고친 수 / 전체 = 여기서 고치고 아직 되돌리지 않은 것 / 그것과 남은 카드를 더한 수. ~토큰 = 세션마다 덜 싣는 양(예상). '한도 씀' = Claude에게 맡겨 한도를 쓰는 카드.",
+      "고친 수 / 전체 = 여기서 고치고 아직 되돌리지 않은 카드 수 / 그 카드와 남은 카드를 더한 수. ~토큰 = 세션마다 덜 싣는 양(예상). ‘한도 씀’ = Claude에게 맡겨 한도를 쓰는 카드.",
     fixed: "고침",
     rowFix: "고치기",
     rowAsk: "Claude에게",
     metaTokens: (tokens: string) => `${tokens} 토큰`,
     metaNoEffect: "효과 없음",
-    metaPartly: "일부 모델만 먹음",
+    metaPartly: "일부 모델에만 적용",
     metaOverlap: "기본 안내와 겹침",
     metaLimit: "한도 씀",
-    usesLimit: "한도를 씁니다",
+    usesLimit: "한도를 써요",
     sources: "파일 위치와 출처",
     moreLines: (count: string) => `외 ${count}줄`,
     chip: {
       days: (days: number) => `최근 ${days}일 기록`,
       ignoredBy: (names: string) => `무시: ${names}`,
-      affected: (names: string) => `먹음: ${names}`,
+      affected: (names: string) => `적용: ${names}`,
       rules: (files: string) => `내 규칙: ${files}`,
       plugin: (plugin: string) => `플러그인 ${plugin}`,
       same: "내용 같음",
@@ -390,21 +390,21 @@ export const ko = {
     whoValue: `kcal이 설정 값 하나를 바꿔요. ${WHO_BACKUP}`,
     betterSetting: "설정 파일에 적힌 값과 실제로 도는 값이 같아져요.",
     effort: {
-      title: "생각 깊이 설정 한 줄이 지금 모델에 안 먹고 있어요",
-      short: "안 먹는 생각 깊이 설정",
+      title: "생각 깊이 설정 한 줄이 지금 모델에서 무시돼요",
+      short: "무시되는 생각 깊이 설정",
       ownEffort: (label: string, value: Effort, own: string) =>
-        `${label}는 이 값(${value})을 무시하고, 따로 정해 둔 ${own}로 돌아요.`,
+        `${label}에서는 이 값(${value})을 무시하고, 따로 정해 둔 값(${own})으로 돌아요.`,
       defaultEffort: (label: string, value: Effort, fallback: string) =>
-        `${label}는 이 값(${value})을 무시하고 기본값 ${fallback}로 돌아요.`,
+        `${label}에서는 이 값(${value})을 무시하고 기본값(${fallback})으로 돌아요.`,
       moved: (names: string, value: Effort) =>
-        ` ${names}는 지금처럼 ${value}로 돌도록 그 모델 자리에 옮겨 적어요.`,
+        ` ${names}에는 지금처럼 돌도록 그 모델 자리에 ${value} 값을 옮겨 적어요.`,
       more: "더 깊이 생각하는 만큼 한도를 더 써요.",
       less: "덜 생각하는 만큼 한도를 덜 써요.",
-      what: (moved: string) => `안 먹는 옛 설정 한 줄을 지워요.${moved}`,
+      what: (moved: string) => `무시되는 옛 설정 한 줄을 지워요.${moved}`,
       mine: (days: number, models: number) =>
         `없어요. 최근 ${days}일에 쓴 모델 ${models}개는 모두 지금과 같은 깊이로 돌아요.`,
       remove: "옛 설정 지우기",
-      saveCurrent: (model: string, value: Effort) => `${model}도 ${value}로 돌게 저장하기`,
+      saveCurrent: (model: string, value: Effort) => `${model}도 ${value} 값으로 저장하기`,
     },
     thinking: {
       noneAffected: (days: number) =>
@@ -412,17 +412,17 @@ export const ko = {
       budget: (affected: string, tokens: string) =>
         `${affected}에서는 이 설정이 생각 양을 ${tokens} 토큰으로 묶고 있어요. 지우면 그 묶음이 풀려요.`,
       off: (affected: string) =>
-        `${affected}에서는 이 설정이 생각을 끄고 있어요. 지우면 ${affected}가 다시 생각해서 한도를 더 써요.`,
-      offTitle: "생각 끄기 설정이 지금 모델에 안 먹고 있어요",
-      offShort: "안 먹는 생각 끄기 설정",
-      budgetShort: "안 먹는 생각 토큰 한도",
-      budgetTitle: "생각 토큰 한도 설정이 지금 모델에 안 먹고 있어요",
+        `${affected}에서는 이 설정이 생각을 끄고 있어요. 지우면 다시 생각해서 한도를 더 써요.`,
+      offTitle: "생각 끄기 설정이 지금 모델에서 무시돼요",
+      offShort: "무시되는 생각 끄기 설정",
+      budgetShort: "무시되는 생각 토큰 한도",
+      budgetTitle: "생각 토큰 한도 설정이 지금 모델에서 무시돼요",
       budgetIgnored: (ignored: string) =>
-        `${ignored}는 생각 양을 스스로 정해서 이 숫자를 무시해요.`,
-      offIgnored: (ignored: string) => `${ignored}는 생각을 끌 수 없어서 이 설정을 무시해요.`,
-      what: "안 먹는 설정 한 줄을 지워요.",
+        `${ignored}에서는 생각 양을 스스로 정해서 이 숫자를 무시해요.`,
+      offIgnored: (ignored: string) => `${ignored}에서는 생각을 끌 수 없어서 이 설정을 무시해요.`,
+      what: "무시되는 설정 한 줄을 지워요.",
       remove: "설정 지우기",
-      keep: (affected: string) => `${affected}에서는 아직 이 설정이 먹어서요.`,
+      keep: (affected: string) => `${affected}에서는 아직 이 설정이 적용돼서요.`,
     },
     git: {
       defaults: "기본 커밋·PR 안내",
@@ -461,14 +461,14 @@ export const ko = {
       headline: (name: string, plugin: string) =>
         `\`${name}\` 스킬이 내 스킬 폴더와 플러그인 \`${plugin}\`에 둘 다 있어서, 설명이 매번 두 번 실려요.`,
       what: (name: string) =>
-        `내 폴더 쪽을 Claude 목록에서만 숨겨요. /${name}은 그대로 칠 수 있어요.`,
+        `내 폴더 쪽을 Claude 목록에서만 숨겨요. /${name} 명령은 그대로 칠 수 있어요.`,
       same: "없어요. 두 스킬 내용이 같아요.",
       different: "두 스킬 내용이 달라요. 숨기면 Claude는 플러그인 쪽만 보고 써요.",
       who: "kcal이 설정 값 하나를 바꿔요. 스킬 파일은 그대로예요.",
       action: "내 폴더 쪽 숨기기",
       keep: "두 스킬 내용이 달라서요.",
     },
-    handoffNote: "한도를 씁니다(남은 한도가 있어야 실행)",
+    handoffNote: "한도를 써요 (남은 한도가 있어야 실행돼요)",
     handoffLabel: "Claude에게 줄여 달라고 하기",
     long: {
       user: "전역",
@@ -507,7 +507,7 @@ export const ko = {
       description: "스킬 설명이 한 줄이 아니거나 너무 길어요",
       pathsCount: "파일 목록이 비었거나 20개가 넘어요",
       pathText: "파일 목록 값의 모양이 맞지 않아요",
-      pathAbsolute: "파일 목록이 / 나 ~ 로 시작해요",
+      pathAbsolute: "파일 목록이 ‘/’나 ‘~’로 시작해요",
     },
     rule: {
       referenced: (count: string) =>
@@ -521,9 +521,9 @@ export const ko = {
       paths: (paths: string) => `이 파일을 다룰 때만 싣기: ${paths}`,
       pathsLoses:
         "그 파일을 열기 전에는 이 규칙이 실리지 않아요. 대화를 압축하면 빠졌다가, 그 파일을 다시 열면 돌아와요.",
-      skill: (name: string, description: string) => `스킬 \`${name}\`로 옮기기: ${description}`,
+      skill: (name: string, description: string) => `스킬로 옮기기(\`${name}\`): ${description}`,
       skillLoses: (name: string) =>
-        `Claude가 관련 있다고 볼 때나 /${name}로 부를 때만 실려요. 늘 실리는 건 설명 한 줄이에요.`,
+        `Claude가 관련 있다고 볼 때나 /${name} 명령으로 부를 때만 실려요. 늘 실리는 건 설명 한 줄이에요.`,
       keep: "그대로 두기",
       unusable: (problem: string) => `${UNUSABLE}(${problem})`,
     },
@@ -553,7 +553,7 @@ export const ko = {
       opusUnavailable: `이 계정에서는 Opus 5.5를 쓸 수 없어 맡길 수 없어요.${UNCHANGED}`,
       timeout: (minutes: number) => `Claude가 ${minutes}분 안에 끝내지 못했어요.${UNCHANGED}`,
       failed: (reason: string) => `Claude에게 맡기지 못했어요(${reason}).${UNCHANGED}`,
-      internal: "내부 작업이 실패했습니다.",
+      internal: "내부 작업이 실패했어요.",
     },
     handoffPreview: {
       title: "Claude가 고쳐 쓴 글",
@@ -569,7 +569,7 @@ export const ko = {
     thinkingOnForced: "생각 켬(못 끔)",
     thinkingOff: "생각 끔",
     ignored: "무시",
-    applies: "먹음",
+    applies: "적용",
     verified: "2026-11-07 Claude Code 2.1.319에서 확인",
     keepLabel: "그대로 두기",
     keepNote: "누르면 이 카드를 숨겨요. 설정은 그대로이고, 상황이 바뀌면 다시 알려 드려요.",
@@ -585,7 +585,7 @@ export const ko = {
   settings: {
     title: "설정",
     agents: "표시할 에이전트",
-    minOne: "최소 1개는 켜 두어야 합니다.",
+    minOne: "최소 1개는 켜 두세요.",
   },
   tuning: {
     units: {
@@ -616,18 +616,21 @@ export const ko = {
     fields: {
       apiIntervalSecs: { label: "Claude·Codex 간격" },
       kiroIntervalSecs: { label: "Kiro 간격" },
-      refreshMinGapSecs: { label: "새로고침 최소 간격", hint: "연달아 눌러도 이만큼은 기다림" },
+      refreshMinGapSecs: { label: "새로고침 최소 간격", hint: "연달아 눌러도 이만큼은 기다려요" },
       maxBackoffSecs: { label: "요청 과부하 뒤 최대 간격" },
       ratesTtlSecs: { label: "1%당 토큰 다시 계산" },
       contextTtlSecs: { label: "시작 컨텍스트 다시 측정" },
       metricsTtlSecs: { label: "요청 수·캐시 적중률 다시 계산" },
       httpTimeoutSecs: { label: "사용량 API" },
-      keychainTimeoutSecs: { label: "키체인", hint: "macOS에서만 씀" },
+      keychainTimeoutSecs: { label: "키체인", hint: "macOS에서만 써요" },
       kiroTimeoutSecs: { label: "kiro-cli" },
-      claudeHandoffTimeoutSecs: { label: "Claude에게 맡기기", hint: "넘으면 멈추고 파일은 그대로" },
+      claudeHandoffTimeoutSecs: {
+        label: "Claude에게 맡기기",
+        hint: "넘으면 멈추고 파일은 그대로예요",
+      },
       claudeHandoffMinRemaining: {
         label: "Claude에게 맡길 때 필요한 남은 한도",
-        hint: "이보다 적거나 모르면 버튼을 끔",
+        hint: "이보다 적거나 모르면 버튼이 꺼져요",
       },
       codexSessionsToSearch: { label: "Codex 세션" },
       kiroSessionsToSearch: { label: "Kiro 세션" },
@@ -641,20 +644,20 @@ export const ko = {
       checkModelDays: { label: "최적화 판정에 쓰는 최근 기록(일)" },
       diagnoseUsageDays: {
         label: "진단하기 사용 기록 기간",
-        hint: "이 기간에 0번이면 끄기를 권함",
+        hint: "이 기간에 0번이면 끄기를 권해요",
       },
       diagnoseUsageFiles: { label: "진단하기가 여는 Claude 기록 파일" },
       diagnoseMinSessions: {
         label: "끄기를 권하는 데 필요한 세션 수",
-        hint: "이보다 적으면 쓰는지 알 수 없음",
+        hint: "이보다 적으면 쓰는지 알 수 없어요",
       },
       scopeMinUses: {
         label: "프로젝트에서만 켜기를 권하는 데 필요한 사용 횟수",
-        hint: "이보다 적으면 자주 쓰는지 알 수 없음",
+        hint: "이보다 적으면 자주 쓰는지 알 수 없어요",
       },
       diagnoseUsageMaxMib: {
         label: "진단하기가 읽는 기록 크기",
-        hint: "넘으면 오래된 기록은 안 읽음",
+        hint: "넘으면 오래된 기록은 읽지 않아요",
       },
       bytesPerToken: { label: "토큰당 바이트(문자)" },
       lowPercent: { label: "경고색 기준(남은 %)" },
@@ -678,12 +681,12 @@ export const ko = {
     defaultValue: (value: string) => ` · 기본 ${value}`,
     number: "숫자를 입력하세요.",
     integer: "정수로 입력하세요.",
-    range: (range: string) => `${range} 안이어야 합니다.`,
-    formInvalid: "범위를 벗어난 값이 있어 저장하지 않았습니다.",
-    rejected: "저장이 거부됐습니다.",
-    title: "조절 값 (기본값이면 충분합니다)",
+    range: (range: string) => `${range} 안이어야 해요.`,
+    formInvalid: "범위를 벗어난 값이 있어 저장하지 않았어요.",
+    rejected: "저장이 거부됐어요.",
+    title: "조절 값 (기본값이면 충분해요)",
     advanced: "고급: 1%당 토큰 판정 기준",
-    advancedNote: "바꾸면 \u2018예상\u2019 표기의 뜻이 달라집니다.",
+    advancedNote: "바꾸면 \u2018예상\u2019 표기의 뜻이 달라져요.",
     reset: "기본값으로",
     saving: "저장 중…",
     save: "저장",

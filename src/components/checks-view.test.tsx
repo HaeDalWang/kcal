@@ -36,7 +36,7 @@ function mock(overrides: Record<string, (args: unknown) => unknown> = {}): Calls
   return calls;
 }
 
-const EFFORT_TITLE = "생각 깊이 설정 한 줄이 지금 모델에 안 먹고 있어요";
+const EFFORT_TITLE = "생각 깊이 설정 한 줄이 지금 모델에서 무시돼요";
 const GIT_TITLE = "커밋 안내가 두 벌이라 Claude가 헷갈릴 수 있어요";
 const card = (title: string) => screen.getByRole("group", { name: title });
 /** 줄의 펼치기 버튼(줄 전체가 누르는 자리). */
@@ -81,11 +81,11 @@ describe("AgentChecks", () => {
     // 기본은 모두 접힘: 짧은 제목·메타·작은 버튼만.
     expect(toggleOf(EFFORT_TITLE).getAttribute("aria-expanded")).toBe("false");
     expect(toggleOf(GIT_TITLE).getAttribute("aria-expanded")).toBe("false");
-    expect(within(card(EFFORT_TITLE)).getByText("안 먹는 생각 깊이 설정")).toBeTruthy();
+    expect(within(card(EFFORT_TITLE)).getByText("무시되는 생각 깊이 설정")).toBeTruthy();
     expect(within(card(EFFORT_TITLE)).getByText("효과 없음")).toBeTruthy();
     expect(within(card(GIT_TITLE)).getByText("기본 안내와 겹침")).toBeTruthy();
     expect(screen.queryByText("무엇을 하나")).toBeNull();
-    expect(screen.queryByText(/Opus 5\.5는 이 값/)).toBeNull();
+    expect(screen.queryByText(/Opus 5\.5에서는 이 값/)).toBeNull();
     // 접힌 화면에는 강조 버튼이 없다.
     expect(screen.getAllByRole("button").some(isPrimary)).toBe(false);
 
@@ -96,7 +96,7 @@ describe("AgentChecks", () => {
     expect(within(effort).getByLabelText("바뀌는 줄").textContent).toContain(
       '- effortLevel: "high"',
     );
-    expect(within(effort).getByText(/Opus 5\.5는 이 값\(high\)을 무시하고/)).toBeTruthy();
+    expect(within(effort).getByText(/Opus 5\.5에서는 이 값\(high\)을 무시하고/)).toBeTruthy();
     expect(within(effort).getByText("무엇을 하나")).toBeTruthy();
     const remove = within(effort).getByRole("button", { name: /옛 설정 지우기\s*추천/ });
     expect(isPrimary(remove)).toBe(true);
@@ -135,7 +135,7 @@ describe("AgentChecks", () => {
       id: "C-claude-git-instructions",
     });
     // "고치기"는 펼치지 않고 그 자리에서 미리보기로 간다.
-    fireEvent.click(screen.getByRole("button", { name: "안 먹는 생각 깊이 설정 고치기" }));
+    fireEvent.click(screen.getByRole("button", { name: "무시되는 생각 깊이 설정 고치기" }));
     await screen.findByRole("group", { name: "바꿀 내용 확인" });
     expect(calls.find((c) => c.cmd === "preview_check")?.args).toEqual({
       id: "D-claude-effort-level",
@@ -273,7 +273,7 @@ describe("AgentChecks", () => {
     const long = openCard(LONG_TITLE);
     const button = within(long).getByRole("button", { name: /Claude에게 줄여 달라고 하기/ });
     expect((button as HTMLButtonElement).disabled).toBe(true);
-    expect(within(long).getByText("한도를 씁니다 · 지금 남은 한도 12%")).toBeTruthy();
+    expect(within(long).getByText("한도를 써요 · 지금 남은 한도 12%")).toBeTruthy();
     expect(within(long).getByText("남은 한도가 20%보다 적어요.")).toBeTruthy();
   });
 
@@ -370,7 +370,7 @@ describe("AgentChecks", () => {
       expect(within(rules).getByText(/Claude\(Opus 5\.5\)가 규칙마다 제안하고/)).toBeTruthy();
       const button = within(rules).getByRole("button", { name: ASK });
       expect((button as HTMLButtonElement).disabled).toBe(false);
-      expect(within(rules).getByText("한도를 씁니다 · 지금 남은 한도 64%")).toBeTruthy();
+      expect(within(rules).getByText("한도를 써요 · 지금 남은 한도 64%")).toBeTruthy();
       expect(within(rules).getByRole("button", { name: "그대로 두기" })).toBeTruthy();
     });
 

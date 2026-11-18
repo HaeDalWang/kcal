@@ -41,9 +41,11 @@ describe("modelLabel", () => {
 describe("checkCopy", () => {
   it("this Mac effort card: Opus 5.5 ignores high and runs its own xhigh, nothing moves", () => {
     const copy = checkCopy(EFFORT_CHECK);
-    expect(copy.title).toBe("생각 깊이 설정 한 줄이 지금 모델에 안 먹고 있어요");
-    expect(copy.headline).toBe("Opus 5.5는 이 값(high)을 무시하고, 따로 정해 둔 xhigh로 돌아요.");
-    expect(copy.what).toBe("안 먹는 옛 설정 한 줄을 지워요.");
+    expect(copy.title).toBe("생각 깊이 설정 한 줄이 지금 모델에서 무시돼요");
+    expect(copy.headline).toBe(
+      "Opus 5.5에서는 이 값(high)을 무시하고, 따로 정해 둔 값(xhigh)으로 돌아요.",
+    );
+    expect(copy.what).toBe("무시되는 옛 설정 한 줄을 지워요.");
     expect(copy.mine).toBe("없어요. 최근 30일에 쓴 모델 4개는 모두 지금과 같은 깊이로 돌아요.");
     expect(copy.actions.map((a) => [a.label, a.isRecommended])).toEqual([["옛 설정 지우기", true]]);
     expect(copy.keepReason).toBeNull();
@@ -74,12 +76,12 @@ describe("checkCopy", () => {
       ],
     };
     const copy = checkCopy(check);
-    expect(copy.headline).toBe("Haiku 5.5는 이 값(low)을 무시하고 기본값 medium로 돌아요.");
+    expect(copy.headline).toBe("Haiku 5.5에서는 이 값(low)을 무시하고 기본값(medium)으로 돌아요.");
     expect(copy.what).toBe(
-      "안 먹는 옛 설정 한 줄을 지워요. Haiku 4.5는 지금처럼 low로 돌도록 그 모델 자리에 옮겨 적어요.",
+      "무시되는 옛 설정 한 줄을 지워요. Haiku 4.5에는 지금처럼 돌도록 그 모델 자리에 low 값을 옮겨 적어요.",
     );
     expect(copy.actions[1]).toMatchObject({
-      label: "Haiku 5.5도 low로 돌게 저장하기",
+      label: "Haiku 5.5도 low 값으로 저장하기",
       note: "덜 생각하는 만큼 한도를 덜 써요.",
     });
   });
@@ -129,8 +131,8 @@ describe("checkCopy", () => {
       ],
     };
     const copy = checkCopy(check);
-    expect(copy.title).toBe("생각 토큰 한도 설정이 지금 모델에 안 먹고 있어요");
-    expect(copy.headline).toBe("Opus 5.5는 생각 양을 스스로 정해서 이 숫자를 무시해요.");
+    expect(copy.title).toBe("생각 토큰 한도 설정이 지금 모델에서 무시돼요");
+    expect(copy.headline).toBe("Opus 5.5에서는 생각 양을 스스로 정해서 이 숫자를 무시해요.");
     expect(copy.mine).toBe(
       "Haiku 4.5에서는 이 설정이 생각 양을 8,000 토큰으로 묶고 있어요. 지우면 그 묶음이 풀려요.",
     );
@@ -156,7 +158,7 @@ describe("modelRows", () => {
     expect(modelRows(EFFORT_CHECK.facts)).toEqual([
       { label: "Opus 5.5", requests: 9774, current: "xhigh", verdict: "무시" },
       { label: "Sonnet 5.5", requests: 38, current: "medium", verdict: "무시" },
-      { label: "Haiku 4.5", requests: 19, current: "high", verdict: "먹음" },
+      { label: "Haiku 4.5", requests: 19, current: "high", verdict: "적용" },
       { label: "Haiku 5.5", requests: 13, current: "medium", verdict: "무시" },
     ]);
     expect(modelRows(GIT_CHECK.facts)).toEqual([]);
@@ -244,7 +246,7 @@ describe("long instructions card (Claude에게 맡기기)", () => {
         option: "handoff",
         label: "Claude에게 줄여 달라고 하기",
         isRecommended: true,
-        note: "한도를 씁니다(남은 한도가 있어야 실행)",
+        note: "한도를 써요 (남은 한도가 있어야 실행돼요)",
       }),
     ]);
   });
@@ -293,7 +295,7 @@ describe("rules card copy (0018 작업 B)", () => {
         label: "Claude에게 규칙마다 물어보기",
         isRecommended: true,
         isWritable: false,
-        note: "한도를 씁니다(남은 한도가 있어야 실행)",
+        note: "한도를 써요 (남은 한도가 있어야 실행돼요)",
         instruction: "Claude에게 맡긴 뒤 규칙마다 골라 바꿔요.",
       },
     ]);
@@ -315,9 +317,9 @@ describe("rules card copy (0018 작업 B)", () => {
     );
     expect(paths.loses).toContain("대화를 압축하면 빠졌다가, 그 파일을 다시 열면 돌아와요");
     expect(skill.suggestion).toBe(
-      "스킬 `git-workflow`로 옮기기: Use when writing a commit message or opening a pull request.",
+      "스킬로 옮기기(`git-workflow`): Use when writing a commit message or opening a pull request.",
     );
-    expect(skill.loses).toContain("/git-workflow로 부를 때만 실려요");
+    expect(skill.loses).toContain("/git-workflow 명령으로 부를 때만 실려요");
     expect(skill.warnings).toEqual([
       "다른 규칙 1곳이 이 파일을 가리켜요. 그 링크는 고치지 않아요.",
     ]);
@@ -357,7 +359,7 @@ describe("rules card copy (0018 작업 B)", () => {
       "pathAbsolute",
     ] as const;
     expect(new Set(problems.map(ruleProblemText)).size).toBe(problems.length);
-    expect(ruleProblemText("pathAbsolute")).toBe("파일 목록이 / 나 ~ 로 시작해요");
+    expect(ruleProblemText("pathAbsolute")).toBe("파일 목록이 ‘/’나 ‘~’로 시작해요");
     expect(unknownKeysText(2)).toBe("Claude 제안을 쓸 수 없어요(모르는 규칙 2개에 답했어요)");
   });
 });

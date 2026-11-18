@@ -175,7 +175,7 @@ describe("SettingsView", () => {
 
     expect(calls).toEqual([]);
     expect(input(/^경고색 기준/).getAttribute("aria-invalid")).toBe("true");
-    expect(screen.getByText("1–99% 안이어야 합니다.")).toBeTruthy();
+    expect(screen.getByText("1–99% 안이어야 해요.")).toBeTruthy();
     expect(input(/^Kiro 간격/).hasAttribute("aria-invalid")).toBe(false);
   });
 

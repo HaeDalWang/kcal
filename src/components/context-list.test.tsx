@@ -146,7 +146,7 @@ describe("ContextList", () => {
         : undefined,
     );
     render(<ContextList agent="kiro" charsPerToken={DEFAULT_TUNING.bytesPerToken} />);
-    expect(await screen.findByText("시작 조립 12,345자(~3,086 토큰)")).toBeTruthy();
+    expect(await screen.findByText("시작 때 조립한 글 12,345자(~3,086 토큰)")).toBeTruthy();
   });
 
   it("says so when the agent is missing from the response", async () => {
@@ -278,7 +278,7 @@ describe("ContextList Codex share", () => {
     expect(share.getAttribute("title")).toBe("예상: 기록으로 계산한 값");
     // 범위: 보통 구간 × fold max = 100×9/2000 + 100×1/200 = 0.95, 바쁠 때 구간 × fold min = 100×18/500 + 100×2/50 = 7.6
     expect(group.querySelector("[data-slot=details]")!.textContent).toContain(
-      "한도 몫: 보통 ~1.90%, 범위 ~0.95~7.60% (바쁠 때(상위 10%) 포함)",
+      "한도 몫: 보통 ~1.90%, 범위 ~0.95–7.60% (바쁠 때(상위 10%) 포함)",
     );
     const rows = within(group).getAllByRole("listitem");
     expect(rows[0].textContent).toBe("AGENTS.md~100~1.90%");

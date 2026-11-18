@@ -33,7 +33,7 @@ function mock(overrides: Record<string, (args: unknown) => unknown> = {}): Calls
 }
 
 const ALL: Agent[] = ["claude", "codex", "kiro"];
-const EFFORT_TITLE = "생각 깊이 설정 한 줄이 지금 모델에 안 먹고 있어요";
+const EFFORT_TITLE = "생각 깊이 설정 한 줄이 지금 모델에서 무시돼요";
 const section = (name: string) => screen.getByRole("region", { name });
 const column = (agent: string, name: "최적화" | "진단하기") =>
   within(section(agent)).getByRole("group", { name });
@@ -248,7 +248,7 @@ describe("ChecksTab", () => {
         name: /CLAUDE.md 340줄이라/,
       }),
     );
-    await within(long).findByText("한도를 씁니다 · 지금 남은 한도 64%");
+    await within(long).findByText("한도를 써요 · 지금 남은 한도 64%");
     await within(long).findByText("남은 한도가 70%보다 적어요.");
     const button = within(long).getByRole("button", { name: /Claude에게 줄여 달라고 하기/ });
     expect((button as HTMLButtonElement).disabled).toBe(true);
