@@ -16,6 +16,11 @@ import type {
 
 const SETTINGS = "/Users/me/.claude/settings.json";
 
+/** 적용 기록 이름은 Rust가 화면 언어로 지어 준다(`pick`/`tr!`). 미리보기 `?lang=en`이면 영어 이름, 테스트·그 밖에는 한국어. */
+const isEnPreview =
+  typeof location !== "undefined" && new URLSearchParams(location.search).get("lang") === "en";
+const appliedLabel = (ko: string, en: string) => (isEnPreview ? en : ko);
+
 const verdict = (
   model: string,
   requests: number,
@@ -234,7 +239,7 @@ export const LONG_APPLIED: AppliedSwitch = {
   action: "apply",
   target: `claude/check:${LONG_CHECK.id}:handoff`,
   agent: "claude",
-  name: "CLAUDE.md 줄이기",
+  name: appliedLabel("CLAUDE.md 줄이기", "Shorten CLAUDE.md"),
   file: LONG_FILE,
   backup: `${LONG_FILE}.kcal-20261107T120000000Z.bak`,
   enabled: false,
@@ -359,7 +364,7 @@ export const RULES_APPLIED: AppliedSwitch = {
   action: "apply",
   target: `claude/check:${RULES_CHECK.id}:paths`,
   agent: "claude",
-  name: "coding-style.md 필요할 때만 싣기",
+  name: appliedLabel("coding-style.md 필요할 때만 싣기", "Load coding-style.md only when needed"),
   file: `${RULES_ROOT}/common/coding-style.md`,
   backup: `${RULES_ROOT}/common/coding-style.md.kcal-20261108T120000000Z.bak`,
   enabled: false,
@@ -392,7 +397,7 @@ export const EFFORT_APPLIED: AppliedSwitch = {
   action: "apply",
   target: "claude/check:D-claude-effort-level:remove",
   agent: "claude",
-  name: "생각 깊이 옛 설정 정리",
+  name: appliedLabel("생각 깊이 옛 설정 정리", "Clean up the old thinking-depth setting"),
   file: SETTINGS,
   backup: `${SETTINGS}.kcal-20261107T120000000Z.bak`,
   enabled: false,
