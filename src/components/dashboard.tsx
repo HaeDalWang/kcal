@@ -203,30 +203,15 @@ export function Dashboard() {
   const shownError = error ?? refreshError ?? tabError;
   return (
     <div className="h-full overflow-y-auto bg-background">
-      <main className="mx-auto flex max-w-5xl flex-col gap-3 p-4 break-keep">
-        <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-          <h1 className="text-base font-semibold">{t.dashboard.title}</h1>
-          {view.tab === "usage" ? (
-            <DayPicker days={days} selected={selected} onSelect={select} />
-          ) : (
-            <span />
-          )}
-          <Button variant="outline" size="sm" onClick={refresh} className="justify-self-end">
-            {t.app.refresh}
-          </Button>
-        </header>
-        {shownError && (
-          <p role="alert" className="text-sm text-destructive">
-            {shownError}
-          </p>
-        )}
-        {!error && !settings && <StateText kind="loading" />}
-        {settings && (
-          <Tabs
-            value={view.tab}
-            onValueChange={(tab: DashboardTab) => setView({ tab, focusKey: 0 })}
-            className="gap-3"
-          >
+      <main className="mx-auto max-w-5xl p-4 break-keep">
+        <Tabs
+          value={view.tab}
+          onValueChange={(tab: DashboardTab) => setView({ tab, focusKey: 0 })}
+          className="gap-3"
+        >
+          {/* 도구막대 한 줄: 제목 · 탭 | 날짜(사용량 탭만) · 새로고침. 좁으면 오른쪽 묶음이 통째로 다음 줄로 간다. */}
+          <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="text-sm font-semibold">{t.dashboard.title}</h1>
             <TabsList>
               <TabsTrigger value="usage" className={TAB}>
                 {t.dashboard.usage}
@@ -235,31 +220,49 @@ export function Dashboard() {
                 {t.app.checks}
               </TabsTrigger>
             </TabsList>
-            {/* 사용량은 숨겨도 그대로 둔다(다시 와도 다시 읽지 않는다). 점검은 열 때마다 새로 읽는다. */}
-            <TabsContent value="usage" keepMounted className="flex flex-col gap-3">
-              <UnreadableNotices settings={settings} usage={usage} />
-              <EmptyGuide settings={settings} usage={usage} onRefresh={refresh} />
-              <DailyActivity
-                days={days}
-                selected={selected}
-                onSelect={select}
-                settings={settings}
-                kiroUsage={usage.snapshot?.agents.find((a) => a.agent === "kiro")}
-              />
-              <HealthCompare
-                refreshKey={`${settings.tuning.compareDays}:${settings.enabledAgents.join(",")}`}
-              />
-              <AgentPanels settings={settings} usage={usage} />
-            </TabsContent>
-            <TabsContent value="checks">
-              <ChecksTab
-                agents={settings.enabledAgents}
-                focusKey={view.focusKey}
-                onShowEffect={showEffect}
-              />
-            </TabsContent>
-          </Tabs>
-        )}
+            <div className="ml-auto flex items-center gap-2">
+              {view.tab === "usage" && (
+                <DayPicker days={days} selected={selected} onSelect={select} />
+              )}
+              <Button variant="outline" onClick={refresh}>
+                {t.app.refresh}
+              </Button>
+            </div>
+          </header>
+          {shownError && (
+            <p role="alert" className="text-sm text-destructive">
+              {shownError}
+            </p>
+          )}
+          {!error && !settings && <StateText kind="loading" />}
+          {settings && (
+            <>
+              {/* 사용량은 숨겨도 그대로 둔다(다시 와도 다시 읽지 않는다). 점검은 열 때마다 새로 읽는다. */}
+              <TabsContent value="usage" keepMounted className="flex flex-col gap-3">
+                <UnreadableNotices settings={settings} usage={usage} />
+                <EmptyGuide settings={settings} usage={usage} onRefresh={refresh} />
+                <DailyActivity
+                  days={days}
+                  selected={selected}
+                  onSelect={select}
+                  settings={settings}
+                  kiroUsage={usage.snapshot?.agents.find((a) => a.agent === "kiro")}
+                />
+                <HealthCompare
+                  refreshKey={`${settings.tuning.compareDays}:${settings.enabledAgents.join(",")}`}
+                />
+                <AgentPanels settings={settings} usage={usage} />
+              </TabsContent>
+              <TabsContent value="checks">
+                <ChecksTab
+                  agents={settings.enabledAgents}
+                  focusKey={view.focusKey}
+                  onShowEffect={showEffect}
+                />
+              </TabsContent>
+            </>
+          )}
+        </Tabs>
       </main>
     </div>
   );

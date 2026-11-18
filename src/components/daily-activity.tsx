@@ -116,33 +116,33 @@ export function DayPicker({ days, selected, onSelect }: DayPickerProps) {
         ? t.daily.yesterday
         : dateText(days[selected]);
   return (
-    <div className="flex items-center gap-1 rounded-full bg-muted p-1">
+    <div className="flex h-8 items-center gap-0.5 rounded-lg bg-muted p-[3px]">
       <Button
         variant="ghost"
-        size="icon-sm"
-        className="rounded-full"
+        size="icon-xs"
+        className="rounded-md"
         aria-label={t.daily.previous}
         disabled={selected === 0}
         onClick={() => onSelect(selected - 1)}
       >
-        <ChevronLeft />
+        <ChevronLeft className="size-3.5" />
       </Button>
       <span
         aria-live="polite"
         title={dateText(days[selected])}
-        className="min-w-28 text-center text-sm font-semibold tabular-nums"
+        className="min-w-28 text-center text-sm font-medium tabular-nums"
       >
         {text}
       </span>
       <Button
         variant="ghost"
-        size="icon-sm"
-        className="rounded-full"
+        size="icon-xs"
+        className="rounded-md"
         aria-label={t.daily.next}
         disabled={selected === last}
         onClick={() => onSelect(selected + 1)}
       >
-        <ChevronRight />
+        <ChevronRight className="size-3.5" />
       </Button>
     </div>
   );
