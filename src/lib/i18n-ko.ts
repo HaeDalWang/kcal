@@ -189,9 +189,9 @@ export const ko = {
     over: "넘침",
     noMonthlyLimit: "월 한도 모름",
     limitUnread: "한도 못 읽음",
+    usagePending: "집계 전",
+    noneAgents: (names: string) => `${names} · 이날 기록 없음`,
     hourly: "시간대별 요청",
-    noneThisDay: (isQuestion: boolean): string =>
-      isQuestion ? "이날 질문 없음" : "이날 요청 없음",
     question: "질문",
     request: "요청",
     chart: (agent: string, noun: string, summary: string) =>

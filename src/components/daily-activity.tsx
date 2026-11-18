@@ -39,6 +39,8 @@ type AgentDay = {
   isCredits: boolean;
   /** % 에이전트인데 한도 표본이 하나도 없다(로그인 못 읽음 등). 0 %가 아니라 모르는 값이다. */
   isUnread: boolean;
+  /** % 에이전트인데 요청은 있고 쓴 %p는 0이다. 한도 표본이 아직 오르지 않았거나 앱이 꺼져 있던 때라 0 %를 확정할 수 없다. */
+  isPending: boolean;
 };
 
 function agentDays(
@@ -52,20 +54,24 @@ function agentDays(
     const m = metrics?.agents.find((a) => a.agent === agent);
     const activity = dayActivity(m?.hourly ?? [], day);
     const isCredits = agent === "kiro";
+    const isUnread = !isCredits && m !== undefined && m.bars.length === 0 && activity.used === 0;
     return {
       agent,
       activity,
       goal: dailyGoal(agent, settings.tuning, kiroUsage, day),
       isCredits,
       // 5시간 막대(`bars`)는 한도 표본으로만 생긴다. 비어 있으면 그날 %도 읽지 못한 것이다.
-      isUnread: !isCredits && m !== undefined && m.bars.length === 0 && activity.used === 0,
+      isUnread,
+      // 한도 %는 표본(앱이 켜져 있을 때만 기록)의 증가분이라, 요청이 있어도 0일 수 있다(0015). 확정된 "0"으로 보이지 않는다.
+      isPending:
+        !isCredits && !isUnread && activity.used === 0 && activity.requests.some((n) => n > 0),
     };
   });
 }
 
 function rings(values: readonly AgentDay[]): Ring[] {
   return values.flatMap((v) =>
-    v.goal === null || v.isUnread
+    v.goal === null || v.isUnread || v.isPending
       ? []
       : [{ agent: v.agent, fraction: ringFraction(v.activity.used, v.goal) }],
   );
@@ -82,6 +88,7 @@ function ringsLabel(values: readonly AgentDay[], isEmpty = isEmptyDay(values)): 
     .map((v) => {
       if (isEmpty) return `${AGENT_LABEL[v.agent]} ${t.common.noRecord}`;
       if (v.isUnread) return `${AGENT_LABEL[v.agent]} ${t.daily.limitUnread}`;
+      if (v.isPending) return `${AGENT_LABEL[v.agent]} ${t.daily.usagePending}`;
       const used = t.daily.amount(amount.format(v.activity.used), v.isCredits);
       const goal =
         v.goal === null ? "" : t.daily.goal(t.daily.amount(amount.format(v.goal), v.isCredits));
@@ -189,7 +196,7 @@ export function DailyActivity({ days, selected, onSelect, settings, kiroUsage }:
           </li>
         ))}
       </ul>
-      <div className="grid grid-cols-1 gap-3 min-[900px]:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-3 min-[900px]:grid-cols-2">
         <TodayCard values={today} />
         <HourlyCard values={today} />
       </div>
@@ -215,66 +222,78 @@ function TodayCard({ values }: { values: readonly AgentDay[] }) {
     { label: t.daily.activeHours, value: t.daily.hours(activeHours) },
   ];
   return (
-    <section aria-label={t.daily.usedToday} className={`${CARD} flex flex-col gap-5 p-5`}>
-      <ActivityRings
-        rings={rings(values)}
-        size={208}
-        stroke={16}
-        gap={4}
-        label={ringsLabel(values)}
-        className="self-center"
-      />
-      <ul
-        className="grid gap-2"
-        style={{ gridTemplateColumns: `repeat(${values.length}, minmax(0, 1fr))` }}
-      >
-        {values.map((v) => {
-          const isOver = v.goal !== null && v.activity.used > v.goal;
-          return (
-            <li
-              key={v.agent}
-              title={measuredTitle(ringsLabel([v], isEmpty))}
-              className="flex min-w-0 flex-col items-center pt-2 pb-1.5"
-            >
-              <span className="flex items-center gap-1.5 text-sm font-medium">
-                <span
-                  aria-hidden
-                  className="size-2 rounded-full"
-                  style={{ backgroundColor: AGENT_COLOR[v.agent] }}
-                />
-                {AGENT_LABEL[v.agent]}
-              </span>
-              {/* 빈 날은 "기록 없음"을 숫자 자리 높이 그대로 조용히 둔다(세 칸 모두 큰 글씨면 시끄럽다). */}
-              {isEmpty ? (
-                <span className="flex h-[1.875rem] items-center text-sm text-muted-foreground">
-                  {t.common.noRecord}
+    <section aria-label={t.daily.usedToday} className={`${CARD} flex flex-col gap-4 p-5`}>
+      <div className="flex items-center gap-5">
+        <ActivityRings
+          rings={rings(values)}
+          size={104}
+          stroke={10}
+          gap={3}
+          label={ringsLabel(values)}
+        />
+        <ul className="flex min-w-0 flex-1 flex-col gap-2.5">
+          {values.map((v) => {
+            const isOver = v.goal !== null && v.activity.used > v.goal;
+            const isQuiet = isEmpty || v.isPending;
+            return (
+              <li
+                key={v.agent}
+                title={measuredTitle(ringsLabel([v], isEmpty))}
+                className="flex min-w-0 items-baseline gap-2"
+              >
+                <span className="flex w-16 shrink-0 items-center gap-1.5 text-sm font-medium">
+                  <span
+                    aria-hidden
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: AGENT_COLOR[v.agent] }}
+                  />
+                  {AGENT_LABEL[v.agent]}
                 </span>
-              ) : (
-                <span
-                  className={`text-2xl leading-tight font-semibold tabular-nums ${isOver ? "text-warn" : ""}`}
-                >
-                  {v.isUnread ? "—" : amount.format(v.activity.used)}
-                </span>
-              )}
-              {!isEmpty && !v.isUnread && (
-                <span className="text-xs text-muted-foreground">{t.daily.unit(v.isCredits)}</span>
-              )}
-              {/* 넘침을 색만으로 알리지 않는다(6절 3). */}
-              {isOver && <span className="text-xs font-medium text-warn">{t.daily.over}</span>}
-              {/* 빈 날은 목표 줄을 보이지 않는다(design.md 1절: 모르는 값은 줄 숨김). */}
-              {!isEmpty && (
-                <span className="mt-1.5 w-full border-t pt-1 text-center text-xs text-balance text-muted-foreground tabular-nums">
-                  {v.isUnread
-                    ? t.daily.limitUnread
-                    : v.goal === null
+                {/* 기록이 없거나 아직 집계 전이면 큰 숫자 대신 조용한 글씨(확정된 0을 내지 않는다). */}
+                {isQuiet || v.isUnread ? (
+                  <>
+                    {!isEmpty && (
+                      <span className="text-lg leading-tight font-semibold text-muted-foreground">
+                        —
+                      </span>
+                    )}
+                    <span className="text-sm text-muted-foreground">
+                      {isEmpty
+                        ? t.common.noRecord
+                        : v.isUnread
+                          ? t.daily.limitUnread
+                          : t.daily.usagePending}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      className={`text-lg leading-tight font-semibold tabular-nums ${isOver ? "text-warn" : ""}`}
+                    >
+                      {amount.format(v.activity.used)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {t.daily.unit(v.isCredits)}
+                    </span>
+                    {/* 넘침을 색만으로 알리지 않는다(6절 3). */}
+                    {isOver && (
+                      <span className="text-xs font-medium text-warn">{t.daily.over}</span>
+                    )}
+                  </>
+                )}
+                {/* 빈 날은 목표를 보이지 않는다(design.md 1절: 모르는 값은 줄 숨김). */}
+                {!isEmpty && (
+                  <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+                    {v.goal === null
                       ? t.daily.noMonthlyLimit
                       : t.daily.goalLabel(t.daily.amount(amount.format(v.goal), v.isCredits))}
-                </span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
       <dl className="flex flex-col gap-2 text-sm">
         {lines.map((line) => (
           <div key={line.label} title={line.title} className="flex items-baseline gap-2">
@@ -292,20 +311,18 @@ function TodayCard({ values }: { values: readonly AgentDay[] }) {
 }
 
 function HourlyCard({ values }: { values: readonly AgentDay[] }) {
+  const active = values.filter((v) => busiestHour(v.activity.requests) !== null);
+  const quiet = values.filter((v) => busiestHour(v.activity.requests) === null);
   return (
-    <section aria-label={t.daily.hourly} className={`${CARD} flex flex-col gap-6 p-5`}>
-      {values.map((v) => {
+    <section aria-label={t.daily.hourly} className={`${CARD} flex flex-col gap-5 p-5`}>
+      {active.map((v) => {
         const noun = v.agent === "kiro" ? t.daily.question : t.daily.request;
-        const busiest = busiestHour(v.activity.requests);
-        // 그날 요청이 없으면 빈 축 대신 조용한 한 줄만 둔다(에이전트마다).
-        const summary =
-          busiest === null
-            ? t.daily.noneThisDay(v.agent === "kiro")
-            : t.daily.busiestAt(
-                hourRangeText(busiest),
-                integer.format(v.activity.requests[busiest]),
-                v.agent === "kiro",
-              );
+        const busiest = busiestHour(v.activity.requests) ?? 0;
+        const summary = t.daily.busiestAt(
+          hourRangeText(busiest),
+          integer.format(v.activity.requests[busiest]),
+          v.agent === "kiro",
+        );
         return (
           <div key={v.agent} className="flex flex-col gap-2">
             <div>
@@ -314,17 +331,21 @@ function HourlyCard({ values }: { values: readonly AgentDay[] }) {
               </h3>
               <p className="text-sm text-muted-foreground tabular-nums">{summary}</p>
             </div>
-            {busiest !== null && (
-              <HourlyChart
-                agent={v.agent}
-                requests={v.activity.requests}
-                noun={noun}
-                label={t.daily.chart(AGENT_LABEL[v.agent], noun, summary)}
-              />
-            )}
+            <HourlyChart
+              agent={v.agent}
+              requests={v.activity.requests}
+              noun={noun}
+              label={t.daily.chart(AGENT_LABEL[v.agent], noun, summary)}
+            />
           </div>
         );
       })}
+      {/* 그날 요청이 없는 에이전트는 머리글·빈 축 없이 한 줄로 모은다. */}
+      {quiet.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {t.daily.noneAgents(quiet.map((v) => AGENT_LABEL[v.agent]).join(", "))}
+        </p>
+      )}
     </section>
   );
 }
