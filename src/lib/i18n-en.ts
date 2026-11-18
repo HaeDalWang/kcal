@@ -23,7 +23,7 @@ const n = (count: number, one: string, many = `${one}s`) => `${count} ${count ==
 const ns = (count: string, one: string, many = `${one}s`) =>
   `${count} ${count === "1" ? one : many}`;
 const UNCHANGED = " The file is unchanged.";
-const UNUSABLE = "Claude's suggestion can't be used";
+const UNUSABLE = "Claude’s suggestion can’t be used";
 const WHO_BACKUP = "It keeps a backup, and you can undo it here.";
 
 export const en: Messages = {
