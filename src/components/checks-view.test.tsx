@@ -435,4 +435,18 @@ describe("AgentChecks", () => {
       expect(card(RULES_TITLE)).toBeTruthy();
     });
   });
+  it("returns focus to the row's action button when a panel closes with Escape", async () => {
+    mock();
+    render(list(THIS_MAC_CHECKS));
+    const opener = screen.getByRole("button", { name: "무시되는 생각 깊이 설정 고치기" });
+    fireEvent.click(opener);
+    const panel = await screen.findByRole("group", { name: "바꿀 내용 확인" });
+    await waitFor(() => expect(document.activeElement).toBe(panel));
+    fireEvent.keyDown(panel, { key: "Escape" });
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "무시되는 생각 깊이 설정 고치기" }),
+      ),
+    );
+  });
 });

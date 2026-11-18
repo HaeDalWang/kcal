@@ -2,7 +2,7 @@
 // 값은 열 때와 적용·되돌리기·숨기기 뒤에만 읽는다(타이머 없음). 쓰기는 Rust가 점검 ID·옵션 ID로만 한다.
 // "그대로 두기"는 카드를 숨긴다(설정은 그대로). 숨김 판정(`isDismissed`)은 Rust가 한다.
 // 목록 모양(시안 J: 진행 표시 + 한 줄 목록 + 한 줄만 펼침)은 `checks-list.tsx`, 문구는 `src/lib/check-copy.ts`.
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import {
   AllClear,
@@ -129,6 +129,10 @@ export function AgentChecks({
   const [undone, setUndone] = useState<AppliedSwitch | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  // 패널을 닫으면 그 줄로 포커스를 돌려준다(줄이 없어졌으면 이 칸 맨 위로).
+  const [returnId, setReturnId] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const onReturned = useCallback(() => setReturnId(null), []);
   const visible = checks.filter((c) => !c.isDismissed);
   const fixed = fixedEntries(log, agent, fixedSince);
   const setStep = (step: Step) => setActive((prev) => prev && { ...prev, step });
@@ -235,7 +239,11 @@ export function AgentChecks({
   };
   const undo = (id: string) => write(() => undoSwitch(id), showDone);
   const undoFixed = (id: string) => write(() => undoSwitch(id), setUndone);
-  const close = () => setActive(null);
+  const close = () => {
+    if (active && visible.some((c) => c.id === active.check.id)) setReturnId(active.check.id);
+    else rootRef.current?.focus();
+    setActive(null);
+  };
 
   const isActiveListed = active !== null && visible.some((c) => c.id === active.check.id);
   const at = active ? Math.min(Math.max(active.index, 0), visible.length) : 0;
@@ -248,7 +256,7 @@ export function AgentChecks({
   const busy = isBusy || isRunning(active?.step);
   const doneApplied = active?.step.kind === "done" ? active.step.applied : undone;
   return (
-    <div className="flex flex-col">
+    <div ref={rootRef} tabIndex={-1} className="flex flex-col outline-none">
       <LiveStatus
         text={doneApplied && t.checksView.done(doneApplied.name, doneApplied.action === "undo")}
       />
@@ -306,6 +314,8 @@ export function AgentChecks({
                 isOpen={open.key === checkRowKey(check.id)}
                 isBusy={busy}
                 isEmphasized={active === null}
+                isReturn={returnId === check.id}
+                onReturned={onReturned}
                 onToggle={() => open.toggle(checkRowKey(check.id))}
                 onPick={pick}
                 onKeep={keep}

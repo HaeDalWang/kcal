@@ -2,7 +2,7 @@
 // 다음에 남은 카드 한 줄씩. 누른 줄 하나만 진단하기(E)와 같은 테두리 카드로 펼쳐 설명·근거 칩·바뀌는 줄·버튼을 보인다.
 // 펼친 카드의 주 버튼만 강조 버튼이다(design.md 6절 3). 무엇을 하나·파일 경로·명령·문서는 접힌 "파일 위치와 출처" 안.
 import { Check, ChevronRight } from "lucide-react";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { AGENT_COLOR } from "@/components/agent-metrics";
 import { CopyCommand } from "@/components/coach-view";
@@ -408,6 +408,7 @@ function RowAction({
   copy,
   handoff,
   isBusy,
+  buttonRef,
   onPick,
   onKeep,
 }: {
@@ -415,9 +416,11 @@ function RowAction({
   copy: CheckCopy;
   handoff: HandoffContext;
   isBusy: boolean;
+  buttonRef: React.Ref<HTMLButtonElement>;
 } & CardHandlers) {
   const button = (label: string, onClick: () => void, isDisabled = false) => (
     <Button
+      ref={buttonRef}
       size="xs"
       variant="outline"
       className="relative z-10"
@@ -446,6 +449,8 @@ export function CheckRow({
   isOpen,
   isBusy,
   isEmphasized,
+  isReturn = false,
+  onReturned,
   onToggle,
   onPick,
   onKeep,
@@ -454,10 +459,20 @@ export function CheckRow({
   handoff: HandoffContext;
   isOpen: boolean;
   isBusy: boolean;
+  /** 이 줄에서 연 패널이 방금 닫혔다: 작은 버튼(없으면 펼치기 버튼)으로 포커스를 돌려준다. */
+  isReturn?: boolean;
+  onReturned?: () => void;
   onToggle: () => void;
 } & CardHandlers &
   Emphasis) {
   const detailsId = useId();
+  const actionRef = useRef<HTMLButtonElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!isReturn) return;
+    (actionRef.current ?? toggleRef.current)?.focus();
+    onReturned?.();
+  }, [isReturn, onReturned]);
   const copy = checkCopy(check);
   const meta = rowMeta(check);
   return (
@@ -470,6 +485,7 @@ export function CheckRow({
       {/* 줄 전체가 펼치기 버튼의 누르는 자리다: 버튼의 ::after가 줄을 덮고, 작은 버튼만 그 위(z-10)에 둔다(중첩 button 없음). */}
       <div className="relative flex items-center gap-2 rounded-md hover:bg-accent">
         <button
+          ref={toggleRef}
           type="button"
           aria-expanded={isOpen}
           aria-controls={detailsId}
@@ -499,6 +515,7 @@ export function CheckRow({
             copy={copy}
             handoff={handoff}
             isBusy={isBusy}
+            buttonRef={actionRef}
             onPick={onPick}
             onKeep={onKeep}
           />
