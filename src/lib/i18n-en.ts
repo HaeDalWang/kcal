@@ -119,11 +119,11 @@ export const en: Messages = {
     collecting: "Collecting data",
     collectingHint: "Data builds up as you use it.",
     insufficient: "Not enough data yet",
-    insufficientHint: "It shows up once there's more data.",
+    insufficientHint: "It shows up once there’s more data.",
     rangeHint:
       "The fit is loose, so this is a range. Input tokens you can send for 1% of the 5-hour limit.",
-    unknown: "Can't tell yet",
-    unknownHint: "The logs alone weren't enough to calculate it.",
+    unknown: "Can’t tell yet",
+    unknownHint: "The logs alone weren’t enough to calculate it.",
     kiroTurn: (share) => `1 question = ${share}% of the monthly limit`,
     perPercent: "Tokens per 1% of the limit",
     pattern: "Usage pattern",
@@ -170,7 +170,7 @@ export const en: Messages = {
       [days === null ? null : `last ${n(days, "day")}`, "sum of 5-hour limit %"]
         .filter(Boolean)
         .join(" · "),
-    validation: (used, predicted) => `kcal's estimate ${predicted}% · actual ${used}%`,
+    validation: (used, predicted) => `kcal’s estimate ${predicted}% · actual ${used}%`,
     compositionHint:
       "An estimate that splits one typical 5-hour window. Setup is the startup context resent with every request.",
     compositionDetail: (validation, requests, misses, windows) =>
@@ -660,11 +660,11 @@ export const en: Messages = {
       diagnoseUsageFiles: { label: "Claude log files Diagnose opens" },
       diagnoseMinSessions: {
         label: "Sessions needed to suggest turning off",
-        hint: "fewer than this, kcal can't tell if you use it",
+        hint: "fewer than this, kcal can’t tell if you use it",
       },
       scopeMinUses: {
         label: "Uses needed to suggest a project-only scope",
-        hint: "fewer than this, kcal can't tell if you use it often",
+        hint: "fewer than this, kcal can’t tell if you use it often",
       },
       diagnoseUsageMaxMib: {
         label: "Log size Diagnose reads",
