@@ -47,11 +47,12 @@ pub fn events_and_cwds(files: &[PathBuf]) -> (Vec<Event>, HashMap<String, String
     let mut raw = Vec::new();
     let mut cwds = HashMap::new();
     for file in files {
-        let (events, cwd) = codex::read_rollout(file);
+        let rollout = codex::read_rollout(file);
+        let (events, cwd) = &*rollout;
         if let (Some(first), Some(cwd)) = (events.first(), cwd) {
-            cwds.insert(first.file.clone(), cwd);
+            cwds.insert(first.file.clone(), cwd.clone());
         }
-        raw.extend(events);
+        raw.extend(events.iter().cloned());
     }
     (codex::dedup(&raw), cwds)
 }

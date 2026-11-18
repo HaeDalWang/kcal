@@ -8,6 +8,8 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, LazyLock, Mutex};
+use std::time::SystemTime;
 
 use serde_json::Value;
 use time::OffsetDateTime;
@@ -63,6 +65,9 @@ pub fn rollout_files(home: &Path) -> Vec<PathBuf> {
         .collect();
     files.sort_by_cached_key(|p| p.to_string_lossy().into_owned());
     files.dedup();
+    if let Ok(mut map) = PARSED.lock() {
+        map.retain(|path, _| !path.starts_with(&root) || files.binary_search(path).is_ok());
+    }
     files
 }
 
@@ -191,11 +196,50 @@ fn for_each_line_capped(file: &Path, cap: usize, mut f: impl FnMut(&[u8])) {
 
 /// 파일 하나의 이벤트. 접두 검사를 통과한 줄만 JSON으로 읽는다. 잘린 줄은 건너뛴다.
 pub fn read_events(file: &Path) -> Vec<Event> {
-    read_rollout(file).0
+    read_rollout(file).0.clone()
+}
+
+/// rollout 하나의 (이벤트, 작업 폴더).
+pub(super) type Rollout = (Vec<Event>, Option<String>);
+
+/// 파일별 결과: (수정 시각, 크기)가 같으면 다시 읽지 않는다. 이 Mac 154개·434MB를 매번 읽으면 release에서 약 5초.
+/// 없어진 파일의 항목은 `rollout_files`가 목록을 훑을 때 지운다.
+#[allow(clippy::type_complexity)]
+static PARSED: LazyLock<Mutex<HashMap<PathBuf, (SystemTime, u64, Arc<Rollout>)>>> =
+    LazyLock::new(Default::default);
+
+/// 테스트용: 경로별로 실제로 파일을 읽은 횟수.
+#[cfg(test)]
+pub(crate) static PARSE_COUNTS: LazyLock<Mutex<HashMap<PathBuf, usize>>> =
+    LazyLock::new(Default::default);
+
+/// `parse_rollout`의 결과. 같은 파일은 바뀌기 전까지 한 번만 읽는다.
+pub(super) fn read_rollout(file: &Path) -> Arc<Rollout> {
+    let key = std::fs::metadata(file)
+        .ok()
+        .and_then(|m| Some((m.modified().ok()?, m.len())));
+    if let Some((modified, len)) = key
+        && let Ok(map) = PARSED.lock()
+        && let Some((m, l, found)) = map.get(file)
+        && (*m, *l) == (modified, len)
+    {
+        return Arc::clone(found);
+    }
+    #[cfg(test)]
+    if let Ok(mut counts) = PARSE_COUNTS.lock() {
+        *counts.entry(file.to_path_buf()).or_default() += 1;
+    }
+    let parsed = Arc::new(parse_rollout(file));
+    if let Some((modified, len)) = key
+        && let Ok(mut map) = PARSED.lock()
+    {
+        map.insert(file.to_path_buf(), (modified, len, Arc::clone(&parsed)));
+    }
+    parsed
 }
 
 /// 이벤트와 작업 폴더 경로(첫 줄 `session_meta`의 `cwd`). 같은 읽기 루프에서 첫 줄만 더 본다.
-pub(super) fn read_rollout(file: &Path) -> (Vec<Event>, Option<String>) {
+fn parse_rollout(file: &Path) -> Rollout {
     let name = file
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())

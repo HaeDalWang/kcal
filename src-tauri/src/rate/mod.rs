@@ -192,8 +192,8 @@ pub struct RateSnapshot {
 
 pub const RATES_UPDATED_EVENT: &str = "rates-updated";
 
-// ponytail: 다시 계산할 때 rollout·Kiro 세션·Claude 기록 전체를 읽는다(이 Mac 약 1.4GB + 630MB, debug 빌드 약 4.7초 + Claude).
-// 캐시 덕에 화면은 기다리지 않는다. CPU·디스크 부담이 문제가 되면 파일별 (mtime, 크기) 캐시로 바뀐 파일만 읽는다.
+// Codex rollout·Claude 기록은 파일별 (mtime, 크기) 메모로 바뀐 파일만 다시 읽는다(Codex 154개: 첫 계산 약 5초, 그 뒤 약 15ms, release).
+// ponytail: Kiro 세션은 매번 전체를 읽는다. 무거워지면 같은 메모를 둔다.
 fn compute(home: &Path, history_file: &Path, tuning: &Tuning) -> RateSnapshot {
     let now = OffsetDateTime::now_utc();
     let advanced = &tuning.advanced;

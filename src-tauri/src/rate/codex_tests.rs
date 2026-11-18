@@ -372,3 +372,31 @@ fn for_each_line_stops_at_overlong_line() {
     for_each_line_capped(&path, 16, |_| all += 1);
     assert_eq!(all, 3);
 }
+
+#[test]
+fn rereads_a_rollout_only_after_it_changes_and_forgets_deleted_ones() {
+    let home = TempDir::new("rate-codex-memo");
+    let line = token_line("2026-11-04T01:00:00Z", 10, 10, "codex", 5.0, 1_800_000_000);
+    home.write(".codex/sessions/2026/11/04/rollout-m.jsonl", &line);
+    let file = rollout_files(home.path()).remove(0);
+    let reads = || {
+        PARSE_COUNTS
+            .lock()
+            .unwrap()
+            .get(&file)
+            .copied()
+            .unwrap_or(0)
+    };
+    assert_eq!(read_events(&file).len(), 1);
+    assert_eq!(read_events(&file).len(), 1);
+    assert_eq!(reads(), 1);
+
+    let second = token_line("2026-11-04T01:01:00Z", 20, 30, "codex", 6.0, 1_800_000_000);
+    std::fs::write(&file, format!("{line}\n{second}")).unwrap();
+    assert_eq!(read_events(&file).len(), 2);
+    assert_eq!(reads(), 2);
+
+    std::fs::remove_file(&file).unwrap();
+    assert!(rollout_files(home.path()).is_empty());
+    assert!(!PARSED.lock().unwrap().contains_key(&file));
+}
