@@ -169,7 +169,7 @@ function ActionButton({
 
 const KindChip = ({ item }: { item: CoachSwitch }) => (
   <Badge
-    variant="secondary"
+    variant="outline"
     className="h-4 shrink-0 px-1.5 py-0 text-[10px] leading-none text-muted-foreground"
   >
     {item.kind === "mcp" ? "MCP" : t.coach.plugin}
