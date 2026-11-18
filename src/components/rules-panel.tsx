@@ -1,6 +1,7 @@
 // 늘 실리는 규칙 카드(0018 작업 B)의 결과 칸: Claude가 규칙마다 제안한 것 한 줄씩 + "이대로 바꾸기".
 // 적용은 Rust 보관본으로 한다(화면은 카드 id·규칙 열쇠·해시만 보낸다). 되돌리기는 진단하기 "최근 바꾼 것"에서.
 // 문구는 `src/lib/check-copy.ts`(`ruleRowCopy`·`RULES_PREVIEW`).
+import { TriangleAlert } from "lucide-react";
 import { Fragment } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -56,8 +57,10 @@ function RuleRow({
       </p>
       {rule.reason && <p className={MUTED}>{rule.reason}</p>}
       {copy.loses && <p className="text-[10px]">{t.checksView.loses(copy.loses)}</p>}
+      {/* 주의(오류 아님)는 --warn색 + 세모 아이콘: 색만으로 알리지 않는다(design.md 4절). */}
       {copy.warnings.map((w) => (
-        <p key={w} className="text-[10px] text-destructive">
+        <p key={w} className="flex items-start gap-1 text-[10px] text-warn">
+          <TriangleAlert aria-hidden className="mt-px size-[10px] shrink-0" />
           {w}
         </p>
       ))}
