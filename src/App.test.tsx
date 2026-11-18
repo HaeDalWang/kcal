@@ -113,12 +113,22 @@ describe("popover menu", () => {
     await waitFor(() =>
       expect(calls.find((c) => c.cmd === "open_dashboard")?.args).toEqual({ tab: "checks" }),
     );
-    fireEvent.click(within(menu()).getByRole("button", { name: "대시보드" }));
+    fireEvent.click(within(menu()).getByRole("button", { name: /^대시보드/ }));
     await waitFor(() =>
       expect(calls.filter((c) => c.cmd === "open_dashboard").map((c) => c.args)).toEqual([
         { tab: "checks" },
         {},
       ]),
+    );
+  });
+
+  it("opens the dashboard with the D shortcut shown on its row", async () => {
+    const calls = mock(THIS_MAC_CHECKS);
+    render(<App />);
+    expect((await checksItem()) && within(menu()).getByText("Ctrl+D")).toBeTruthy();
+    fireEvent.keyDown(window, { key: "d", ctrlKey: true });
+    await waitFor(() =>
+      expect(calls.filter((c) => c.cmd === "open_dashboard").map((c) => c.args)).toEqual([{}]),
     );
   });
 });

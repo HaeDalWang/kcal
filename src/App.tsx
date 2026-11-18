@@ -128,7 +128,7 @@ export function App() {
     action().catch((reason: unknown) => setActionError(errorMessage(reason)));
   };
 
-  // 단축키. 설정 화면에서는 새로고침·설정 단축키를 무시한다.
+  // 단축키. 설정 화면에서는 대시보드·새로고침·설정 단축키를 무시한다.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(IS_MAC ? event.metaKey : event.ctrlKey)) return;
@@ -136,6 +136,9 @@ export function App() {
       if (key === "q") {
         event.preventDefault();
         void quitApp();
+      } else if (view === "usage" && key === "d") {
+        event.preventDefault();
+        run(openDashboard);
       } else if (view === "usage" && key === "r") {
         event.preventDefault();
         run(refreshAll);
@@ -180,7 +183,7 @@ export function App() {
         {view === "usage" && (
           <>
             <button type="button" onClick={() => run(openDashboard)} className={MENU_ITEM}>
-              <MenuLabel icon={<LayoutDashboard />} label={t.app.dashboard} />
+              <MenuLabel icon={<LayoutDashboard />} label={t.app.dashboard} shortcut={hint("D")} />
             </button>
             {/* 최적화·진단하기는 대시보드 점검 탭(docs/decisions/0017 "화면 자리"). 여기는 알림만. */}
             <button
