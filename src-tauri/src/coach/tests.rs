@@ -127,14 +127,30 @@ fn apply_writes_backup_next_to_original_with_same_content() {
 
 #[cfg(unix)]
 #[test]
+fn apply_refuses_symlink_planted_at_backup_name() {
+    let f = fixture("backup-link");
+    let victim = f.config.with_file_name("victim");
+    let planted = f
+        .config
+        .with_file_name("config.toml.kcal-20261105T120000123Z.bak");
+    std::os::unix::fs::symlink(&victim, &planted).unwrap();
+    let p = preview_of(&f, TARGET, false).unwrap();
+    assert!(message(apply_with(&f, &p.before_hash).unwrap_err()).contains("백업"));
+    assert!(!victim.exists());
+    assert_eq!(std::fs::read_to_string(&f.config).unwrap(), CONFIG);
+}
+
+#[cfg(unix)]
+#[test]
 fn apply_keeps_file_permission_mode() {
     use std::os::unix::fs::PermissionsExt;
     let f = fixture("mode");
     std::fs::set_permissions(&f.config, std::fs::Permissions::from_mode(0o600)).unwrap();
     let p = preview_of(&f, TARGET, false).unwrap();
-    apply_with(&f, &p.before_hash).unwrap();
-    let mode = std::fs::metadata(&f.config).unwrap().permissions().mode() & 0o777;
-    assert_eq!(mode, 0o600);
+    let applied = apply_with(&f, &p.before_hash).unwrap();
+    let mode_of = |p: &Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
+    assert_eq!(mode_of(&f.config), 0o600);
+    assert_eq!(mode_of(Path::new(&applied.backup)), 0o600);
 }
 
 #[cfg(unix)]

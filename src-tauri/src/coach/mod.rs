@@ -226,14 +226,26 @@ fn backup_and_replace(
     now: OffsetDateTime,
 ) -> Result<PathBuf, AppError> {
     let backup = backup_path(path, now)?;
-    if backup.exists() {
-        return Err(refuse(pick(
-            "같은 이름의 백업이 이미 있어요. 잠시 뒤 다시 하세요.",
-            "A backup with the same name already exists. Try again in a moment.",
-        )));
+    // create_new(O_EXCL) also refuses a planted symlink; fs::copy would write through it.
+    let copied = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&backup)
+        .and_then(|mut out| {
+            let mut src = std::fs::File::open(path)?;
+            std::io::copy(&mut src, &mut out)?;
+            out.set_permissions(src.metadata()?.permissions())
+        });
+    match copied {
+        Ok(()) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+            return Err(refuse(pick(
+                "같은 이름의 백업이 이미 있어요. 잠시 뒤 다시 하세요.",
+                "A backup with the same name already exists. Try again in a moment.",
+            )));
+        }
+        Err(e) => return Err(io_refusal(pick("백업 만들기", "create the backup"), &e)),
     }
-    std::fs::copy(path, &backup)
-        .map_err(|e| io_refusal(pick("백업 만들기", "create the backup"), &e))?;
     replace_file(path, content.as_bytes())
         .map_err(|e| io_refusal(pick("설정 파일 쓰기", "write the settings file"), &e))?;
     Ok(backup)
