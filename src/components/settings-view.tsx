@@ -85,7 +85,9 @@ export function SettingsView({ settings, onSaved, onBack }: SettingsViewProps) {
       >
         <div className="flex flex-col gap-2">
           <fieldset className="flex flex-col gap-1.5">
-            <legend className="mb-1 text-xs text-muted-foreground">{t.settings.agents}</legend>
+            <legend className="mb-1 text-xs font-medium text-muted-foreground">
+              {t.settings.agents}
+            </legend>
             {AGENTS.map((agent) => {
               const isChecked = enabled.includes(agent);
               return (

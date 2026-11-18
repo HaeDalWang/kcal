@@ -237,14 +237,10 @@ export function TuningForm({ settings, isSaving, onSave, children }: TuningFormP
     const error = errors[key];
     return (
       <div key={key} className="flex flex-col gap-0.5">
+        {/* 이름·입력란·단위 한 줄, 그 아래 범위·도움말은 전체 폭(좁은 이름 칸에서 세 줄로 접히지 않게). */}
         <div className="flex items-center gap-2">
-          <label htmlFor={id} className="flex min-w-0 flex-1 flex-col">
-            <span className="text-sm">{info.label}</span>
-            <span id={`${id}-range`} className="text-xs text-muted-foreground tabular-nums">
-              {rangeText(spec)}
-              {t.tuning.defaultValue(toDisplay(key, spec.default))}
-              {info.hint && ` · ${info.hint}`}
-            </span>
+          <label htmlFor={id} className="min-w-0 flex-1 text-sm">
+            {info.label}
           </label>
           <Input
             id={id}
@@ -258,6 +254,11 @@ export function TuningForm({ settings, isSaving, onSave, children }: TuningFormP
           />
           <span className="w-10 text-xs text-muted-foreground">{unitLabel(info.unit)}</span>
         </div>
+        <p id={`${id}-range`} className="text-xs text-pretty text-muted-foreground tabular-nums">
+          {rangeText(spec)}
+          {t.tuning.defaultValue(toDisplay(key, spec.default))}
+          {info.hint && ` · ${info.hint}`}
+        </p>
         {error && (
           <p id={`${id}-error`} className="text-xs text-destructive">
             {error}
@@ -288,7 +289,7 @@ export function TuningForm({ settings, isSaving, onSave, children }: TuningFormP
           <div className="mt-1.5 flex flex-col gap-3">
             {SECTIONS.map((section) => (
               <fieldset key={section} className="flex flex-col gap-1.5">
-                <legend className="mb-1 text-xs text-muted-foreground">
+                <legend className="mb-1 text-xs font-medium text-muted-foreground">
                   {t.tuning.sections[section]}
                 </legend>
                 {keysOf(section).map(renderField)}
