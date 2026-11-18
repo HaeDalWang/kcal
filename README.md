@@ -6,11 +6,6 @@
 
 <p align="center"><b>A macOS menu bar app for Claude Code, Codex and Kiro: see what your agent loads before you type, and how much usage limit is left.</b><br/>Local only. Changes your agent config only after you confirm.</p>
 
-<p align="center">
-  <img src="docs/assets/demo.gif" alt="kcal demo with demo data: the menu bar popover shows usage limit left and startup context, the Claude tab shows recent 5-hour window bars (hovering a bar shows its start time and usage) and a one-line startup context summary, then Checks → Diagnose turns a plugin off showing the exact line it changes, and Undo puts it back" width="720">
-  <br/><sub>Demo data. kcal shows numbers from your own sessions.</sub>
-</p>
-
 **In the author's setup, Claude Code loaded 37.6K tokens before the first message: 9% of Opus 5.5's 400K-token context window. About half of that (19.6K) came from what the author added: 52 skills (9.3K), 9 memory files (6.3K), MCP server instructions and tools (3.6K), 3 custom agents (0.4K).** kcal shows the same split for your setup and points at what you could switch off. <sub>Measured with `/context` in Claude Code 2.1.322 on 2026-11-12. Your numbers will differ.</sub>
 
 [CodexBar](https://github.com/steipete/CodexBar) shows usage limits for many AI coding providers, [ccusage](https://github.com/ccusage/ccusage) reads token usage from local logs, and Claude Code's `/context` shows how the context window is used in the current session. kcal puts the limit left and the startup context for Claude Code, Codex and Kiro in one menu bar popover, and suggests what to switch off. Not affiliated with Anthropic, OpenAI or AWS.
