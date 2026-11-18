@@ -95,7 +95,7 @@ const FIELDS: Record<TuningKey, FieldInfo> = {
 
 /** 설정 묶음(macOS 설정 모양): 작은 캡션 + 둥근 면 + 가는 구분선으로 나뉜 줄. 팝오버 폭은 그대로. */
 export const GROUP_CLASS =
-  "flex flex-col divide-y divide-border/60 rounded-lg bg-muted/50 [&>*]:px-2.5";
+  "flex flex-col divide-y divide-border rounded-lg bg-muted/50 [&>*]:px-2.5";
 export const ROW_CLASS = "flex min-h-8 items-center gap-2 py-1";
 export const CAPTION_CLASS = "mb-1 px-1.5 text-xs font-medium text-muted-foreground";
 /** 접는 줄(`<summary>`): 묶음과 같은 면. 화살표는 열리면 돌아간다(motion-reduce면 바로). */
@@ -309,24 +309,29 @@ export function TuningForm({ settings, isSaving, onSave, children, footer }: Tun
             <span className="flex-1">{t.tuning.title}</span>
             <ChevronRight className={CHEVRON_CLASS} aria-hidden />
           </summary>
-          {SECTIONS.map((section) => (
-            <fieldset key={section} className="flex flex-col">
-              <legend className={CAPTION_CLASS}>{t.tuning.sections[section]}</legend>
-              <div className={GROUP_CLASS}>{keysOf(section).map(renderField)}</div>
-            </fieldset>
-          ))}
-          <details
-            open={isAdvancedOpen}
-            onToggle={(event) => setIsAdvancedOpen(event.currentTarget.open)}
-            className="group/disclosure flex flex-col gap-1.5"
-          >
-            <summary className={DISCLOSURE_CLASS}>
-              <span className="flex-1">{t.tuning.advanced}</span>
-              <ChevronRight className={CHEVRON_CLASS} aria-hidden />
-            </summary>
-            <p className="px-1.5 text-xs text-muted-foreground">{t.tuning.advancedNote}</p>
-            <div className={GROUP_CLASS}>{keysOf("advanced").map(renderField)}</div>
-          </details>
+          {/* WebKit은 <details> 안을 flex로 놓지 않아 gap이 안 먹는다. 묶음 사이 간격은 이 div가 준다. */}
+          <div className="flex flex-col gap-4 pt-3">
+            {SECTIONS.map((section) => (
+              <fieldset key={section} className="flex flex-col">
+                <legend className={CAPTION_CLASS}>{t.tuning.sections[section]}</legend>
+                <div className={GROUP_CLASS}>{keysOf(section).map(renderField)}</div>
+              </fieldset>
+            ))}
+            <details
+              open={isAdvancedOpen}
+              onToggle={(event) => setIsAdvancedOpen(event.currentTarget.open)}
+              className="group/disclosure flex flex-col gap-1.5"
+            >
+              <summary className={DISCLOSURE_CLASS}>
+                <span className="flex-1">{t.tuning.advanced}</span>
+                <ChevronRight className={CHEVRON_CLASS} aria-hidden />
+              </summary>
+              <div className="flex flex-col gap-1.5 pt-1.5">
+                <p className="px-1.5 text-xs text-muted-foreground">{t.tuning.advancedNote}</p>
+                <div className={GROUP_CLASS}>{keysOf("advanced").map(renderField)}</div>
+              </div>
+            </details>
+          </div>
         </details>
         {footer}
       </div>
