@@ -539,7 +539,10 @@ export function UsagePopover({
                   {AGENT_LABEL[tab.agent]}
                   {/* 낮음을 색만으로 알리지 않는다(6절 3). */}
                   {isTabLow(tab, now, lowPercent) && (
-                    <TriangleAlert aria-hidden className="size-[10px] text-destructive" />
+                    <>
+                      <TriangleAlert aria-hidden className="size-[10px] text-destructive" />
+                      <span className="sr-only">{t.popover.low}</span>
+                    </>
                   )}
                 </span>
               </span>
