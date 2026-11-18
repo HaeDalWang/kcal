@@ -297,8 +297,11 @@ function HourlyCard({ values }: { values: readonly AgentDay[] }) {
       {values.map((v) => {
         const noun = v.agent === "kiro" ? t.daily.question : t.daily.request;
         const busiest = busiestHour(v.activity.requests);
+        // 그날 요청이 없으면 빈 축 대신 조용한 한 줄만 둔다(에이전트마다).
         const summary =
-          busiest === null ? t.common.noRecord : t.daily.busiestAt(hourRangeText(busiest));
+          busiest === null
+            ? t.daily.noneThisDay(v.agent === "kiro")
+            : t.daily.busiestAt(hourRangeText(busiest));
         return (
           <div key={v.agent} className="flex flex-col gap-2">
             <div>
@@ -307,12 +310,14 @@ function HourlyCard({ values }: { values: readonly AgentDay[] }) {
               </h3>
               <p className="text-sm text-muted-foreground tabular-nums">{summary}</p>
             </div>
-            <HourlyChart
-              agent={v.agent}
-              requests={v.activity.requests}
-              noun={noun}
-              label={t.daily.chart(AGENT_LABEL[v.agent], noun, summary)}
-            />
+            {busiest !== null && (
+              <HourlyChart
+                agent={v.agent}
+                requests={v.activity.requests}
+                noun={noun}
+                label={t.daily.chart(AGENT_LABEL[v.agent], noun, summary)}
+              />
+            )}
           </div>
         );
       })}

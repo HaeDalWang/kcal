@@ -180,6 +180,10 @@ describe("Dashboard", () => {
     // 목표 줄("하루 몫 14%")은 빈 날에 보이지 않는다.
     expect(within(card).queryByText(/^하루 몫/)).toBeNull();
     expect(within(card).getByRole("img").getAttribute("aria-label")).not.toMatch(/\d/);
+    // 시간대 카드는 빈 축 대신 에이전트마다 조용한 한 줄만 보인다.
+    const hourly = screen.getByRole("region", { name: "시간대별 요청" });
+    expect(within(hourly).getAllByText("이날 요청 없음").length).toBeGreaterThanOrEqual(1);
+    expect(within(hourly).queryByRole("img")).toBeNull();
   });
 
   it("names the daily share with its unit under each ring", async () => {

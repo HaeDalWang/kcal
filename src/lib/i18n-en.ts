@@ -199,6 +199,7 @@ export const en: Messages = {
     noMonthlyLimit: "Monthly limit unknown",
     limitUnread: "Limit not read",
     hourly: "Requests by hour",
+    noneThisDay: (isQuestion) => (isQuestion ? "No questions this day" : "No requests this day"),
     question: "questions",
     request: "requests",
     chart: (agent, noun, summary) => `${agent} ${noun} by hour. ${summary}`,
