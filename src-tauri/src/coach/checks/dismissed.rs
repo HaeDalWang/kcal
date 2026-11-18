@@ -127,18 +127,29 @@ pub fn dismiss(
     }
     if ids.len() >= MAX_IDS {
         return Err(refuse(pick(
-            "숨긴 카드가 너무 많아요. 다시 보기를 누른 뒤 하세요.",
-            "Too many hidden cards. Press Show again, then try.",
+            "숨긴 카드가 너무 많아요. 맨 아래 숨긴 카드에서 몇 개를 다시 알린 뒤 하세요.",
+            "Too many hidden cards. Bring some back from the hidden list at the bottom, then try.",
         )));
     }
     let next: Vec<String> = ids.into_iter().chain([id.to_owned()]).collect();
     write(path, &next)
 }
 
-/// 숨긴 카드를 모두 다시 보인다.
-pub fn restore(path: &Path) -> Result<(), AppError> {
+/// 숨긴 카드 하나를 다시 알린다(점검 목록으로 돌린다). 목록에 없으면 그대로 성공.
+pub fn restore(path: &Path, id: &str) -> Result<(), AppError> {
+    if !is_valid_id(id) {
+        return Err(refuse(pick(
+            "점검 이름이 올바르지 않아요.",
+            "That check name isn't valid.",
+        )));
+    }
     let _guard = WRITE_LOCK.lock().map_err(|_| AppError::Internal)?;
-    write(path, &[])
+    let ids = read(path);
+    if !ids.iter().any(|d| d == id) {
+        return Ok(());
+    }
+    let next: Vec<String> = ids.into_iter().filter(|d| d != id).collect();
+    write(path, &next)
 }
 
 #[cfg(test)]
@@ -184,7 +195,11 @@ mod tests {
             marked(&home, &path),
             [(EFFORT.into(), false), (GIT.into(), true)]
         );
-        restore(&path).unwrap();
+        // 하나만 되돌린다: 없는 id는 그대로 성공, 빈 id는 거절.
+        restore(&path, EFFORT).unwrap();
+        assert_eq!(read(&path), [GIT]);
+        assert!(restore(&path, "").is_err());
+        restore(&path, GIT).unwrap();
         assert!(read(&path).is_empty());
         assert!(marked(&home, &path).iter().all(|(_, d)| !d));
     }

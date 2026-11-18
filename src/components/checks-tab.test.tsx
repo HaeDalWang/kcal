@@ -192,12 +192,22 @@ describe("ChecksTab", () => {
     expect(document.querySelectorAll("button.bg-primary")).toHaveLength(0);
   });
 
-  it("restores hidden cards from the bottom row and reads again", async () => {
+  it("shows hidden cards without bringing them back, then brings back only the one asked", async () => {
     const calls = mock();
     render(<ChecksTab agents={ALL} focusKey={0} onShowEffect={() => {}} />);
-    fireEvent.click(await screen.findByRole("button", { name: "다시 보기" }));
+    const toggle = await screen.findByRole("button", { name: "보기" });
+    fireEvent.click(toggle);
+    // 보기만 해서는 아무것도 쓰지 않는다.
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(count(calls, "restore_dismissed_check")).toBe(0);
+    const back = screen.getAllByRole("button", { name: "다시 알리기" });
+    expect(back.length).toBeGreaterThan(0);
+    const hiddenId = DASHBOARD_CHECKS.find((c) => c.isDismissed)!.id;
+    fireEvent.click(back[0]);
     await waitFor(() => expect(count(calls, "get_checks")).toBe(2));
-    expect(count(calls, "restore_dismissed_checks")).toBe(1);
+    expect(calls.filter((c) => c.cmd === "restore_dismissed_check").map((c) => c.args)).toEqual([
+      { id: hiddenId },
+    ]);
   });
 
   it("sends the diagnosis effect button to the usage tab", async () => {

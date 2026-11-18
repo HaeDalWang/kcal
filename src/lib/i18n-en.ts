@@ -598,7 +598,10 @@ export const en: Messages = {
     empty: "Nothing to fix right now.",
     notChecked: (name) =>
       `Nothing was checked: kcal didn’t find ${name} on this computer. Run claude once and sign in, then press Refresh. Not installed yet? https://code.claude.com/docs/en/setup`,
-    restore: "Show again",
+    showHidden: "Show",
+    hideHidden: "Hide",
+    hiddenNote: "You chose to keep these as they are. Your settings are unchanged.",
+    restore: "Bring back",
     noChecks: (label) =>
       `No optimization checks for ${label} yet. Only Claude Code is checked so far.`,
     alert: (count) => `${count} to check`,

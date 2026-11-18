@@ -590,7 +590,10 @@ export const ko = {
     empty: "지금 고칠 것이 없어요.",
     notChecked: (name: string) =>
       `점검하지 못했어요. 이 컴퓨터에서 ${name}를 찾지 못했어요. claude를 한 번 실행해 로그인한 뒤 새로고침하세요. 아직 설치 전이면: https://code.claude.com/docs/en/setup`,
-    restore: "다시 보기",
+    showHidden: "보기",
+    hideHidden: "접기",
+    hiddenNote: "그대로 두기로 정한 카드예요. 설정은 그대로예요.",
+    restore: "다시 알리기",
     noChecks: (label: string) =>
       `${label}는 아직 최적화 점검이 없어요. 지금은 Claude Code만 점검해요.`,
     alert: (count: string) => `점검할 것 ${count}개`,

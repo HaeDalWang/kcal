@@ -12,10 +12,12 @@ import {
   type HandoffContext,
 } from "@/components/checks-list";
 import { AGENT_COLOR } from "@/components/agent-metrics";
+import { AgentIcon } from "@/components/agent-icon";
 import { ChangePanel, DonePanel, LiveStatus, usePanelFocus } from "@/components/coach-view";
 import { RulesPanel } from "@/components/rules-panel";
 import { Button } from "@/components/ui/button";
 import {
+  checkCopy,
   fixedEntries,
   handoffErrorText,
   handoffRunningText,
@@ -68,24 +70,56 @@ const isRunning = (step: Step | undefined) =>
 const NO_USAGE: HandoffContext = { remaining: null, minRemaining: 20, timeoutSecs: 300 };
 const MUTED = "text-[10px] text-muted-foreground";
 
-/** 점검 탭 맨 아래 "숨긴 카드 n개 · 다시 보기". 숨긴 카드가 없으면 그리지 않는다. */
+/** 점검 탭 맨 아래 "숨긴 카드 n개 · 보기". 숨긴 카드가 없으면 그리지 않는다.
+ * "보기"는 예전에 그대로 두기로 정한 카드를 훑어보기만 한다. 되살리기는 카드마다 "다시 알리기"로 하나씩. */
 export function HiddenRow({
-  count,
+  hidden,
   isBusy,
   onRestore,
 }: {
-  count: number;
+  hidden: CoachCheck[];
   isBusy: boolean;
-  onRestore: () => void;
+  onRestore: (id: string) => void;
 }) {
-  const text = hiddenText(count);
+  const [isOpen, setIsOpen] = useState(false);
+  const text = hiddenText(hidden.length);
   if (text === null) return null;
   return (
-    <div className="flex items-center gap-2 px-1 py-1">
-      <span className="flex-1 text-xs text-muted-foreground">{text}</span>
-      <Button size="xs" variant="outline" disabled={isBusy} onClick={onRestore}>
-        {t.checks.restore}
-      </Button>
+    <div className="flex flex-col gap-1 px-1 py-1">
+      <div className="flex items-center gap-2">
+        <span className="flex-1 text-xs text-muted-foreground">{text}</span>
+        <Button
+          size="xs"
+          variant="outline"
+          aria-expanded={isOpen}
+          onClick={() => setIsOpen((open) => !open)}
+        >
+          {isOpen ? t.checks.hideHidden : t.checks.showHidden}
+        </Button>
+      </div>
+      {isOpen && (
+        <div role="group" aria-label={text} className="flex flex-col gap-1">
+          <p className={MUTED}>{t.checks.hiddenNote}</p>
+          <ul className="flex flex-col">
+            {hidden.map((check) => (
+              <li key={check.id} className="flex items-center gap-2 border-t py-1.5">
+                <AgentIcon agent={check.agent} className="size-3.5 shrink-0 opacity-70" />
+                <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                  {checkCopy(check).title}
+                </span>
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  disabled={isBusy}
+                  onClick={() => onRestore(check.id)}
+                >
+                  {t.checks.restore}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

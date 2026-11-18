@@ -560,11 +560,11 @@ pub async fn dismiss_check(app: AppHandle, id: String) -> Result<(), AppError> {
     .await
 }
 
-/// 숨긴 카드를 모두 다시 보인다.
+/// 숨긴 카드 하나를 다시 알린다.
 #[tauri::command]
-pub async fn restore_dismissed_checks(app: AppHandle) -> Result<(), AppError> {
+pub async fn restore_dismissed_check(app: AppHandle, id: String) -> Result<(), AppError> {
     let file = dismissed_file(&app)?;
-    tauri::async_runtime::spawn_blocking(move || dismissed::restore(&file))
+    tauri::async_runtime::spawn_blocking(move || dismissed::restore(&file, &id))
         .await
         .map_err(|_| AppError::Internal)?
 }

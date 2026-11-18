@@ -1,5 +1,5 @@
 // 대시보드 "점검" 탭(docs/decisions/0017 "화면 자리"): 켠 에이전트마다 칸 하나, 왼쪽 "최적화"(점검 카드), 오른쪽 "진단하기"(코칭 스위치, 0014).
-// 탭을 열 때와 쓰기(적용·되돌리기·숨김·다시 보기) 뒤에만 읽는다(타이머 없음).
+// 탭을 열 때와 쓰기(적용·되돌리기·숨김·다시 알리기) 뒤에만 읽는다(타이머 없음).
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AgentIcon } from "@/components/agent-icon";
@@ -18,7 +18,7 @@ import {
   getCoachLog,
   getInstalledAgents,
   getSwitches,
-  restoreDismissedChecks,
+  restoreDismissedCheck,
   type Agent,
   type AppliedSwitch,
   type CoachCheck,
@@ -88,10 +88,10 @@ export function ChecksTab({ agents, focusKey, onShowEffect }: ChecksTabProps) {
     if (first) document.getElementById(checksSectionId(first))?.scrollIntoView({ block: "start" });
   }, [loads, checks, agents]);
 
-  const restore = () => {
+  const restore = (id: string) => {
     setError(null);
     setIsBusy(true);
-    restoreDismissedChecks().then(
+    restoreDismissedCheck(id).then(
       () => {
         setIsBusy(false);
         load();
@@ -103,7 +103,7 @@ export function ChecksTab({ agents, focusKey, onShowEffect }: ChecksTabProps) {
     );
   };
 
-  const hiddenCount = checks?.filter((c) => c.isDismissed && agents.includes(c.agent)).length ?? 0;
+  const hidden = checks?.filter((c) => c.isDismissed && agents.includes(c.agent)) ?? [];
   const claudeUsage = usage.snapshot?.agents.find((a) => a.agent === "claude");
   const handoff: HandoffContext = {
     remaining: claudeUsage ? minRemaining(claudeUsage, usage.now) : null,
@@ -179,7 +179,7 @@ export function ChecksTab({ agents, focusKey, onShowEffect }: ChecksTabProps) {
           </div>
         </section>
       ))}
-      <HiddenRow count={hiddenCount} isBusy={isBusy} onRestore={restore} />
+      <HiddenRow hidden={hidden} isBusy={isBusy} onRestore={restore} />
     </div>
   );
 }

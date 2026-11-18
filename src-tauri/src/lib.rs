@@ -68,7 +68,7 @@ pub fn run() {
             coach::checks::preview_check,
             coach::checks::apply_check,
             coach::checks::dismiss_check,
-            coach::checks::restore_dismissed_checks,
+            coach::checks::restore_dismissed_check,
             coach::checks::handoff::ask_claude_handoff,
             coach::checks::handoff::apply_claude_handoff,
             coach::checks::rules_handoff::ask_claude_rules,

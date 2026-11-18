@@ -183,9 +183,9 @@ export function dismissCheck(id: string): Promise<void> {
   return invoke("dismiss_check", { id });
 }
 
-/** 숨긴 카드를 모두 다시 보인다. */
-export function restoreDismissedChecks(): Promise<void> {
-  return invoke("restore_dismissed_checks");
+/** 숨긴 카드 하나를 다시 알린다(점검 목록으로 돌린다). */
+export function restoreDismissedCheck(id: string): Promise<void> {
+  return invoke("restore_dismissed_check", { id });
 }
 
 /** Rust `coach::checks::long_instructions::HANDOFF`. 긴 안내문 카드의 "Claude에게 맡기기" 옵션 id. */
