@@ -99,7 +99,7 @@ fn apply_refuses_and_leaves_file_unchanged_when_it_changed_after_preview() {
     let p = preview_of(&f, TARGET, false).unwrap();
     let changed = format!("{CONFIG}# agent wrote this\n");
     std::fs::write(&f.config, &changed).unwrap();
-    assert!(message(apply_with(&f, &p.before_hash).unwrap_err()).contains("바뀌었습니다"));
+    assert!(message(apply_with(&f, &p.before_hash).unwrap_err()).contains("바뀌었어요"));
     assert_eq!(std::fs::read_to_string(&f.config).unwrap(), changed);
     assert!(log::read(&f.log).is_empty());
 }
@@ -176,7 +176,7 @@ fn apply_refuses_manual_and_unknown_targets_and_bad_hash() {
             NOW,
         )
     };
-    assert!(message(run("codex/plugin:missing@m", &hash).unwrap_err()).contains("목록에 없습니다"));
+    assert!(message(run("codex/plugin:missing@m", &hash).unwrap_err()).contains("목록에 없어요"));
     assert!(message(run(TARGET, "not-a-hash").unwrap_err()).contains("미리보기"));
     f.home
         .write(".claude.json", r#"{"mcpServers": {"docs": {}}}"#);

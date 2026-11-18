@@ -64,7 +64,7 @@ fn refuse(message: impl Into<String>) -> AppError {
 fn validate_target(target: &str) -> Result<(), AppError> {
     if target.is_empty() || target.len() > MAX_TARGET_LEN {
         return Err(refuse(pick(
-            "스위치 이름이 올바르지 않습니다.",
+            "스위치 이름이 올바르지 않아요.",
             "That switch name isn't valid.",
         )));
     }
@@ -75,7 +75,7 @@ fn io_refusal(what: &str, error: &std::io::Error) -> AppError {
     eprintln!("kcal: 코칭 {what} 실패({:?})", error.kind());
     let kind = error.kind();
     refuse(crate::tr!(
-        "{what}에 실패했습니다({kind:?}).",
+        "{what}에 실패했어요({kind:?}).",
         "Couldn't {what} ({kind:?})."
     ))
 }
@@ -85,7 +85,7 @@ fn read_text(path: &Path) -> Result<(Vec<u8>, String), AppError> {
         .map_err(|e| io_refusal(pick("설정 파일 읽기", "read the settings file"), &e))?;
     let text = String::from_utf8(bytes.clone()).map_err(|_| {
         refuse(pick(
-            "설정 파일이 UTF-8이 아니라 고치지 않습니다.",
+            "설정 파일이 UTF-8이 아니라 고치지 않아요.",
             "The settings file isn't UTF-8, so kcal won't edit it.",
         ))
     })?;
@@ -105,7 +105,7 @@ fn switch_and_file(
     let path = switch.path().ok_or_else(|| {
         refuse(switch.instruction.clone().unwrap_or_else(|| {
             pick(
-                "kcal이 바꾸지 않는 스위치입니다.",
+                "kcal이 바꾸지 않는 스위치예요.",
                 "kcal doesn't change this switch.",
             )
             .into()
@@ -200,7 +200,7 @@ fn record_id(now: OffsetDateTime) -> String {
 fn validate_hash(before_hash: &str) -> Result<(), AppError> {
     if before_hash.len() != HASH_LEN || !before_hash.bytes().all(|b| b.is_ascii_hexdigit()) {
         return Err(refuse(pick(
-            "미리보기 값이 올바르지 않습니다. 다시 미리 보세요.",
+            "미리보기 값이 올바르지 않아요. 다시 미리 보세요.",
             "The preview is no longer valid. Preview again.",
         )));
     }
@@ -212,7 +212,7 @@ fn read_unchanged(path: &Path, before_hash: &str) -> Result<String, AppError> {
     let (bytes, text) = read_text(path)?;
     if edit::content_hash(&bytes) != before_hash {
         return Err(refuse(pick(
-            "미리보기 뒤에 설정 파일이 바뀌었습니다. 아무것도 바꾸지 않았습니다. 다시 미리 보세요.",
+            "미리보기 뒤에 설정 파일이 바뀌었어요. 아무것도 바꾸지 않았어요. 다시 미리 보세요.",
             "The settings file changed after the preview. Nothing was changed. Preview again.",
         )));
     }
@@ -228,7 +228,7 @@ fn backup_and_replace(
     let backup = backup_path(path, now)?;
     if backup.exists() {
         return Err(refuse(pick(
-            "같은 이름의 백업이 이미 있습니다. 잠시 뒤 다시 하세요.",
+            "같은 이름의 백업이 이미 있어요. 잠시 뒤 다시 하세요.",
             "A backup with the same name already exists. Try again in a moment.",
         )));
     }
@@ -243,7 +243,7 @@ fn append_applied(log_file: &Path, entry: &AppliedSwitch) -> Result<(), AppError
     log::append(log_file, entry).map_err(|e| {
         eprintln!("kcal: 코칭 기록 쓰기 실패({:?})", e.kind());
         refuse(crate::tr!(
-            "설정은 바꿨지만 기록을 남기지 못해 앱에서 되돌릴 수 없습니다. 되돌리려면: {}",
+            "설정은 바꿨지만 기록을 남기지 못해 앱에서 되돌릴 수 없어요. 되돌리려면: {}",
             "The setting changed, but kcal couldn't log it, so it can't be undone here. To undo: {}",
             entry.undo_command
         ))
@@ -269,9 +269,9 @@ pub fn apply(
     let edit = switch.plan(&text, enabled).map_err(refuse)?;
     if !edit.changed {
         return Err(refuse(if enabled {
-            pick("이미 켜져 있습니다.", "It's already on.")
+            pick("이미 켜져 있어요.", "It's already on.")
         } else {
-            pick("이미 꺼져 있습니다.", "It's already off.")
+            pick("이미 꺼져 있어요.", "It's already off.")
         }));
     }
     let backup = backup_and_replace(&path, &edit.content, now)?;
@@ -335,7 +335,7 @@ pub fn undo(
         || !id.bytes().all(|b| b.is_ascii_digit() || b == b'-')
     {
         return Err(refuse(pick(
-            "기록 ID가 올바르지 않습니다.",
+            "기록 ID가 올바르지 않아요.",
             "That record ID isn't valid.",
         )));
     }
@@ -346,13 +346,13 @@ pub fn undo(
         .find(|e| e.id == id && e.action == CoachAction::Apply)
         .ok_or_else(|| {
             refuse(pick(
-                "되돌릴 적용 기록이 없습니다.",
+                "되돌릴 적용 기록이 없어요.",
                 "There's no applied change to undo.",
             ))
         })?;
     if entries.iter().any(|e| e.undo_of.as_deref() == Some(id)) {
         return Err(refuse(pick(
-            "이미 되돌린 기록입니다.",
+            "이미 되돌린 기록이에요.",
             "This change was already undone.",
         )));
     }
@@ -377,14 +377,14 @@ pub fn undo(
         || checks::handoff::is_undoable(&applied.target, &file);
     if !is_known || !is_backup_of(&backup, &file) {
         return Err(refuse(pick(
-            "기록의 파일·백업 경로가 kcal이 만든 것이 아니라 되돌리지 않습니다.",
+            "기록의 파일·백업 경로가 kcal이 만든 것이 아니라 되돌리지 않아요.",
             "The file or backup path in the record wasn't made by kcal, so it won't be undone.",
         )));
     }
     let (current, _) = read_text(&file)?;
     if edit::content_hash(&current) != applied.after_hash {
         return Err(refuse(crate::tr!(
-            "적용 뒤에 설정 파일이 바뀌어 앱에서 되돌리지 않습니다. 그 변경을 버려도 되면 직접 되돌리세요: {}",
+            "적용 뒤에 설정 파일이 바뀌어 앱에서 되돌리지 않아요. 그 변경을 버려도 되면 직접 되돌리세요: {}",
             "The settings file changed after the change was applied, so kcal won't undo it. If you can drop that edit, undo it yourself: {}",
             applied.undo_command
         )));

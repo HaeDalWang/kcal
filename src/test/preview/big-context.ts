@@ -80,13 +80,13 @@ export function bigContext(now: number): ContextSnapshot {
     computedAt: new Date(now - 60_000).toISOString(),
     agents: [
       agent("claude", claudeItems, 400000, null, [
-        "hook 20개: 출력 크기는 실행할 때 정해져 세지 않았습니다.",
-        "실측값은 가장 최근 Claude 세션(작업 폴더 gureumi) 기준입니다.",
+        "hook 20개: 출력 크기는 실행할 때 정해져 세지 않았어요.",
+        "실측값은 가장 최근 Claude 세션(작업 폴더 gureumi) 기준이에요.",
       ]),
       agent("codex", codexItems, 475000, 15000, [
-        "hook 11개: 출력 크기는 실행할 때 정해져 세지 않았습니다.",
-        "MCP 서버 1개: 스키마는 연결해야 알 수 있어 세지 않았습니다.",
-        "실측값은 가장 최근 Codex 세션(작업 폴더 gureumi) 기준입니다.",
+        "hook 11개: 출력 크기는 실행할 때 정해져 세지 않았어요.",
+        "MCP 서버 1개: 스키마는 연결해야 알 수 있어 세지 않았어요.",
+        "실측값은 가장 최근 Codex 세션(작업 폴더 gureumi) 기준이에요.",
       ]),
       agent("kiro", kiroItems, null, null, []),
     ],

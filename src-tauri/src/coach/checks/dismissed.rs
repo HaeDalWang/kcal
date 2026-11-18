@@ -52,7 +52,7 @@ fn write(path: &Path, ids: &[String]) -> Result<(), AppError> {
     let io = |e: std::io::Error| {
         eprintln!("kcal: 숨긴 카드 목록 쓰기 실패({:?})", e.kind());
         refuse(crate::tr!(
-            "숨긴 카드 목록을 저장하지 못했습니다({:?}).",
+            "숨긴 카드 목록을 저장하지 못했어요({:?}).",
             "Couldn't save the hidden card list ({:?}).",
             e.kind()
         ))
@@ -103,7 +103,7 @@ pub fn dismiss(
 ) -> Result<(), AppError> {
     if !is_valid_id(id) {
         return Err(refuse(pick(
-            "점검 이름이 올바르지 않습니다.",
+            "점검 이름이 올바르지 않아요.",
             "That check name isn't valid.",
         )));
     }
@@ -111,13 +111,13 @@ pub fn dismiss(
     let checks = list(home, records, tuning);
     let check = checks.iter().find(|c| c.id == id).ok_or_else(|| {
         refuse(pick(
-            "지금 점검 목록에 없는 항목입니다. 화면을 다시 여세요.",
+            "지금 점검 목록에 없는 항목이에요. 화면을 다시 여세요.",
             "This item isn't in the current check list. Reopen the screen.",
         ))
     })?;
     if !is_dismissable(check) {
         return Err(refuse(pick(
-            "그대로 두기를 추천하는 카드만 숨길 수 있습니다.",
+            "그대로 두기를 추천하는 카드만 숨길 수 있어요.",
             "Only cards that recommend keeping things as they are can be hidden.",
         )));
     }
@@ -127,7 +127,7 @@ pub fn dismiss(
     }
     if ids.len() >= MAX_IDS {
         return Err(refuse(pick(
-            "숨긴 카드가 너무 많습니다. 다시 보기를 누른 뒤 하세요.",
+            "숨긴 카드가 너무 많아요. 다시 보기를 누른 뒤 하세요.",
             "Too many hidden cards. Press Show again, then try.",
         )));
     }

@@ -129,7 +129,7 @@ pub fn codex(home: &Path, workspace: Option<&Path>, tuning: &Tuning) -> AgentCon
     if found.truncated {
         warnings.push(
             pick(
-                "AGENTS.md 파일이 Codex의 크기 제한(project_doc_max_bytes)에서 잘렸습니다.",
+                "AGENTS.md 파일이 Codex의 크기 제한(project_doc_max_bytes)에서 잘렸어요.",
                 "AGENTS.md files were cut off by Codex's size limit (project_doc_max_bytes).",
             )
             .into(),

@@ -285,7 +285,7 @@ const MAX_ID_LEN: usize = 512;
 fn validate(id: &str, option: &str) -> Result<(), AppError> {
     if id.is_empty() || id.len() > MAX_ID_LEN || option.is_empty() || option.len() > MAX_ID_LEN {
         return Err(refuse(pick(
-            "점검 이름이 올바르지 않습니다.",
+            "점검 이름이 올바르지 않아요.",
             "That check name isn't valid.",
         )));
     }
@@ -334,7 +334,7 @@ fn find(
 ) -> Result<(CoachCheck, CheckOption), AppError> {
     let check = checks.into_iter().find(|c| c.id == id).ok_or_else(|| {
         refuse(pick(
-            "지금 점검 목록에 없는 항목입니다. 화면을 다시 여세요.",
+            "지금 점검 목록에 없는 항목이에요. 화면을 다시 여세요.",
             "This item isn't in the current check list. Reopen the screen.",
         ))
     })?;
@@ -345,20 +345,20 @@ fn find(
         .cloned()
         .ok_or_else(|| {
             refuse(pick(
-                "이 점검에 없는 선택입니다.",
+                "이 점검에 없는 선택이에요.",
                 "That option isn't part of this check.",
             ))
         })?;
     if picked.id == KEEP {
         return Err(refuse(pick(
-            "그대로 두기는 바꿀 것이 없습니다.",
+            "그대로 두기는 바꿀 것이 없어요.",
             "Keeping it as is has nothing to change.",
         )));
     }
     if !picked.is_writable {
         return Err(refuse(picked.instruction.clone().unwrap_or_else(|| {
             pick(
-                "kcal이 고치지 않는 설정입니다.",
+                "kcal이 고치지 않는 설정이에요.",
                 "kcal doesn't edit this setting.",
             )
             .into()
@@ -425,7 +425,7 @@ pub fn apply(
     let edit = edit::apply_json_ops(&text, &picked.ops).map_err(refuse)?;
     if edit.changes.is_empty() {
         return Err(refuse(pick(
-            "이미 그 값이라 바꿀 것이 없습니다.",
+            "이미 그 값이라 바꿀 것이 없어요.",
             "It already has that value, so there's nothing to change.",
         )));
     }

@@ -8,7 +8,7 @@ use serde::{Serialize, Serializer, ser::SerializeStruct};
 pub enum AppError {
     #[error(
         "{}",
-        crate::i18n::pick("내부 작업이 실패했습니다.", "Something went wrong inside kcal.")
+        crate::i18n::pick("내부 작업이 실패했어요.", "Something went wrong inside kcal.")
     )]
     Internal,
     /// 입력 검증 실패. 메시지는 사용자에게 그대로 보여 줄 수 있는 문장이다.
@@ -45,7 +45,7 @@ mod tests {
             json,
             serde_json::json!({
                 "kind": "internal",
-                "message": "내부 작업이 실패했습니다."
+                "message": "내부 작업이 실패했어요."
             })
         );
     }

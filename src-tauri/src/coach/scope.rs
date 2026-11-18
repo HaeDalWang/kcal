@@ -225,14 +225,14 @@ fn plan_project(project: &Path, id: &str) -> Result<Option<Planned>, AppError> {
     let dir = project.join(CLAUDE_DIR);
     if has_project_link(&local_file(project)) {
         return Err(refuse(crate::tr!(
-            "{}의 설정 폴더나 파일이 링크라 프로젝트 밖을 고칠 수 있어 고치지 않습니다.",
+            "{}의 설정 폴더나 파일이 링크라 프로젝트 밖을 고칠 수 있어 고치지 않아요.",
             "The settings folder or file in {} is a link that could point outside the project, so kcal won't edit it.",
             project.display()
         )));
     }
     if dir.exists() && !dir.is_dir() {
         return Err(refuse(crate::tr!(
-            "{}이(가) 폴더가 아니라 고치지 않습니다.",
+            "{}이(가) 폴더가 아니라 고치지 않아요.",
             "{} isn't a folder, so kcal won't edit it.",
             dir.display()
         )));
@@ -301,7 +301,7 @@ fn plan(switch: &CoachSwitch) -> Result<(Vec<Planned>, &ScopeMove), AppError> {
     let (bytes, text) = read_text(&path)?;
     let user = edit::set_json_plugin_enabled(&text, &switch.name, false).map_err(refuse)?;
     if !user.changed {
-        return Err(refuse(pick("이미 꺼져 있습니다.", "It's already off.")));
+        return Err(refuse(pick("이미 꺼져 있어요.", "It's already off.")));
     }
     planned.push(Planned {
         change: ScopeFileChange {
@@ -449,7 +449,7 @@ pub fn apply(
     let (planned, moving) = plan(switch)?;
     if plan_hash(&planned) != before_hash {
         return Err(refuse(pick(
-            "미리보기 뒤에 설정 파일이 바뀌었습니다. 아무것도 바꾸지 않았습니다. 다시 미리 보세요.",
+            "미리보기 뒤에 설정 파일이 바뀌었어요. 아무것도 바꾸지 않았어요. 다시 미리 보세요.",
             "The settings file changed after the preview. Nothing was changed. Preview again.",
         )));
     }
@@ -549,7 +549,7 @@ pub fn undo(
         && applied.files.iter().all(is_known_project_file);
     if !is_known {
         return Err(refuse(pick(
-            "기록의 파일·백업 경로가 kcal이 만든 것이 아니라 되돌리지 않습니다.",
+            "기록의 파일·백업 경로가 kcal이 만든 것이 아니라 되돌리지 않아요.",
             "The file or backup path in the record wasn't made by kcal, so it won't be undone.",
         )));
     }
@@ -560,7 +560,7 @@ pub fn undo(
             .all(|f| current_hash(Path::new(&f.file)).as_deref() == Some(f.after_hash.as_str()));
     if !is_untouched {
         return Err(refuse(crate::tr!(
-            "적용 뒤에 설정 파일이 바뀌어 앱에서 되돌리지 않습니다. 그 변경을 버려도 되면 직접 되돌리세요: {}",
+            "적용 뒤에 설정 파일이 바뀌어 앱에서 되돌리지 않아요. 그 변경을 버려도 되면 직접 되돌리세요: {}",
             "The settings file changed after the change was applied, so kcal won't undo it. If you can drop that edit, undo it yourself: {}",
             applied.undo_command
         )));

@@ -139,7 +139,7 @@ fn load(path: &Path) -> Settings {
         Err(error) => {
             let kind = error.kind();
             return broken(tr!(
-                "설정 파일을 읽지 못했습니다({kind})",
+                "설정 파일을 읽지 못했어요({kind})",
                 "Couldn't read the settings file ({kind})"
             ));
         }
@@ -147,7 +147,7 @@ fn load(path: &Path) -> Settings {
     let parsed = serde_json::from_str::<SettingsFile>(&text)
         .map_err(|_| {
             tr!(
-                "설정 파일 형식이 잘못됐습니다",
+                "설정 파일 형식이 잘못됐어요",
                 "The settings file is malformed"
             )
         })

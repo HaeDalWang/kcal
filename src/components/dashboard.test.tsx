@@ -153,7 +153,7 @@ describe("Dashboard", () => {
   });
 
   it("shows the rejection reason as an alert and keeps the dashboard when refresh_all fails", async () => {
-    const message = "새로고침을 시작하지 못했습니다.";
+    const message = "새로고침을 시작하지 못했어요.";
     mockIPC(
       (cmd) =>
         cmd === "refresh_all"

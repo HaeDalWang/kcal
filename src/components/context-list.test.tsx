@@ -42,7 +42,7 @@ function snapshot(): ContextSnapshot {
         firstRequestChars: null,
         model: null,
         contextWindow: null,
-        warnings: ["hook 19개: 출력 크기는 실행할 때 정해져 세지 않았습니다."],
+        warnings: ["hook 19개: 출력 크기는 실행할 때 정해져 세지 않았어요."],
       },
     ],
   };

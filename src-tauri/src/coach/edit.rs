@@ -75,14 +75,14 @@ pub fn set_toml_enabled(content: &str, section: &str, enabled: bool) -> Result<E
     let start = match matching.as_slice() {
         [] => {
             return Err(tr!(
-                "[{section}] section이 파일에 없어 바꿀 것이 없습니다.",
+                "[{section}] section이 파일에 없어 바꿀 것이 없어요.",
                 "There's no [{section}] section in the file, so there's nothing to change."
             ));
         }
         [one] => *one,
         _ => {
             return Err(tr!(
-                "[{section}] section이 두 번 이상 나와 어느 쪽을 바꿀지 정할 수 없습니다.",
+                "[{section}] section이 두 번 이상 나와 어느 쪽을 바꿀지 정할 수 없어요.",
                 "The [{section}] section appears more than once, so kcal can't tell which to change."
             ));
         }
@@ -120,7 +120,7 @@ pub fn set_toml_enabled(content: &str, section: &str, enabled: bool) -> Result<E
     let line = lines[target];
     let caps = ENABLED_BOOL.captures(line).ok_or_else(|| {
         tr!(
-            "[{section}]의 enabled 값이 true/false가 아니라 고치지 않습니다.",
+            "[{section}]의 enabled 값이 true/false가 아니라 고치지 않아요.",
             "enabled in [{section}] isn't true/false, so kcal won't edit it."
         )
     })?;
@@ -148,9 +148,9 @@ pub fn set_toml_enabled(content: &str, section: &str, enabled: bool) -> Result<E
 fn parse_object(content: &str) -> Result<Map<String, Value>, String> {
     match serde_json::from_str::<Value>(content) {
         Ok(Value::Object(map)) => Ok(map),
-        Ok(_) => Err(pick("JSON 최상위가 객체가 아니라 고치지 않습니다.", "The JSON top level isn't an object, so kcal won't edit it.").into()),
+        Ok(_) => Err(pick("JSON 최상위가 객체가 아니라 고치지 않아요.", "The JSON top level isn't an object, so kcal won't edit it.").into()),
         Err(_) => Err(pick(
-            "올바른 JSON이 아니라(주석·끝 쉼표 등) 고치지 않습니다. 아무것도 바뀌지 않았습니다.",
+            "올바른 JSON이 아니라(주석·끝 쉼표 등) 고치지 않아요. 아무것도 바뀌지 않았어요.",
             "It isn't valid JSON (comments, trailing commas, ...), so kcal won't edit it. Nothing was changed.",
         )
         .into()),
@@ -165,7 +165,7 @@ fn serialize_checked(
 ) -> Result<String, String> {
     let mut text = serde_json::to_string_pretty(expected).map_err(|_| {
         pick(
-            "JSON을 다시 쓰지 못했습니다.",
+            "JSON을 다시 쓰지 못했어요.",
             "Couldn't write the JSON back.",
         )
         .to_owned()
@@ -177,7 +177,7 @@ fn serialize_checked(
     let reparsed_keys: Vec<&String> = reparsed.keys().collect();
     let original_keys: Vec<&String> = keys_in_order.iter().collect();
     if &reparsed != expected || reparsed_keys != original_keys {
-        return Err(pick("다시 읽은 결과가 예상과 달라(키 순서 등) 고치지 않습니다.", "Reading it back didn't match what was expected (key order etc.), so kcal won't edit it.").into());
+        return Err(pick("다시 읽은 결과가 예상과 달라(키 순서 등) 고치지 않아요.", "Reading it back didn't match what was expected (key order etc.), so kcal won't edit it.").into());
     }
     Ok(text)
 }
@@ -189,7 +189,7 @@ pub fn set_json_server_disabled(content: &str, name: &str, disabled: bool) -> Re
         .get("mcpServers")
         .and_then(Value::as_object)
         .ok_or(pick(
-            "mcpServers 객체가 없어 고치지 않습니다.",
+            "mcpServers 객체가 없어 고치지 않아요.",
             "There's no mcpServers object, so kcal won't edit it.",
         ))?;
     let server = servers
@@ -197,7 +197,7 @@ pub fn set_json_server_disabled(content: &str, name: &str, disabled: bool) -> Re
         .and_then(Value::as_object)
         .ok_or_else(|| {
             tr!(
-                "{name} 서버가 mcpServers에 없어 고치지 않습니다.",
+                "{name} 서버가 mcpServers에 없어 고치지 않아요.",
                 "Server {name} isn't in mcpServers, so kcal won't edit it."
             )
         })?;
@@ -242,12 +242,12 @@ pub fn set_json_plugin_enabled(content: &str, id: &str, enabled: bool) -> Result
         .get("enabledPlugins")
         .and_then(Value::as_object)
         .ok_or(pick(
-            "enabledPlugins 객체가 없어 고치지 않습니다.",
+            "enabledPlugins 객체가 없어 고치지 않아요.",
             "There's no enabledPlugins object, so kcal won't edit it.",
         ))?;
     let current = plugins.get(id).ok_or_else(|| {
         tr!(
-            "{id} 플러그인이 enabledPlugins에 없어 고치지 않습니다.",
+            "{id} 플러그인이 enabledPlugins에 없어 고치지 않아요.",
             "Plugin {id} isn't in enabledPlugins, so kcal won't edit it."
         )
     })?;
@@ -361,7 +361,7 @@ fn parent_mut<'a>(
 ) -> Result<&'a mut Value, String> {
     let blocked = || {
         tr!(
-            "{}이(가) 객체가 아니라 고치지 않습니다.",
+            "{}이(가) 객체가 아니라 고치지 않아요.",
             "{} isn't an object, so kcal won't edit it.",
             location(path)
         )
@@ -388,11 +388,11 @@ fn parent_mut<'a>(
 fn apply_op(root: &mut Value, op: &JsonOp) -> Result<(), String> {
     let path = op.path();
     let Some(last) = path.last() else {
-        return Err(pick("고칠 위치가 비어 있습니다.", "The place to edit is empty.").into());
+        return Err(pick("고칠 위치가 비어 있어요.", "The place to edit is empty.").into());
     };
     let missing = || {
         tr!(
-            "{}이(가) 파일에 없어 고치지 않습니다.",
+            "{}이(가) 파일에 없어 고치지 않아요.",
             "{} isn't in the file, so kcal won't edit it.",
             location(path)
         )
@@ -421,7 +421,7 @@ fn apply_op(root: &mut Value, op: &JsonOp) -> Result<(), String> {
         }
         (JsonOp::Set(..), Seg::Index(_)) => {
             return Err(pick(
-                "배열 칸에는 값을 넣지 않습니다.",
+                "배열 칸에는 값을 넣지 않아요.",
                 "kcal doesn't put values into array slots.",
             )
             .into());
@@ -443,7 +443,7 @@ fn diff_paths(
             let common_y: Vec<&String> = y.keys().filter(|k| x.contains_key(*k)).collect();
             if common_x != common_y {
                 return Err(pick(
-                    "다시 읽은 결과의 키 순서가 달라 고치지 않습니다.",
+                    "다시 읽은 결과의 키 순서가 달라 고치지 않아요.",
                     "Reading it back changed the key order, so kcal won't edit it.",
                 )
                 .into());
@@ -518,7 +518,7 @@ pub fn apply_json_ops(content: &str, ops: &[JsonOp]) -> Result<JsonEdit, String>
     }
     let mut text = serde_json::to_string_pretty(&next).map_err(|_| {
         pick(
-            "JSON을 다시 쓰지 못했습니다.",
+            "JSON을 다시 쓰지 못했어요.",
             "Couldn't write the JSON back.",
         )
         .to_owned()
@@ -533,7 +533,7 @@ pub fn apply_json_ops(content: &str, ops: &[JsonOp]) -> Result<JsonEdit, String>
     let is_same_order = serde_json::to_vec(&reparsed).ok() == serde_json::to_vec(&next).ok();
     if !is_same_order || !only_intended(&original, &diff, &applied) {
         return Err(pick(
-            "다시 읽은 결과가 예상과 달라 고치지 않습니다.",
+            "다시 읽은 결과가 예상과 달라 고치지 않아요.",
             "Reading it back didn't match what was expected, so kcal won't edit it.",
         )
         .into());

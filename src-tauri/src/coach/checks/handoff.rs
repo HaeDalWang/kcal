@@ -210,7 +210,7 @@ pub fn find_target(
 ) -> Result<Target, AppError> {
     if !id.starts_with(ID_PREFIX) || id.len() > MAX_ID_LEN {
         return Err(refuse(pick(
-            "점검 이름이 올바르지 않습니다.",
+            "점검 이름이 올바르지 않아요.",
             "That check name isn't valid.",
         )));
     }
@@ -219,7 +219,7 @@ pub fn find_target(
         .find(|c| c.id == id)
         .ok_or_else(|| {
             refuse(pick(
-                "지금 점검 목록에 없는 항목입니다. 화면을 다시 여세요.",
+                "지금 점검 목록에 없는 항목이에요. 화면을 다시 여세요.",
                 "This item isn't in the current check list. Reopen the screen.",
             ))
         })?;

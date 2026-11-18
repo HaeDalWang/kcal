@@ -110,7 +110,7 @@ describe("SettingsView", () => {
     const keys = TUNING_SPEC.map((s) => s.key);
     const joined = keys.join(", ");
     expect(fieldsInMessage(`Some values are out of range: ${joined}`)).toEqual(keys);
-    expect(fieldsInMessage(`tuning 값이 범위를 벗어났습니다: ${joined}`)).toEqual(keys);
+    expect(fieldsInMessage(`tuning 값이 범위를 벗어났어요: ${joined}`)).toEqual(keys);
     expect(fieldsInMessage("toString constructor: __proto__")).toEqual([]);
   });
 
@@ -180,7 +180,7 @@ describe("SettingsView", () => {
   });
 
   it("shows a server invalid_input on every field it names", async () => {
-    const message = "tuning 값이 범위를 벗어났습니다: advanced.goodR2, advanced.rangeR2";
+    const message = "tuning 값이 범위를 벗어났어요: advanced.goodR2, advanced.rangeR2";
     mockSave(() => Promise.reject({ kind: "invalid_input", message }));
     render(<SettingsView settings={settingsWith()} onSaved={() => {}} onBack={() => {}} />);
 

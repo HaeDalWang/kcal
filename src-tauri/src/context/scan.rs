@@ -159,7 +159,7 @@ fn global_session_note(agent: &str, cwd: Option<&str>) -> String {
         .filter(|name| !name.is_empty())
         .unwrap_or(pick("알 수 없음", "unknown"));
     tr!(
-        "실측값은 가장 최근 {agent} 세션(작업 폴더 {folder}) 기준입니다.",
+        "실측값은 가장 최근 {agent} 세션(작업 폴더 {folder}) 기준이에요.",
         "Measured values come from the latest {agent} session (folder {folder})."
     )
 }
@@ -175,7 +175,7 @@ fn hook_item(count: usize, items: &mut Vec<ContextItem>, warnings: &mut Vec<Stri
         Loading::Conditional,
     ));
     warnings.push(tr!(
-        "hook {count}개: 출력 크기는 실행할 때 정해져 세지 않았습니다.",
+        "hook {count}개: 출력 크기는 실행할 때 정해져 세지 않았어요.",
         "{count} {noun}: output size is decided when they run, so it isn't counted."
     ));
 }
@@ -192,7 +192,7 @@ fn mcp_items(
     let count = servers.len();
     let noun = plural(count, "server", "servers");
     warnings.push(tr!(
-        "MCP 서버 {count}개: 도구 스키마는 서버를 실행해야 알 수 있어 세지 않았습니다.",
+        "MCP 서버 {count}개: 도구 스키마는 서버를 실행해야 알 수 있어 세지 않았어요.",
         "{count} MCP {noun}: tool schemas are only known once a server runs, so they aren't counted."
     ));
     items.extend(
@@ -204,7 +204,7 @@ fn mcp_items(
 
 fn plugin_missing(id: &str) -> String {
     tr!(
-        "플러그인 {id}: 캐시 폴더가 없어 세지 않았습니다.",
+        "플러그인 {id}: 캐시 폴더가 없어 세지 않았어요.",
         "Plugin {id}: no cache folder, so it isn't counted."
     )
 }
@@ -427,7 +427,7 @@ fn claude_session(
     let workspace = workspace?;
     let sent = shape::latest(home, None, search)?;
     warnings.push(tr!(
-        "이 작업 폴더({})의 Claude 세션 기록이 없어 {} 그 프로젝트의 MCP 도구가 포함됩니다.",
+        "이 작업 폴더({})의 Claude 세션 기록이 없어 {} 그 프로젝트의 MCP 도구가 포함돼요.",
         "No Claude session in this folder ({}). {} Its MCP tools are included.",
         file_name(workspace),
         global_session_note("Claude", sent.cwd.as_deref())
@@ -494,7 +494,7 @@ pub fn claude(
         Some((sent, is_same_workspace)) => {
             if workspace.is_none() {
                 warnings.push(tr!(
-                    "{} 그 프로젝트의 MCP 도구가 포함됩니다.",
+                    "{} 그 프로젝트의 MCP 도구가 포함돼요.",
                     "{} Its MCP tools are included.",
                     global_session_note("Claude", sent.cwd.as_deref())
                 ));
@@ -548,7 +548,7 @@ pub fn claude(
             if !shape::has_sessions(home) {
                 warnings.push(
                     pick(
-                        "아직 Claude 세션이 없어서 시스템 프롬프트와 내장 도구는 세지 않았습니다. 세션을 한 번 시작한 뒤 새로고침하세요.",
+                        "아직 Claude 세션이 없어서 시스템 프롬프트와 내장 도구는 세지 않았어요. 세션을 한 번 시작한 뒤 새로고침해 주세요.",
                         "No Claude session found yet, so the system prompt and built-in tools aren't counted. Start a session, then press Refresh.",
                     )
                     .into(),
@@ -556,7 +556,7 @@ pub fn claude(
             } else {
                 warnings.push(
                     pick(
-                        "최근 Claude 세션에서 시스템 프롬프트 크기가 보고되지 않아 시스템 프롬프트·도구는 세지 않았습니다(Claude Code 2.1.300 이상 필요). 업데이트한 뒤 새 세션을 시작하고 새로고침하세요.",
+                        "최근 Claude 세션에서 시스템 프롬프트 크기가 보고되지 않아 시스템 프롬프트·도구는 세지 않았어요(Claude Code 2.1.300 이상 필요). 업데이트한 뒤 새 세션을 시작하고 새로고침해 주세요.",
                         "No recent Claude session reported the system prompt size (needs Claude Code 2.1.300+), so the system prompt and tools aren't counted. Start a new session after updating, then press Refresh.",
                     )
                     .into(),

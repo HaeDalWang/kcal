@@ -57,7 +57,7 @@ pub fn apply(
     validate_hash(request.before_hash)?;
     if !is_key(request.key) {
         return Err(refuse(pick(
-            "규칙 이름이 올바르지 않습니다.",
+            "규칙 이름이 올바르지 않아요.",
             "That rule name isn't valid.",
         )));
     }
@@ -75,7 +75,7 @@ pub fn apply(
         .find(|r| r.key == request.key)
         .ok_or_else(|| {
             refuse(pick(
-                "Claude에게 맡긴 결과에 없는 규칙입니다. 다시 맡겨 주세요.",
+                "Claude에게 맡긴 결과에 없는 규칙이에요. 다시 맡겨 주세요.",
                 "That rule isn't in Claude's result. Ask Claude again.",
             ))
         })?;
@@ -85,7 +85,7 @@ pub fn apply(
         .find(|r| r.fact.file == rule.file)
         .ok_or_else(|| {
             refuse(pick(
-                "지금 점검 목록에 없는 규칙입니다. 화면을 다시 여세요.",
+                "지금 점검 목록에 없는 규칙이에요. 화면을 다시 여세요.",
                 "That rule isn't in the current check list. Reopen the screen.",
             ))
         })?;
@@ -100,7 +100,7 @@ pub fn apply(
         }
         Proposal::Keep => {
             return Err(refuse(pick(
-                "그대로 두기는 바꿀 것이 없습니다.",
+                "그대로 두기는 바꿀 것이 없어요.",
                 "Keeping it as is has nothing to change.",
             )));
         }
@@ -318,7 +318,7 @@ fn apply_skill(
     let backup = backup_path(&rule.file, now)?;
     if std::fs::symlink_metadata(&backup).is_ok() {
         return Err(refuse(pick(
-            "같은 이름의 백업이 이미 있습니다. 잠시 뒤 다시 하세요.",
+            "같은 이름의 백업이 이미 있어요. 잠시 뒤 다시 하세요.",
             "A backup with the same name already exists. Try again in a moment.",
         )));
     }
@@ -400,7 +400,7 @@ pub fn undo_skill(
     if !is_ours {
         return Err(refuse_with(
             pick(
-                "기록의 파일·백업 경로가 kcal이 만든 것이 아니라 되돌리지 않습니다.",
+                "기록의 파일·백업 경로가 kcal이 만든 것이 아니라 되돌리지 않아요.",
                 "The file or backup path in the record wasn't made by kcal, so it won't be undone.",
             ),
             command,
@@ -409,7 +409,7 @@ pub fn undo_skill(
     let current = std::fs::read(&skill_md).map_err(|_| {
         refuse_with(
             pick(
-                "스킬 파일을 읽지 못해 앱에서 되돌리지 않습니다.",
+                "스킬 파일을 읽지 못해 앱에서 되돌리지 않아요.",
                 "kcal couldn't read the skill file, so it won't undo here.",
             ),
             command,
@@ -417,14 +417,14 @@ pub fn undo_skill(
     })?;
     if edit::content_hash(&current) != applied.after_hash {
         return Err(refuse(crate::tr!(
-            "옮긴 뒤에 스킬 파일이 바뀌어 앱에서 되돌리지 않습니다. 그 변경을 버려도 되면 직접 되돌리세요: {command}",
+            "옮긴 뒤에 스킬 파일이 바뀌어 앱에서 되돌리지 않아요. 그 변경을 버려도 되면 직접 되돌리세요: {command}",
             "The skill file changed after the move, so kcal won't undo here. If you can drop that edit, undo it yourself: {command}"
         )));
     }
     if std::fs::symlink_metadata(&file).is_ok() {
         return Err(refuse_with(
             pick(
-                "규칙 자리에 파일이 다시 생겨 앱에서 되돌리지 않습니다.",
+                "규칙 자리에 파일이 다시 생겨 앱에서 되돌리지 않아요.",
                 "A file is back where the rule was, so kcal won't undo here.",
             ),
             command,

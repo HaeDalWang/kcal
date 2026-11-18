@@ -407,7 +407,7 @@ describe("UsagePopover", () => {
   });
 
   it("shows the rejection reason as an alert instead of an endless loading state when get_usage fails", async () => {
-    const message = "사용량을 읽지 못했습니다.";
+    const message = "사용량을 읽지 못했어요.";
     mockIPC(
       (cmd) =>
         cmd === "get_usage" ? Promise.reject({ kind: "internal", message }) : mockCommands(cmd),

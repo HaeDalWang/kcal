@@ -242,7 +242,7 @@ fn apply_refuses_when_any_file_changed_after_preview() {
     let f = fixture("stale");
     let p = preview(&kit(&f)).unwrap();
     std::fs::write(&f.b_local, "{}\n").unwrap();
-    assert!(message(apply_now(&f, &p.before_hash).unwrap_err()).contains("바뀌었습니다"));
+    assert!(message(apply_now(&f, &p.before_hash).unwrap_err()).contains("바뀌었어요"));
     assert_eq!(std::fs::read_to_string(&f.user).unwrap(), USER);
     assert!(!f.a.join(".claude").exists());
     assert!(log::read(&f.log).is_empty());

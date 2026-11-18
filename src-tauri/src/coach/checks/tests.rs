@@ -398,7 +398,7 @@ fn apply_refuses_and_writes_nothing_when_settings_changed_after_preview() {
     assert!(
         run("D-claude-effort-level", "remove", &p.before_hash)
             .unwrap_err()
-            .contains("바뀌었습니다")
+            .contains("바뀌었어요")
     );
     assert_eq!(
         std::fs::read_to_string(settings_file(&home)).unwrap(),

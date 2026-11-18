@@ -530,7 +530,7 @@ impl Tuning {
         match self.invalid_fields().as_slice() {
             [] => Ok(()),
             fields => Err(crate::tr!(
-                "tuning 값이 범위를 벗어났습니다: {}",
+                "tuning 값이 범위를 벗어났어요: {}",
                 "Some values are out of range: {}",
                 fields.join(", ")
             )),

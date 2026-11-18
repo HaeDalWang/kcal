@@ -246,7 +246,7 @@ describe("AgentChecks", () => {
 
   it("shows the refusal reason in plain words and the empty state", async () => {
     const message =
-      "미리보기 뒤에 설정 파일이 바뀌었습니다. 아무것도 바꾸지 않았습니다. 다시 미리 보세요.";
+      "미리보기 뒤에 설정 파일이 바뀌었어요. 아무것도 바꾸지 않았어요. 다시 미리 보세요.";
     mock({ apply_check: () => Promise.reject({ kind: "invalid_input", message }) });
     const { unmount } = render(list(THIS_MAC_CHECKS));
     fireEvent.click(within(openCard(EFFORT_TITLE)).getByRole("button", { name: /옛 설정 지우기/ }));

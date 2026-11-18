@@ -22,7 +22,7 @@ use crate::usage::Agent;
 
 pub fn claude_mcp_instruction() -> &'static str {
     pick(
-        "Claude Code에서 /mcp를 열고 이 서버를 끄세요. kcal은 ~/.claude.json을 고치지 않습니다(Claude가 실행 중에 다시 씁니다).",
+        "Claude Code에서 /mcp를 열고 이 서버를 끄세요. kcal은 ~/.claude.json을 고치지 않아요(Claude가 실행 중에 다시 씁니다).",
         "Open /mcp in Claude Code and turn this server off. kcal doesn't edit ~/.claude.json (Claude rewrites it while running).",
     )
 }
@@ -105,7 +105,7 @@ impl CoachSwitch {
             Field::JsonPluginEnabled => edit::set_json_plugin_enabled(content, &self.name, enabled),
             Field::None => Err(self.instruction.clone().unwrap_or_else(|| {
                 pick(
-                    "kcal이 바꾸지 않는 스위치입니다.",
+                    "kcal이 바꾸지 않는 스위치예요.",
                     "kcal doesn't change this switch.",
                 )
                 .into()
@@ -395,7 +395,7 @@ pub fn find(switches: Vec<CoachSwitch>, target: &str) -> Result<CoachSwitch, Str
         .find(|s| s.target == target)
         .ok_or_else(|| {
             crate::tr!(
-                "{target}은(는) 바꿀 수 있는 스위치 목록에 없습니다.",
+                "{target}은(는) 바꿀 수 있는 스위치 목록에 없어요.",
                 "{target} isn't in the list of switches kcal can change."
             )
         })
