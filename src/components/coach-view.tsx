@@ -4,7 +4,7 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { SwitchLists } from "@/components/coach-list";
+import { GROUP_TITLE, SwitchLists } from "@/components/coach-list";
 import { appliedName } from "@/lib/check-copy";
 import {
   CHECK_TARGET_PREFIX,
@@ -79,9 +79,14 @@ export function ChangePanel({
           {rows.map((row) => (
             <div key={row.location} className="flex flex-col gap-1.5">
               <p className="text-[10px] break-all text-muted-foreground">{row.location}</p>
+              {/* 새로 넣는 줄은 `+`만, 지우는 줄은 `-`만 보인다("+ (지움)" 같은 가짜 줄 없이). 표시는 글자(-/+)와 색을 함께 쓴다. */}
               <pre className="overflow-x-auto rounded-md bg-muted px-2 py-1 font-mono text-[10px] leading-relaxed whitespace-pre">
-                <span className="block text-destructive">{`- ${row.before ?? t.common.none}`}</span>
-                <span className="block text-foreground">{`+ ${row.after ?? t.common.removed}`}</span>
+                {row.before !== null && (
+                  <span className="block text-destructive">{`- ${row.before}`}</span>
+                )}
+                {row.after !== null && (
+                  <span className="block text-foreground">{`+ ${row.after}`}</span>
+                )}
               </pre>
             </div>
           ))}
@@ -209,6 +214,19 @@ export function CopyCommand({ command, label }: { command: string; label?: strin
   );
 }
 
+/** 완료 패널 제목의 기본값: 점검 기록은 이름만, 스위치는 "<이름> 켬·끔", 되돌리기는 "<이름> 되돌림". */
+export const doneTitle = (applied: AppliedSwitch) =>
+  applied.action === "undo" ? t.coach.undone(applied.name) : appliedName(applied);
+
+/** 적용·되돌리기 결과를 화면 읽기 프로그램에 알리는 자리. 늘 그려 두고 글자만 바꾼다(새로 붙인 live 영역은 읽히지 않을 수 있다). */
+export function LiveStatus({ text }: { text: string | null }) {
+  return (
+    <p role="status" className="sr-only">
+      {text ?? ""}
+    </p>
+  );
+}
+
 export function DonePanel({
   applied,
   title,
@@ -230,9 +248,7 @@ export function DonePanel({
       aria-label={t.coach.result}
       className="flex flex-col gap-1.5 border-t px-5 py-2.5"
     >
-      <h2 className="text-[13px] font-medium">
-        {title ?? (isUndo ? t.coach.undone(applied.name) : appliedName(applied))}
-      </h2>
+      <h2 className="text-[13px] font-medium">{title ?? doneTitle(applied)}</h2>
       <p className="text-xs">{t.coach.restart}</p>
       <p className="truncate text-[10px] text-muted-foreground" title={applied.backup}>
         {t.coach.backup(applied.backup)}
@@ -273,7 +289,7 @@ function RecentLog({
       aria-label={t.coach.recent}
       className="flex flex-col gap-1.5 border-t px-5 py-2.5"
     >
-      <h2 className="text-[13px] font-medium">{t.coach.recent}</h2>
+      <h2 className={GROUP_TITLE}>{t.coach.recent}</h2>
       <ul className="flex flex-col gap-1.5">
         {open.map((e) => (
           <li key={e.id} className="flex items-center gap-2 text-xs">
@@ -388,6 +404,7 @@ export function CoachPanel({
   );
   return (
     <div className="flex flex-col">
+      <LiveStatus text={step.kind === "done" ? doneTitle(step.applied) : null} />
       {error && (
         <p role="alert" className="px-5 pt-1.5 text-[10px] text-destructive">
           {error}

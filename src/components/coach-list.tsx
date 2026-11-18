@@ -198,7 +198,7 @@ function SuggestRow({
   const noLog = !item.usage && item.agent !== "claude";
   return (
     <li
-      className={`flex flex-col gap-1.5 border text-xs ${isOpen ? "-mx-2 px-2 py-1.5" : "border-transparent"}`}
+      className={`flex flex-col gap-1.5 rounded-lg border text-xs ${isOpen ? "-mx-2 px-2 py-1.5" : "border-transparent"}`}
       style={isOpen ? { borderColor: AGENT_COLOR[item.agent] } : undefined}
     >
       {/* 줄 전체가 펼치기 버튼의 누르는 자리다: 버튼의 ::after가 줄을 덮고, 끄기 버튼만 그 위(z-10)에 둔다(중첩 button 없음). */}
@@ -308,7 +308,8 @@ function GroupDot({ group, agent }: { group: SwitchGroup; agent: Agent }) {
   );
 }
 
-const GROUP_TITLE = "flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground";
+export const GROUP_TITLE =
+  "flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground";
 
 /** 묶음 제목 "<프로젝트>에서만 켜기 제안": 제안이 모두 같은 한 프로젝트면 그 이름, 아니면 일반 문구. */
 function moveProject(items: CoachSwitch[]): string | null {
@@ -347,14 +348,15 @@ function Summary({
                   {t.coach.tokensUnit}
                 </span>
               </p>
+              {/* 두 문장은 줄을 나눠 둔다(한 줄로 이으면 좁을 때 "·"가 줄 끝에 홀로 남는다). */}
               <p className="text-[10px] text-muted-foreground tabular-nums">
-                {[
-                  t.coach.summary(trim.count),
-                  basis ? t.coach.basis(basis.days, basis.sessions) : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
+                {t.coach.summary(trim.count)}
               </p>
+              {basis && (
+                <p className="text-[10px] text-muted-foreground tabular-nums">
+                  {t.coach.basis(basis.days, basis.sessions)}
+                </p>
+              )}
             </>
           ) : (
             <p className="text-xs text-muted-foreground wrap-break-word select-text">

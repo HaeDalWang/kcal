@@ -377,7 +377,8 @@ describe("CoachPanel", () => {
     renderPanel("codex", { log: [APPLIED], onChanged: () => (changed += 1) });
     const recent = screen.getByRole("group", { name: "최근 바꾼 것" });
     fireEvent.click(within(recent).getByRole("button", { name: "되돌리기" }));
-    await screen.findByText("big@m 되돌림");
+    await screen.findByRole("heading", { name: "big@m 되돌림" });
+    expect(screen.getByRole("status").textContent).toBe("big@m 되돌림");
     expect(calls.find((c) => c.cmd === "undo_switch")?.args).toEqual({ id: "1" });
     expect(changed).toBe(1);
   });
@@ -387,9 +388,8 @@ describe("CoachPanel", () => {
     renderPanel("claude", { switches: CLAUDE_SWITCHES });
     // 끄기 제안 idle@m 900 + 프로젝트에서만 켜기 niche@m 700(팝오버 입구 줄과 같은 합).
     expect(screen.getByText("~1,600")).toBeTruthy();
-    expect(
-      screen.getByText("2개를 바꾸면 세션마다 이만큼 덜 실려요 · 최근 30일 세션 24개 기준"),
-    ).toBeTruthy();
+    expect(screen.getByText("2개를 바꾸면 세션마다 이만큼 덜 실려요")).toBeTruthy();
+    expect(screen.getByText("최근 30일 세션 24개 기준")).toBeTruthy();
     const legend = ko.coach.legendTokens + ko.coach.legendClaude + ko.coach.evidenceSource;
     expect(screen.queryByText(legend)).toBeNull();
     const howTo = screen.getByRole("button", { name: ko.coach.howToRead });
