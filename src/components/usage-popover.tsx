@@ -1,5 +1,5 @@
 import { ChevronRight, LayoutList, TriangleAlert } from "lucide-react";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 
 import { AgentIcon } from "@/components/agent-icon";
 import {
@@ -211,7 +211,7 @@ export function AgentSection({ usage, now, lowPercent, onOpenDashboard }: Sectio
   return (
     <section role="group" aria-label={AGENT_LABEL[usage.agent]} className="flex flex-col">
       {onOpenDashboard ? (
-        <div className="flex items-center justify-between gap-2 border-b px-[20px] pt-1.5 pb-1.5">
+        <div className="mx-[20px] flex items-center justify-between gap-2 border-b pt-1.5 pb-1.5">
           <div className="flex min-w-0 flex-col gap-[4px]">
             <h2 className="text-[13px] font-bold">{AGENT_LABEL[usage.agent]}</h2>
             {meta && <p className="text-[10px] text-muted-foreground tabular-nums">{meta}</p>}
@@ -244,25 +244,29 @@ export function AgentSection({ usage, now, lowPercent, onOpenDashboard }: Sectio
   );
 }
 
-/** 개요의 보조 창 한 줄: "7일 76%" + 얇은 막대 + 남은 시간. */
+/** 개요의 보조 창 한 줄: "5-hour [막대] 60% left · 2h 40m". 이름 칸·값 칸 폭을 고정해 카드끼리 막대 양 끝이 맞는다.
+ * 다이얼처럼 "남음"을 붙이고, 막대도 다이얼처럼 남은 만큼 찬다. */
 function OverviewWindow({ window, now, lowPercent, agent }: BarProps & { agent: Agent }) {
   const remaining = remainingPercent(window, now);
   const reset = resetIn(window, now);
   const label = t.popover.windowShort[window.id];
+  const left = t.popover.dial(Math.round(remaining));
   return (
     <div className="flex items-center gap-2 text-[10px] tabular-nums">
-      <span
-        title={t.popover.left(t.popover.window[window.id], Math.round(remaining))}
-        className="w-18 shrink-0 whitespace-nowrap"
-      >{`${label} ${Math.round(remaining)}%`}</span>
+      <span className="min-w-10 shrink-0 font-medium whitespace-nowrap">{label}</span>
       <Bar
         remaining={remaining}
         label={t.popover.remainingBar(label)}
         color={AGENT_COLOR[agent]}
         isLow={isLow(remaining, lowPercent)}
-        className="h-[6px] flex-1"
+        className="h-[6px] min-w-8 flex-1"
       />
-      {reset && <span className="w-14 shrink-0 text-right text-muted-foreground">{reset}</span>}
+      <span
+        title={reset ? (resetText(window, now) ?? undefined) : undefined}
+        className="min-w-[88px] shrink-0 text-right whitespace-nowrap text-muted-foreground"
+      >
+        {reset ? `${left} · ${reset}` : left}
+      </span>
     </div>
   );
 }
@@ -272,11 +276,11 @@ function StartupContextLine({ context }: { context: AgentContext | undefined }) 
   if (!context || context.items.length === 0) return null;
   return (
     <p
-      className="text-[10px] tabular-nums"
+      className="text-[10px] text-muted-foreground tabular-nums"
       title={`${t.context.description}\n${startupTitle(context)}`}
     >
-      <span className="text-muted-foreground">{`${t.common.startupContext} `}</span>
-      {startupShortValue(context)}
+      <span className="font-medium text-foreground">{t.common.startupContext}</span>
+      {` · ${startupShortValue(context)}`}
     </p>
   );
 }
@@ -306,7 +310,7 @@ function OverviewCard({
     <section
       role="group"
       aria-label={AGENT_LABEL[usage.agent]}
-      className="flex items-center gap-3 px-[20px] py-[10px]"
+      className="flex items-center gap-3 py-[10px]"
     >
       {/* 값을 모르면 다이얼을 숨기고 이름 줄만 둔다(1절 "—로 채우지 않는다"). */}
       {urgentRemaining !== null && (
@@ -362,7 +366,7 @@ function Overview({
   // 개요에 들어올 때 한 번 부른다(Rust가 캐시를 바로 준다). 갱신은 `context-updated` event.
   const { value: contexts } = useSnapshot(contextStore, "overview");
   return (
-    <div className="flex flex-col divide-y">
+    <div className="flex flex-col divide-y px-[20px]">
       {usages.map((usage) => (
         <OverviewCard
           key={usage.agent}
@@ -404,13 +408,9 @@ function MiniBar({
 /** 위쪽 탭: 개요 + 설정에서 켠 에이전트. */
 export type PopoverTab = "overview" | Agent;
 
+/** 고른 탭은 개요·에이전트 모두 같은 회색 칸(메뉴 hover와 같은 accent). 에이전트 색은 아래 사용량 막대에만 쓴다. */
 const TRIGGER =
-  "h-auto flex-col gap-1 px-1.5 py-1 text-[11px] group-data-[variant=default]/tabs-list:data-active:shadow-none dark:data-active:border-transparent";
-const OVERVIEW_ACTIVE =
-  "data-active:bg-accent data-active:text-accent-foreground dark:data-active:bg-accent";
-/** 활성 탭 배경 = 에이전트 색 18%. `--tint`는 트리거의 style로 준다. */
-const AGENT_ACTIVE = "data-active:bg-(--tint) dark:data-active:bg-(--tint)";
-const TINT_PERCENT = 18;
+  "h-auto flex-col gap-1 px-1.5 py-1 text-[11px] hover:bg-accent/50 group-data-[variant=default]/tabs-list:data-active:shadow-none data-active:bg-accent data-active:text-accent-foreground dark:data-active:border-transparent dark:data-active:bg-accent";
 
 type UsagePopoverProps = {
   /** 탭·개요에 보여 줄 에이전트(설정에서 켠 것). */
@@ -441,7 +441,7 @@ function TrimEntry({
       onClick={onReview}
       className="mx-[20px] flex items-center gap-2 rounded-md bg-muted px-2 py-1.5 text-left text-[10px] tabular-nums hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none active:translate-y-px"
     >
-      <span className="min-w-0 flex-1">{trimText(trim.count, trim.tokens)}</span>
+      <span className="min-w-0 flex-1 text-balance">{trimText(trim.count, trim.tokens)}</span>
       <span className="flex shrink-0 items-center text-[11px] font-medium">
         {t.popover.trimReview}
         <ChevronRight className="size-[12px]" aria-hidden />
@@ -516,7 +516,7 @@ export function UsagePopover({
     <Tabs value={selected} onValueChange={(value: PopoverTab) => onSelect(value)} className="gap-1">
       <div className="px-2 pt-2">
         <TabsList className="w-full gap-0.5 bg-transparent p-0 group-data-horizontal/tabs:h-auto">
-          <TabsTrigger value="overview" className={`${TRIGGER} ${OVERVIEW_ACTIVE}`}>
+          <TabsTrigger value="overview" className={TRIGGER}>
             <span className="flex flex-col items-center gap-px">
               <LayoutList className="size-[16px]" aria-hidden />
               {t.popover.overview}
@@ -524,16 +524,7 @@ export function UsagePopover({
             <span aria-hidden className="block h-[3px]" />
           </TabsTrigger>
           {usages.map((tab) => (
-            <TabsTrigger
-              key={tab.agent}
-              value={tab.agent}
-              className={`${TRIGGER} ${AGENT_ACTIVE}`}
-              style={
-                {
-                  "--tint": `color-mix(in oklab, ${AGENT_COLOR[tab.agent]} ${TINT_PERCENT}%, transparent)`,
-                } as CSSProperties
-              }
-            >
+            <TabsTrigger key={tab.agent} value={tab.agent} className={TRIGGER}>
               <span className="flex flex-col items-center gap-px">
                 <AgentIcon agent={tab.agent} className="size-[16px]" />
                 <span className="flex items-center gap-0.5">

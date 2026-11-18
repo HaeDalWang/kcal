@@ -49,13 +49,13 @@ function MenuLabel({
   );
 }
 
-/** "점검" 옆 빨간 점 + 개수. */
+/** "점검" 줄 오른쪽(다른 줄의 단축키 자리) 빨간 점 + 개수. */
 function AlertBadge({ count }: { count: number }) {
   return (
     <span
       role="img"
       aria-label={alertLabel(count)}
-      className="flex items-center gap-1 text-[12px] font-medium text-destructive tabular-nums"
+      className="ml-auto flex items-center gap-1 text-[12px] font-medium text-destructive tabular-nums"
     >
       <span aria-hidden className="size-1.5 rounded-full bg-destructive" />
       <span aria-hidden>{count}</span>
@@ -149,7 +149,8 @@ export function App() {
   });
 
   return (
-    <div ref={ref} className="select-none">
+    // break-keep: 한국어를 어절 단위로만 줄바꿈한다(영어에는 영향 없음).
+    <div ref={ref} className="break-keep select-none">
       {settingsError && (
         <StateText kind="error" className="p-3">
           {settingsError}

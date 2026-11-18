@@ -288,10 +288,13 @@ describe("UsagePopover", () => {
     expect(within(claude).getByText("7일 한도").parentElement?.textContent).toMatch(
       /^7일 한도 · 3d (9h 59m|10h) 후 초기화$/,
     );
-    // 다른 창(5시간)은 막대 줄 그대로.
-    expect(within(claude).getByText("5시간 90%")).toBeTruthy();
-    // 개요 줄의 %가 "남은 비율"임은 title이 말한다(모양은 그대로).
-    expect(within(claude).getByText("5시간 90%").getAttribute("title")).toBe("5시간 90% 남음");
+    // 다른 창(5시간)은 막대 줄: 이름 · 막대 · 다이얼처럼 "남음"을 붙인 값과 남은 시간.
+    expect(within(claude).getByText("5시간")).toBeTruthy();
+    expect(
+      within(claude)
+        .getByText(/^90% 남음 · \d/)
+        .getAttribute("title"),
+    ).toMatch(/후 초기화$/);
   });
 
   it("shows startup context as a share of the window on the overview, tokens only when the window is unknown", async () => {
@@ -310,12 +313,12 @@ describe("UsagePopover", () => {
 
     const claude = await screen.findByRole("group", { name: "Claude" });
     const line = await within(claude).findByTitle(/바이트 ÷ 4/);
-    expect(line.textContent).toBe("시작 컨텍스트 ~8.5% (~34.2K / 400K 토큰)");
+    expect(line.textContent).toBe("시작 컨텍스트 · ~8.5% (~34.2K / 400K 토큰)");
     expect(line.getAttribute("title")).toBe(
       "첫 메시지 전에 기본으로 실리는 지시문·도구 설명이에요.\n예상: 기록으로 계산한 값 · 토큰 = 바이트 ÷ 4 · claude-opus-5-5 컨텍스트 창 400K 토큰",
     );
     const kiro = screen.getByRole("group", { name: "Kiro" });
-    expect(within(kiro).getByTitle(/바이트 ÷ 4/).textContent).toBe("시작 컨텍스트 ~4.1K 토큰");
+    expect(within(kiro).getByTitle(/바이트 ÷ 4/).textContent).toBe("시작 컨텍스트 · ~4.1K 토큰");
     expect(within(kiro).queryByText(/%/)).toBeNull();
   });
 

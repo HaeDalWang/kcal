@@ -68,7 +68,7 @@ export const en: Messages = {
     reset: "Just reset",
     resetsIn: (duration) => `resets in ${duration}`,
     ago: (duration) => `${duration} ago`,
-    updated: (ago) => `updated ${ago}`,
+    updated: (ago) => `Updated ${ago}`,
     openDashboard: "Open dashboard",
     low: "Low",
     dial: (percent) => `${percent}% left`,
