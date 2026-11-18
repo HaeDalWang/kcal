@@ -583,6 +583,8 @@ pub fn claude(
 mod codex_scan;
 pub use codex_scan::codex;
 #[cfg(test)]
+use codex_scan::codex_plugin_skills;
+#[cfg(test)]
 use codex_scan::{codex_enabled_mcp_servers, codex_enabled_plugins};
 pub(crate) use codex_scan::{codex_mcp_server_states, codex_plugin_states};
 

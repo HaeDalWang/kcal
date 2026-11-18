@@ -42,7 +42,7 @@
 - [ ] 첫 점검의 한계: hook 점검은 최근 세션 폴더만 본다.
 - [ ] Codex·Kiro 사실표(0017)와 코드의 차이 중 고치지 않은 것: Kiro 세션 기록 위치. Codex `project_root_markers`(한 줄 배열만)·`plugins._default.enabled`는 2026-11-18에 읽게 고쳤다. config에 section이 없는 설치된 Codex 플러그인은 아직 모른다(설치 목록 출처를 찾아야 함). Codex·Kiro의 다음 점검 후보 3개는 구현하지 않았다.
 - [ ] Codex·Kiro 끄기 제안 정책: 두 에이전트는 사용 기록을 읽는 출처가 없어(근거 없음) 플러그인·MCP 끄기를 제안하지 않고, 사용자가 직접 끌 수만 있다. Claude는 최근 30일 기록(세션 10개 이상)에서 한 번도 안 쓴 것만 제안한다. 같은 기준을 Codex·Kiro에 쓰려면 사용 기록 출처를 먼저 찾아야 한다(결정 0017·0022).
-- [ ] Codex 플러그인은 매니페스트(플러그인 폴더의 설정 파일)에 적힌 스킬·명령 경로를 읽지 않는다(Claude는 공식 규칙대로 읽음). 막힌 곳(2026-11-17): Codex 플러그인 매니페스트 공식 규칙은 모름, 이 Mac의 `~/.codex/plugins`에는 `codex-package.json`·`.mcp.json`·`package.json`만 보인다. 공식 문서를 찾은 뒤에 한다. 최적화 칸의 "고친 것" 줄 문구는 적용한 때의 언어로 남는다.
+- [ ] Codex 플러그인 매니페스트(2026-11-18, `plugins/build/plugins` 문서): skill 폴더는 기본 `skills/`, 호환 매니페스트 `.codex-plugin/plugin.json`의 `skills` 경로가 있으면 그것을 따르게 고쳤다(이 Mac 설치본 20개는 모두 `./skills/`이거나 없음, 확인됨). 남은 것: 플러그인 루트 `mcp.json`의 MCP 서버는 세지 않는다. 명령(prompts) 필드는 문서에 없다. 최적화 칸의 "고친 것" 줄 문구는 적용한 때의 언어로 남는다.
 
 ### 화면·문구
 

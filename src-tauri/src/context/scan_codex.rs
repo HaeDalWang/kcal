@@ -70,6 +70,26 @@ pub(crate) fn codex_plugin_states(config: &str) -> Vec<TomlSwitchState> {
         .collect()
 }
 
+/// Codex 플러그인의 skill 폴더: 호환 매니페스트(`.codex-plugin/plugin.json`)의 `skills` 경로, 없으면 `skills/`.
+/// 플러그인 폴더 밖을 가리키는 경로(절대 경로·`..`)는 따르지 않는다(`plugins/build/plugins`).
+pub(super) fn codex_plugin_skills(plugin: &Path) -> PathBuf {
+    let manifest = read_json(&plugin.join(".codex-plugin").join("plugin.json"));
+    let relative = manifest
+        .as_ref()
+        .and_then(|m| m.get("skills"))
+        .and_then(Value::as_str)
+        .map(Path::new)
+        .filter(|p| {
+            p.components().all(|c| {
+                matches!(
+                    c,
+                    std::path::Component::Normal(_) | std::path::Component::CurDir
+                )
+            })
+        });
+    plugin.join(relative.unwrap_or(Path::new("skills")))
+}
+
 pub(super) fn codex_enabled_plugins(config: &str) -> Vec<String> {
     codex_plugin_states(config)
         .into_iter()
@@ -168,7 +188,7 @@ pub fn codex(home: &Path, workspace: Option<&Path>, tuning: &Tuning) -> AgentCon
             Some(directory) => items.extend(skill_item(
                 ContextKind::Plugins,
                 &id,
-                &directory.join("skills"),
+                &codex_plugin_skills(&directory),
                 PLUGIN_CACHE,
             )),
             None => warnings.push(plugin_missing(&id)),

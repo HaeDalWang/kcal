@@ -481,3 +481,22 @@ enabled = false
         Vec::<String>::new()
     );
 }
+
+#[test]
+fn codex_plugin_skills_follow_the_manifest_path_inside_the_plugin() {
+    let plugin = TempDir::new("codex-plugin-manifest");
+    assert_eq!(
+        codex_plugin_skills(plugin.path()),
+        plugin.path().join("skills")
+    );
+    plugin.write(".codex-plugin/plugin.json", r#"{"skills": "./my-skills/"}"#);
+    assert_eq!(
+        codex_plugin_skills(plugin.path()),
+        plugin.path().join("./my-skills/")
+    );
+    plugin.write(".codex-plugin/plugin.json", r#"{"skills": "../outside"}"#);
+    assert_eq!(
+        codex_plugin_skills(plugin.path()),
+        plugin.path().join("skills")
+    );
+}
