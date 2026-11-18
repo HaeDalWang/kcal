@@ -180,9 +180,10 @@ describe("Dashboard", () => {
     // 목표 줄("하루 몫 14%")은 빈 날에 보이지 않는다.
     expect(within(card).queryByText(/^하루 몫/)).toBeNull();
     expect(within(card).getByRole("img").getAttribute("aria-label")).not.toMatch(/\d/);
-    // 시간대 카드는 빈 축 대신 에이전트마다 조용한 한 줄만 보인다.
+    // 시간대 카드는 빈 축 대신 조용한 한 줄만 보인다(에이전트 이름을 모아서).
     const hourly = screen.getByRole("region", { name: "시간대별 요청" });
-    expect(within(hourly).getAllByText("이날 요청 없음").length).toBeGreaterThanOrEqual(1);
+    expect(within(hourly).getAllByText(/ · 이날 기록 없음$/)).toHaveLength(1);
+    expect(within(hourly).queryByRole("heading")).toBeNull();
     expect(within(hourly).queryByRole("img")).toBeNull();
   });
 
@@ -231,6 +232,36 @@ describe("Dashboard", () => {
       );
       // 읽은 Codex는 그대로 숫자와 하루 몫을 보인다.
       expect(within(card).getByText("1.5")).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shows pending, not a confident 0 %, when requests exist but no limit sample rose", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-04T14:00:00Z"));
+    try {
+      // Claude: 막대(표본)는 있고 요청은 908회인데 오늘 오른 %p가 없다(0015: 증가분은 표본에서만 나온다).
+      const pending = {
+        ...metrics,
+        agents: metrics.agents.map((a) =>
+          a.agent === "claude"
+            ? {
+                ...a,
+                bars: metrics.agents.find((o) => o.agent === "codex")?.bars ?? [],
+                hourly: [{ startsAt: "2026-11-04T11:00:00Z", requests: 908, used: 0 }],
+              }
+            : a,
+        ),
+      };
+      mockIPC((cmd) => (cmd === "get_metrics" ? pending : (FIXTURE[cmd] ?? null)), {
+        shouldMockEvents: true,
+      });
+      render(<Dashboard />);
+      const card = await screen.findByRole("region", { name: "오늘 쓴 양" });
+      expect(within(card).getByText("집계 전")).toBeTruthy();
+      expect(within(card).getByRole("img").getAttribute("aria-label")).toMatch(/Claude 집계 전/);
+      expect(within(card).queryByText("0")).toBeNull();
     } finally {
       vi.useRealTimers();
     }
