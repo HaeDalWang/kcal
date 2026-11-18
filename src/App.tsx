@@ -178,7 +178,7 @@ export function App() {
           selected={tab}
           onSelect={setSelected}
           lowPercent={settings.tuning.lowPercent}
-          onOpenDashboard={() => run(openDashboard)}
+          onOpenDashboard={(agent) => run(() => openDashboard(undefined, agent))}
           trim={tab === "overview" || !switches ? null : trimSummary(switches, tab)}
           onReview={() => run(() => openDashboard("checks"))}
         />

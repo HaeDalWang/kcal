@@ -94,6 +94,19 @@ describe("popover menu", () => {
     expect(await within(item).findByRole("img", { name: "점검할 것 1개" })).toBeTruthy();
   });
 
+  it("opens the dashboard on the current agent from the agent tab, and with none from the menu", async () => {
+    const calls = mock(THIS_MAC_CHECKS);
+    render(<App />);
+    await checksItem();
+    fireEvent.click(screen.getByRole("tab", { name: "Codex" }));
+    fireEvent.click(await screen.findByRole("button", { name: "대시보드 열기" }));
+    await waitFor(() =>
+      expect(calls.filter((c) => c.cmd === "open_dashboard").map((c) => c.args)).toEqual([
+        { agent: "codex" },
+      ]),
+    );
+  });
+
   it("reads the checks again when the popover gets focus", async () => {
     const calls = mock(THIS_MAC_CHECKS);
     render(<App />);

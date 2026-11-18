@@ -410,20 +410,29 @@ export type DashboardTab = "usage" | "checks";
 /** Rust `tray::DASHBOARD_TAB_EVENT`. 이미 열린 대시보드 창에만 온다. */
 export const DASHBOARD_TAB_EVENT = "dashboard-tab";
 
-/** 대시보드 창을 열고(없으면 만든다) 팝오버를 숨긴다. `tab`을 주면 그 탭으로 연다(열린 창이면 바꾼다). */
-export function openDashboard(tab?: DashboardTab): Promise<void> {
-  return invoke("open_dashboard", tab ? { tab } : {});
+/** Rust `tray::DashboardTarget`(event payload). null인 칸은 그대로 둔다. */
+export type DashboardTarget = { tab: DashboardTab | null; agent: Agent | null };
+
+/** 대시보드 창을 열고(없으면 만든다) 팝오버를 숨긴다. `tab`·`agent`를 주면 그 탭·에이전트로 연다(열린 창이면 바꾼다). */
+export function openDashboard(tab?: DashboardTab, agent?: Agent): Promise<void> {
+  return invoke("open_dashboard", { ...(tab && { tab }), ...(agent && { agent }) });
 }
 
-/** 대시보드 창: `openDashboard(tab)`이 이미 열린 창에 보낸 탭 전환. */
-export function onDashboardTab(handler: (tab: DashboardTab) => void): Promise<UnlistenFn> {
-  return listen<DashboardTab>(DASHBOARD_TAB_EVENT, (event) => handler(event.payload));
+/** 대시보드 창: `openDashboard`가 이미 열린 창에 보낸 탭·에이전트 전환. */
+export function onDashboardTab(handler: (target: DashboardTarget) => void): Promise<UnlistenFn> {
+  return listen<DashboardTarget>(DASHBOARD_TAB_EVENT, (event) => handler(event.payload));
 }
 
 /** 새 대시보드 창의 시작 탭(Rust가 `?tab=`으로 넘긴다). 모르는 값이면 null. */
 export function initialDashboardTab(search: string): DashboardTab | null {
   const tab = new URLSearchParams(search).get("tab");
   return tab === "usage" || tab === "checks" ? tab : null;
+}
+
+/** 새 대시보드 창의 시작 에이전트(`?agent=`). 모르는 값이면 null. 켜 있는지는 화면이 본다. */
+export function initialDashboardAgent(search: string): Agent | null {
+  const agent = new URLSearchParams(search).get("agent");
+  return AGENTS.find((a) => a === agent) ?? null;
 }
 
 /** 지금 웹뷰 창의 label(`popover` 또는 `dashboard`). IPC 없이 Tauri가 넣어 둔 값을 읽는다. */

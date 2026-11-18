@@ -6,7 +6,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Dashboard } from "@/components/dashboard";
 import { healthStore } from "@/components/health-compare";
 import { metricsStore } from "@/lib/snapshot-store";
-import { DASHBOARD_TAB_EVENT, initialDashboardTab, type Settings } from "@/lib/ipc";
+import {
+  DASHBOARD_TAB_EVENT,
+  initialDashboardAgent,
+  initialDashboardTab,
+  type Settings,
+} from "@/lib/ipc";
 import context from "@/test/fixtures/ipc/context-snapshot.json";
 import health from "@/test/fixtures/ipc/health-report.json";
 import metrics from "@/test/fixtures/ipc/metrics-snapshot.json";
@@ -85,10 +90,96 @@ describe("Dashboard", () => {
     await screen.findByRole("tablist");
     expect(isSelected("점검")).toBe(true);
 
-    await act(() => emit(DASHBOARD_TAB_EVENT, "usage"));
+    await act(() => emit(DASHBOARD_TAB_EVENT, { tab: "usage", agent: null }));
     await waitFor(() => expect(isSelected("사용량")).toBe(true));
-    await act(() => emit(DASHBOARD_TAB_EVENT, "checks"));
+    await act(() => emit(DASHBOARD_TAB_EVENT, { tab: "checks", agent: null }));
     await waitFor(() => expect(isSelected("점검")).toBe(true));
+  });
+
+  it("reads the starting agent from the URL and falls back to all for unknown ids", () => {
+    expect(initialDashboardAgent("?agent=kiro")).toBe("kiro");
+    expect(initialDashboardAgent("?tab=usage&agent=codex")).toBe("codex");
+    expect(initialDashboardAgent("?agent=gemini")).toBeNull();
+    expect(initialDashboardAgent("?agent=")).toBeNull();
+    expect(initialDashboardAgent("")).toBeNull();
+  });
+
+  const pickerTab = (name: string) => screen.getByRole("tab", { name });
+  const isPicked = (name: string) => pickerTab(name).getAttribute("aria-selected") === "true";
+  const cardHeading = (name: string) => !!screen.queryByRole("heading", { level: 2, name });
+  const picker = () => screen.findByRole("tablist", { name: "에이전트 고르기" });
+
+  it("shows every agent card under All and only one card under an agent tab", async () => {
+    mock();
+    render(<Dashboard />);
+    await picker();
+    expect(isPicked("전체")).toBe(true);
+    for (const name of ["Claude", "Codex", "Kiro"]) expect(cardHeading(name)).toBe(true);
+
+    fireEvent.click(pickerTab("Kiro"));
+    expect(isPicked("Kiro")).toBe(true);
+    expect(cardHeading("Kiro")).toBe(true);
+    expect(cardHeading("Claude")).toBe(false);
+    expect(cardHeading("Codex")).toBe(false);
+    // 처방 효과 주간 요약도 그 에이전트 줄만 남는다.
+    const health = screen.getByRole("region", { name: "처방 효과" });
+    expect(within(health).queryByText("Claude")).toBeNull();
+
+    fireEvent.click(pickerTab("전체"));
+    for (const name of ["Claude", "Codex", "Kiro"]) expect(cardHeading(name)).toBe(true);
+  });
+
+  it("starts on the agent in the URL and follows the event on an open window", async () => {
+    window.history.replaceState(null, "", "/?agent=codex");
+    mock();
+    render(<Dashboard />);
+    await picker();
+    expect(isPicked("Codex")).toBe(true);
+    expect(cardHeading("Claude")).toBe(false);
+
+    await act(() => emit(DASHBOARD_TAB_EVENT, { tab: null, agent: "kiro" }));
+    await waitFor(() => expect(isPicked("Kiro")).toBe(true));
+    expect(isSelected("사용량")).toBe(true);
+    expect(cardHeading("Codex")).toBe(false);
+  });
+
+  it("falls back to All for an unknown or disabled agent and hides the picker for one agent", async () => {
+    window.history.replaceState(null, "", "/?agent=gemini");
+    mock();
+    const first = render(<Dashboard />);
+    await picker();
+    expect(isPicked("전체")).toBe(true);
+    expect(cardHeading("Claude") && cardHeading("Codex") && cardHeading("Kiro")).toBe(true);
+    first.unmount();
+
+    // 끈 에이전트: 켠 것은 claude·codex뿐이라 kiro 요청은 전체로 읽는다.
+    window.history.replaceState(null, "", "/?agent=kiro");
+    mockIPC(
+      (cmd) =>
+        cmd === "get_settings"
+          ? { ...ALL_AGENTS, enabledAgents: ["claude", "codex"] }
+          : (FIXTURE[cmd] ?? null),
+      { shouldMockEvents: true },
+    );
+    const second = render(<Dashboard />);
+    await picker();
+    expect(isPicked("전체")).toBe(true);
+    expect(cardHeading("Claude") && cardHeading("Codex")).toBe(true);
+    expect(screen.queryByRole("tab", { name: "Kiro" })).toBeNull();
+    second.unmount();
+
+    // 하나만 켜면 고르기를 숨긴다.
+    mockIPC(
+      (cmd) =>
+        cmd === "get_settings"
+          ? { ...ALL_AGENTS, enabledAgents: ["claude"] }
+          : (FIXTURE[cmd] ?? null),
+      { shouldMockEvents: true },
+    );
+    render(<Dashboard />);
+    await screen.findByRole("tablist");
+    expect(screen.queryByRole("tablist", { name: "에이전트 고르기" })).toBeNull();
+    expect(cardHeading("Claude")).toBe(true);
   });
 
   it("shows an agent's sign-in message above the daily ring, once, without a scroll position", async () => {

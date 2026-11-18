@@ -727,6 +727,8 @@ export const ko = {
     save: "저장",
   },
   dashboard: {
+    agentPicker: "에이전트 고르기",
+    allAgents: "전체",
     title: "kcal 대시보드",
     usage: "사용량",
     emptyGuide: "Claude Code, Codex, Kiro 중 하나를 한 번 쓰고 새로고침하면 여기에 채워져요.",

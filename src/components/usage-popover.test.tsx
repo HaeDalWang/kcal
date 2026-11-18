@@ -440,6 +440,7 @@ describe("UsagePopover", () => {
     );
     fireEvent.click(await screen.findByRole("button", { name: "대시보드 열기" }));
     expect(onOpenDashboard).toHaveBeenCalledTimes(1);
+    expect(onOpenDashboard).toHaveBeenCalledWith("claude");
   });
 });
 

@@ -168,11 +168,13 @@ export function DayPicker({ days, selected, onSelect }: DayPickerProps) {
 type Props = DayPickerProps & {
   settings: Settings;
   usages: readonly AgentUsage[] | undefined;
+  /** 고른 에이전트 하나만 보인다. null이면 켠 에이전트 전부. */
+  only?: Agent | null;
 };
 
-export function DailyActivity({ days, selected, onSelect, settings, usages }: Props) {
+export function DailyActivity({ days, selected, onSelect, settings, usages, only }: Props) {
   const { value: metrics, error } = useSnapshot(metricsStore, "daily");
-  const agents = settings.enabledAgents;
+  const agents = only ? [only] : settings.enabledAgents;
   const week = days.map((day) => agentDays(agents, metrics, settings, usages, day));
   const today = week[selected];
   return (

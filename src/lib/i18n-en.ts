@@ -737,6 +737,8 @@ export const en: Messages = {
     save: "Save",
   },
   dashboard: {
+    agentPicker: "Choose agent",
+    allAgents: "All",
     title: "kcal Dashboard",
     usage: "Usage",
     emptyGuide: "Use Claude Code, Codex, or Kiro once, then press Refresh and this fills in.",

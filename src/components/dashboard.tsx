@@ -20,9 +20,11 @@ import { kiroMonthlyLimit } from "@/lib/breakdown";
 import { recentDays } from "@/lib/daily";
 import {
   errorMessage,
+  initialDashboardAgent,
   initialDashboardTab,
   onDashboardTab,
   refreshAll,
+  type Agent,
   type AgentUsage,
   type DashboardTab,
   type Settings,
@@ -103,10 +105,19 @@ function EmptyGuide({
   );
 }
 
-function AgentPanels({ settings, usage: state }: { settings: Settings; usage: UsageState }) {
+function AgentPanels({
+  settings,
+  usage: state,
+  only,
+}: {
+  settings: Settings;
+  usage: UsageState;
+  /** 고른 에이전트 하나만 그린다. null이면 켠 에이전트 전부. */
+  only: Agent | null;
+}) {
   const { snapshot, error, now } = state;
   const { lowPercent, bytesPerToken, breakdownDays } = settings.tuning;
-  return settings.enabledAgents.map((agent) => {
+  return shownAgents(settings.enabledAgents, only).map((agent) => {
     const usage = snapshot?.agents.find((a) => a.agent === agent);
     return (
       <section
@@ -152,6 +163,43 @@ function AgentPanels({ settings, usage: state }: { settings: Settings; usage: Us
   });
 }
 
+/** 고른 에이전트가 있으면 그것만, 없으면 켠 에이전트 전부. */
+const shownAgents = (enabled: readonly Agent[], only: Agent | null): readonly Agent[] =>
+  only ? [only] : enabled;
+
+/** 사용량 탭 맨 위 고르기: `전체 / 켠 에이전트`. 하나만 켰으면 고를 것이 없어 숨긴다. */
+function AgentPicker({
+  enabled,
+  value,
+  onChange,
+}: {
+  enabled: readonly Agent[];
+  value: Agent | null;
+  onChange: (agent: Agent | null) => void;
+}) {
+  if (enabled.length < 2) return null;
+  return (
+    <Tabs
+      value={value ?? ALL}
+      onValueChange={(next: string) => onChange(enabled.find((a) => a === next) ?? null)}
+    >
+      <TabsList aria-label={t.dashboard.agentPicker}>
+        <TabsTrigger value={ALL} className={TAB}>
+          {t.dashboard.allAgents}
+        </TabsTrigger>
+        {enabled.map((agent) => (
+          <TabsTrigger key={agent} value={agent} className={TAB}>
+            {AGENT_LABEL[agent]}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
+  );
+}
+
+/** 고르기에서 `전체`의 값. 에이전트 id와 겹치지 않는다. */
+const ALL = "all";
+
 /** 지금 탭과 점검 탭 스크롤 요청. `focusKey`는 팝오버 "점검"으로 열릴 때마다 늘고, 사용자가 탭을 누르면 0이다. */
 type View = { tab: DashboardTab; focusKey: number };
 
@@ -160,17 +208,20 @@ function initialView(): View {
   return { tab, focusKey: tab === "checks" ? 1 : 0 };
 }
 
-/** 지금 탭. 새 창은 `?tab=`으로 시작하고, 이미 열린 창은 `openDashboard(tab)`이 보낸 event로 바꾼다.
+/** 지금 탭·에이전트. 새 창은 `?tab=`·`?agent=`로 시작하고, 이미 열린 창은 `openDashboard`가 보낸 event로 바꾼다.
  * 점검으로 바뀌면 `focusKey`를 늘려 다시 읽고 알림 칸으로 스크롤하게 한다. */
 function useDashboardView() {
   const [view, setView] = useState<View>(initialView);
+  // 고른 에이전트. 켜 있지 않거나 하나만 켰으면 화면이 `전체`로 읽는다(`pickedAgent`). 저장하지 않는다.
+  const [agent, setAgent] = useState<Agent | null>(() => initialDashboardAgent(location.search));
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let isCancelled = false;
     let unlisten: (() => void) | undefined;
-    onDashboardTab((tab) =>
-      setView((prev) => ({ tab, focusKey: tab === "checks" ? prev.focusKey + 1 : 0 })),
-    ).then(
+    onDashboardTab(({ tab, agent }) => {
+      if (tab) setView((prev) => ({ tab, focusKey: tab === "checks" ? prev.focusKey + 1 : 0 }));
+      if (agent) setAgent(agent);
+    }).then(
       (stop) => (isCancelled ? stop() : (unlisten = stop)),
       (reason: unknown) => !isCancelled && setError(errorMessage(reason)),
     );
@@ -179,14 +230,14 @@ function useDashboardView() {
       unlisten?.();
     };
   }, []);
-  return { view, setView, error };
+  return { view, setView, agent, setAgent, error };
 }
 
 export function Dashboard() {
   const { settings, error } = useSettings();
   const usage = useUsageSnapshot();
   const [refreshError, setRefreshError] = useState<string | null>(null);
-  const { view, setView, error: tabError } = useDashboardView();
+  const { view, setView, agent, setAgent, error: tabError } = useDashboardView();
   // "효과 보기"로 사용량 탭에 왔을 때 처방 효과로 스크롤한다.
   const isEffectPending = useRef(false);
   // 오늘에서 며칠 전인가(0 = 오늘). 자정이 지나도 "오늘"을 가리키도록 날짜 대신 거리로 둔다.
@@ -208,6 +259,10 @@ export function Dashboard() {
     isEffectPending.current = false;
     document.getElementById(HEALTH_TITLE_ID)?.scrollIntoView({ block: "start" });
   }, [view.tab]);
+  const pickedAgent =
+    settings && settings.enabledAgents.length > 1 && agent && settings.enabledAgents.includes(agent)
+      ? agent
+      : null;
   const shownError = error ?? refreshError ?? tabError;
   return (
     <div className="h-full overflow-y-auto bg-background">
@@ -247,6 +302,11 @@ export function Dashboard() {
             <>
               {/* 사용량은 숨겨도 그대로 둔다(다시 와도 다시 읽지 않는다). 점검은 열 때마다 새로 읽는다. */}
               <TabsContent value="usage" keepMounted className="flex flex-col gap-3">
+                <AgentPicker
+                  enabled={settings.enabledAgents}
+                  value={pickedAgent}
+                  onChange={setAgent}
+                />
                 <UnreadableNotices settings={settings} usage={usage} />
                 <EmptyGuide settings={settings} usage={usage} onRefresh={refresh} />
                 <DailyActivity
@@ -255,11 +315,13 @@ export function Dashboard() {
                   onSelect={select}
                   settings={settings}
                   usages={usage.snapshot?.agents}
+                  only={pickedAgent}
                 />
                 <HealthCompare
+                  only={pickedAgent}
                   refreshKey={`${settings.tuning.compareDays}:${settings.enabledAgents.join(",")}`}
                 />
-                <AgentPanels settings={settings} usage={usage} />
+                <AgentPanels settings={settings} usage={usage} only={pickedAgent} />
               </TabsContent>
               <TabsContent value="checks">
                 <ChecksTab

@@ -206,8 +206,9 @@ function PrescriptionCard({
 export const HEALTH_TITLE_ID = "health-title";
 
 /** `refreshKey`가 바뀌면(비교 기간·켠 에이전트) 다시 부른다. */
-export function HealthCompare({ refreshKey }: { refreshKey: string }) {
+export function HealthCompare({ refreshKey, only }: { refreshKey: string; only?: Agent | null }) {
   const { value: report, error } = useSnapshot(healthStore, refreshKey);
+  const prescriptions = report?.prescriptions.filter((e) => !only || e.agent === only) ?? [];
   return (
     <section aria-labelledby={HEALTH_TITLE_ID} className={`${CARD} flex flex-col gap-4 p-5`}>
       <header className="flex flex-col gap-0.5">
@@ -225,27 +226,29 @@ export function HealthCompare({ refreshKey }: { refreshKey: string }) {
           <div className="flex flex-col gap-2">
             <h3 className="text-sm font-medium">{t.health.weekly(report.compareDays)}</h3>
             <ul className="flex flex-col gap-2">
-              {report.weekly.map((c) => (
-                <li
-                  key={c.agent}
-                  className="grid grid-cols-1 items-start gap-x-4 gap-y-1.5 border-t pt-2.5 min-[900px]:grid-cols-[6.5rem_1fr]"
-                >
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <AgentName agent={c.agent} />
-                    <PartialNote before={c.before} after={c.after} />
-                  </div>
-                  <Comparison agent={c.agent} before={c.before} after={c.after} />
-                </li>
-              ))}
+              {report.weekly
+                .filter((c) => !only || c.agent === only)
+                .map((c) => (
+                  <li
+                    key={c.agent}
+                    className="grid grid-cols-1 items-start gap-x-4 gap-y-1.5 border-t pt-2.5 min-[900px]:grid-cols-[6.5rem_1fr]"
+                  >
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <AgentName agent={c.agent} />
+                      <PartialNote before={c.before} after={c.after} />
+                    </div>
+                    <Comparison agent={c.agent} before={c.before} after={c.after} />
+                  </li>
+                ))}
             </ul>
           </div>
           <div className="flex flex-col gap-2">
             <h3 className="text-sm font-medium">{t.health.byChange}</h3>
-            {report.prescriptions.length === 0 ? (
+            {prescriptions.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t.health.none}</p>
             ) : (
               <ul className="grid grid-cols-1 gap-2 min-[900px]:grid-cols-2">
-                {report.prescriptions.map((effect) => (
+                {prescriptions.map((effect) => (
                   <PrescriptionCard
                     key={effect.id}
                     effect={effect}

@@ -418,8 +418,8 @@ type UsagePopoverProps = {
   onSelect: (tab: PopoverTab) => void;
   /** 남은 %가 이 값 이하면 경고색(settings `tuning.lowPercent`). */
   lowPercent: number;
-  /** 에이전트 탭 머리말의 chevron. 대시보드 창을 연다. */
-  onOpenDashboard: () => void;
+  /** 에이전트 탭 머리말의 chevron. 그 에이전트로 대시보드 창을 연다. */
+  onOpenDashboard: (agent: Agent) => void;
   /** 선택한 에이전트에서 줄일 수 있는 것(진단하기 제안). 없으면 null이고 입구 줄을 숨긴다. */
   trim?: { count: number; tokens: number } | null;
   /** 입구 줄을 눌렀다: 진단하기가 있는 대시보드 점검 탭으로 간다. */
@@ -556,7 +556,7 @@ export function UsagePopover({
                 usage={usage}
                 now={now}
                 lowPercent={lowPercent}
-                onOpenDashboard={onOpenDashboard}
+                onOpenDashboard={() => onOpenDashboard(usage.agent)}
               />
               {trim && onReview && <TrimEntry trim={trim} onReview={onReview} />}
               <UsageBars agent={usage.agent} />

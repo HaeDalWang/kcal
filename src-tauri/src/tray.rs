@@ -126,52 +126,75 @@ impl DashboardTab {
     }
 }
 
-/// 이미 열린 대시보드 창에 탭을 바꾸라고 보내는 event. TS 짝은 `ipc.ts`의 `DASHBOARD_TAB_EVENT`.
+/// 이미 열린 대시보드 창에 탭·에이전트를 바꾸라고 보내는 event. TS 짝은 `ipc.ts`의 `DASHBOARD_TAB_EVENT`.
 pub const DASHBOARD_TAB_EVENT: &str = "dashboard-tab";
 
-/// 새 대시보드 창의 앱 경로. 탭이 있으면 `?tab=`로 시작 탭을 넘긴다(프론트가 읽는다).
-fn dashboard_path(tab: Option<DashboardTab>) -> String {
-    match tab {
-        Some(tab) => format!("index.html?tab={}", tab.as_str()),
-        None => "index.html".to_owned(),
+/// `DASHBOARD_TAB_EVENT`의 payload. 없는 칸은 그대로 두라는 뜻(null). TS 짝은 `DashboardTarget`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+struct DashboardTarget {
+    tab: Option<DashboardTab>,
+    agent: Option<Agent>,
+}
+
+/// 새 대시보드 창의 앱 경로. 탭·에이전트가 있으면 `?tab=`·`?agent=`로 시작 값을 넘긴다(프론트가 읽는다).
+fn dashboard_path(tab: Option<DashboardTab>, agent: Option<Agent>) -> String {
+    let mut query = Vec::new();
+    if let Some(tab) = tab {
+        query.push(format!("tab={}", tab.as_str()));
+    }
+    if let Some(agent) = agent {
+        query.push(format!("agent={}", agent.id()));
+    }
+    if query.is_empty() {
+        "index.html".to_owned()
+    } else {
+        format!("index.html?{}", query.join("&"))
     }
 }
 
 /// 대시보드 창을 보여 준다(없으면 만든다). 팝오버는 숨긴다.
-/// `tab`이 있으면 새 창은 그 탭으로 시작하고, 열린 창에는 대시보드 창에만 `DASHBOARD_TAB_EVENT`를 보낸다.
+/// `tab`·`agent`가 있으면 새 창은 그 값으로 시작하고, 열린 창에는 대시보드 창에만 `DASHBOARD_TAB_EVENT`를 보낸다.
+/// `agent`는 `Agent`로 역직렬화되므로 모르는 id는 command 인자에서 거부된다(켜 있는지는 프론트가 본다).
 /// 창을 만드는 command는 Windows에서 동기로 부르면 멈추므로 async다.
 #[tauri::command]
 pub async fn open_dashboard<R: Runtime>(
     app: AppHandle<R>,
     tab: Option<DashboardTab>,
+    agent: Option<Agent>,
 ) -> Result<(), AppError> {
     if let Some(popover) = app.get_webview_window(POPOVER) {
         let _ = popover.hide();
     }
     let window = match app.get_webview_window(DASHBOARD) {
         Some(window) => {
-            if let Some(tab) = tab {
-                app.emit_to(DASHBOARD, DASHBOARD_TAB_EVENT, tab)
-                    .map_err(|error| {
-                        eprintln!("open_dashboard: {error}");
-                        AppError::Internal
-                    })?;
-            }
-            window
-        }
-        None => {
-            WebviewWindowBuilder::new(&app, DASHBOARD, WebviewUrl::App(dashboard_path(tab).into()))
-                .title(dashboard_title())
-                .inner_size(DASHBOARD_SIZE.0, DASHBOARD_SIZE.1)
-                .min_inner_size(DASHBOARD_MIN_SIZE.0, DASHBOARD_MIN_SIZE.1)
-                .resizable(true)
-                .decorations(true)
-                .build()
+            if tab.is_some() || agent.is_some() {
+                app.emit_to(
+                    DASHBOARD,
+                    DASHBOARD_TAB_EVENT,
+                    DashboardTarget { tab, agent },
+                )
                 .map_err(|error| {
                     eprintln!("open_dashboard: {error}");
                     AppError::Internal
-                })?
+                })?;
+            }
+            window
         }
+        None => WebviewWindowBuilder::new(
+            &app,
+            DASHBOARD,
+            WebviewUrl::App(dashboard_path(tab, agent).into()),
+        )
+        .title(dashboard_title())
+        .inner_size(DASHBOARD_SIZE.0, DASHBOARD_SIZE.1)
+        .min_inner_size(DASHBOARD_MIN_SIZE.0, DASHBOARD_MIN_SIZE.1)
+        .resizable(true)
+        .decorations(true)
+        .build()
+        .map_err(|error| {
+            eprintln!("open_dashboard: {error}");
+            AppError::Internal
+        })?,
     };
     let _ = window.unminimize();
     let _ = window.show();

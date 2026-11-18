@@ -90,15 +90,36 @@ fn dashboard_tab_accepts_only_usage_and_checks() {
 
 #[test]
 fn new_dashboard_starts_on_the_requested_tab() {
-    assert_eq!(dashboard_path(None), "index.html");
+    use crate::usage::Agent;
+    assert_eq!(dashboard_path(None, None), "index.html");
     assert_eq!(
-        dashboard_path(Some(DashboardTab::Checks)),
+        dashboard_path(Some(DashboardTab::Checks), None),
         "index.html?tab=checks"
     );
     assert_eq!(
-        dashboard_path(Some(DashboardTab::Usage)),
+        dashboard_path(Some(DashboardTab::Usage), None),
         "index.html?tab=usage"
     );
+    assert_eq!(
+        dashboard_path(None, Some(Agent::Kiro)),
+        "index.html?agent=kiro"
+    );
+    assert_eq!(
+        dashboard_path(Some(DashboardTab::Usage), Some(Agent::Codex)),
+        "index.html?tab=usage&agent=codex"
+    );
+}
+
+#[test]
+fn dashboard_agent_accepts_only_known_ids() {
+    use crate::usage::Agent;
+    use serde_json::{from_value, json};
+    for agent in Agent::ALL {
+        assert_eq!(from_value::<Agent>(json!(agent.id())).unwrap(), agent);
+    }
+    for bad in [json!("Claude"), json!("gemini"), json!(""), json!(1)] {
+        assert!(from_value::<Agent>(bad.clone()).is_err(), "{bad}");
+    }
 }
 
 #[test]
