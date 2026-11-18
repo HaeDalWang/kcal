@@ -117,7 +117,7 @@ export function MetricLines({ agent }: { agent: Agent }) {
   );
 }
 
-/** 트레이 에이전트 탭의 시작 컨텍스트 카드: 라벨 → 값 한 줄. 구성 목록·한도 몫은 대시보드 `ContextList`. 항목이 없으면 숨긴다(1절). */
+/** 트레이 에이전트 탭의 시작 컨텍스트 카드: 라벨 → 값 한 줄(폭 310에서 접히지 않게 짧은 값, 토큰 수는 툴팁). 구성 목록·한도 몫은 대시보드 `ContextList`. 항목이 없으면 숨긴다(1절). */
 export function StartupSummary({ agent }: { agent: Agent }) {
   const { value: contexts } = useSnapshot(contextStore, agent);
   const context = contexts?.agents.find((a) => a.agent === agent);
@@ -125,8 +125,11 @@ export function StartupSummary({ agent }: { agent: Agent }) {
   return (
     <div className="mx-[20px] flex flex-col gap-px rounded-lg bg-muted/60 px-3 py-2">
       <span className="text-[10px] text-muted-foreground">{t.common.startupContext}</span>
-      <span className="text-[13px] font-semibold tabular-nums" title={startupTitle(context)}>
-        {startupValue(context)}
+      <span
+        className="text-[13px] font-semibold tabular-nums"
+        title={`${startupValue(context)}\n${startupTitle(context)}`}
+      >
+        {startupShortValue(context)}
       </span>
     </div>
   );
