@@ -67,10 +67,20 @@ export function SettingsView({ settings, onSaved, onBack }: SettingsViewProps) {
   const pickLanguage = (language: LanguageChoice) => report(save(enabled, undefined, language));
 
   return (
-    <div className="flex flex-col">
+    <div
+      className="flex flex-col"
+      onKeyDown={(event) => {
+        // 입력 중인 칸·열린 목록의 Escape는 그 칸이 쓴다.
+        const target = event.target as HTMLElement;
+        if (event.key === "Escape" && target.tagName !== "INPUT" && target.tagName !== "SELECT") {
+          onBack();
+        }
+      }}
+    >
       <div className="px-3 pt-2.5">
         <button
           type="button"
+          autoFocus
           onClick={onBack}
           className="-ml-1 flex w-fit items-center gap-0.5 rounded-md py-0.5 pr-1.5 text-[15px] font-semibold hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none active:translate-y-px"
         >

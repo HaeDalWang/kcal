@@ -1,7 +1,7 @@
 // 5층 코칭 "진단하기"(docs/decisions/0014, 자리는 대시보드 점검 탭 — 0017 "화면 자리"): 끄면 아낄 수 있는 스위치 → 바꿀 줄 미리보기 → 확인 → 적용(백업) → 되돌리기.
 // 값은 열 때와 적용·되돌리기 뒤에만 읽는다(타이머 없음). 쓰기는 Rust가 대상 ID로만 한다.
 // Claude는 최근 N일 사용 기록과 지금 범위를 같이 보이고, 쓴 것은 끄기 대신 "그대로"나 "프로젝트에서만 켜기"(0022). 목록 모양은 `coach-list.tsx`.
-import { useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { GROUP_TITLE, SwitchLists } from "@/components/coach-list";
@@ -23,6 +23,23 @@ import {
 import { ratesStore, useSnapshot } from "@/lib/snapshot-store";
 import { t } from "@/lib/i18n";
 import type { OpenRow } from "@/lib/open-row";
+
+/** 미리보기·완료 패널이 열리면 누른 버튼이 사라져 포커스가 body로 떨어진다. 패널로 옮기고 Escape로 닫게 한다(키보드 사용자는 이어서 Tab). */
+export function usePanelFocus(onEscape: () => void, isDisabled = false) {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+  return {
+    ref,
+    tabIndex: -1,
+    onKeyDown: (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || isDisabled) return;
+      event.stopPropagation();
+      onEscape();
+    },
+  };
+}
 
 /** 화면에 보일 최근 적용 기록 수. */
 const RECENT_LOG = 3;
@@ -60,11 +77,13 @@ export function ChangePanel({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const focus = usePanelFocus(onCancel, isBusy);
   return (
     <section
+      {...focus}
       role="group"
       aria-label={t.coach.review}
-      className="flex flex-col gap-1.5 border-t px-5 py-2.5"
+      className="flex flex-col gap-1.5 border-t px-5 py-2.5 outline-none"
     >
       <h2 className="text-[13px] font-medium">{title}</h2>
       {!rows && <p className="text-[10px] text-muted-foreground">{t.coach.previewing}</p>}
@@ -177,11 +196,13 @@ function MovePanel({
 }
 
 function ManualPanel({ target, onCancel }: { target: CoachSwitch; onCancel: () => void }) {
+  const focus = usePanelFocus(onCancel);
   return (
     <section
+      {...focus}
       role="group"
       aria-label={t.coach.manual}
-      className="flex flex-col gap-1.5 border-t px-5 py-2.5"
+      className="flex flex-col gap-1.5 border-t px-5 py-2.5 outline-none"
     >
       <h2 className="text-[13px] font-medium">{target.name}</h2>
       <p className="text-xs">{target.instruction}</p>
@@ -242,11 +263,13 @@ export function DonePanel({
   onClose: () => void;
 }) {
   const isUndo = applied.action === "undo";
+  const focus = usePanelFocus(onClose);
   return (
     <section
+      {...focus}
       role="group"
       aria-label={t.coach.result}
-      className="flex flex-col gap-1.5 border-t px-5 py-2.5"
+      className="flex flex-col gap-1.5 border-t px-5 py-2.5 outline-none"
     >
       <h2 className="text-[13px] font-medium">{title ?? doneTitle(applied)}</h2>
       <p className="text-xs">{t.coach.restart}</p>

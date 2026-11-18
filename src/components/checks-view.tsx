@@ -12,7 +12,7 @@ import {
   type HandoffContext,
 } from "@/components/checks-list";
 import { AGENT_COLOR } from "@/components/agent-metrics";
-import { ChangePanel, DonePanel, LiveStatus } from "@/components/coach-view";
+import { ChangePanel, DonePanel, LiveStatus, usePanelFocus } from "@/components/coach-view";
 import { RulesPanel } from "@/components/rules-panel";
 import { Button } from "@/components/ui/button";
 import {
@@ -382,11 +382,13 @@ function HandoffPanel({
   onCancel: () => void;
 }) {
   const copy = t.checks.handoffPreview;
+  const focus = usePanelFocus(onCancel, isBusy);
   return (
     <section
+      {...focus}
       role="group"
       aria-label={copy.title}
-      className="flex flex-col gap-1.5 border-t px-5 py-2.5"
+      className="flex flex-col gap-1.5 border-t px-5 py-2.5 outline-none"
     >
       <h2 className="text-[13px] font-medium">{copy.title}</h2>
       {preview ? (
