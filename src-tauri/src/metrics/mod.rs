@@ -202,10 +202,14 @@ fn hourly(now: f64, days: u64, requests: &[f64], used: &[(f64, f64)]) -> Vec<Hou
     buckets
 }
 
+/// 같은 창에서 이만큼(%p) 이상 내려가면 앞당긴 초기화다. 1%p 단위 흔들림과 구분하는 허용오차.
+const EARLY_RESET_DROP_PCT: f64 = 10.0;
+
 /// 주간 한도 표본 (시각, resets_at, used_percent) → (시각, 증가분 %p). 시각순으로 본다.
 /// - 같은 창(직전 리셋과 `reset_tol_secs` 이내): 그 창에서 지금까지 본 가장 큰 값보다 오른 만큼. 내려가면 0.
 /// - 더 늦은 리셋의 새 창: 첫 표본은 0에서 오른 것으로 본다.
 /// - 이미 지난 창의 늦게 온 표본은 0. 맨 첫 표본은 기준점(앞을 몰라 0).
+/// - 리셋 시각이 그대로인데 `EARLY_RESET_DROP_PCT` 이상 내려가면 앞당긴 초기화로 보고 그 값부터 새로 센다.
 pub(crate) fn weekly_increments(
     mut samples: Vec<(f64, f64, f64)>,
     reset_tol_secs: f64,
@@ -219,6 +223,13 @@ pub(crate) fn weekly_increments(
             let delta = match window {
                 None => 0.0,
                 Some((last, _)) if reset > last + reset_tol_secs => pct,
+                // 같은 리셋 시각인데 크게 내려감 = 앞당긴 초기화. 새 창처럼 0에서 오른 것으로 본다.
+                Some((last, peak))
+                    if reset >= last - reset_tol_secs && pct + EARLY_RESET_DROP_PCT <= peak =>
+                {
+                    window = Some((reset, pct));
+                    return (ts, pct);
+                }
                 Some((last, peak)) if reset >= last - reset_tol_secs => (pct - peak).max(0.0),
                 Some(_) => return (ts, 0.0),
             };
@@ -417,6 +428,25 @@ mod tests {
         let deltas: Vec<f64> = got.iter().map(|d| d.1).collect();
         assert_eq!(deltas, [0.0, 2.0, 0.0, 1.0, 3.0, 0.0, 1.5]);
         assert_eq!(got[1].0, 2.0 * H);
+    }
+
+    #[test]
+    fn weekly_increments_restart_when_the_window_resets_early_with_the_same_reset_time() {
+        // 실제 기록(2026-11-17): 95% → 0%로 떨어졌는데 resets_at은 그대로였다(앞당긴 초기화).
+        let w = 200.0 * H;
+        let got = weekly_increments(
+            vec![
+                (1.0 * H, w, 94.0),
+                (2.0 * H, w, 95.0),
+                (3.0 * H, w + 0.4, 0.0), // 앞당긴 초기화: 새 창으로 보고 0에서 +0
+                (4.0 * H, w, 2.0),       // +2
+                (5.0 * H, w, 1.0),       // 작은 흔들림은 그대로 무시
+                (6.0 * H, w, 3.0),       // +1
+            ],
+            600.0,
+        );
+        let deltas: Vec<f64> = got.iter().map(|d| d.1).collect();
+        assert_eq!(deltas, [0.0, 1.0, 0.0, 2.0, 0.0, 1.0]);
     }
 
     /// 이 Mac의 실제 기록으로 지표를 낸다(숫자만, 토큰·본문 없음).
