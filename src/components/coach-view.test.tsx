@@ -31,6 +31,7 @@ const sw = (target: string, extra: Partial<CoachSwitch> = {}): CoachSwitch => {
     scope: null,
     scopeMove: null,
     contents: null,
+    skill: null,
     file: "/h/.codex/config.toml",
     instruction: null,
     ...extra,
@@ -593,6 +594,68 @@ describe("CoachPanel", () => {
     expect(calls.find((c) => c.cmd === "apply_scope_move")?.args).toEqual({
       target: "claude/plugin:niche@m",
       beforeHash: MOVE_PREVIEW.beforeHash,
+    });
+  });
+
+  it("hides a skill's description instead of turning it off, with skill wording and no backup line for a new file", async () => {
+    const calls = mock({
+      preview_switch: () => ({
+        ...PREVIEW,
+        target: "claude/project-skill:old",
+        file: "/h/work/kcal/.claude/settings.local.json",
+        location: "skillOverrides.old",
+        before: null,
+        after: '"old": "user-invocable-only"',
+      }),
+      apply_switch: () => ({
+        ...APPLIED,
+        target: "claude/project-skill:old",
+        agent: "claude",
+        name: "old",
+        backup: "",
+      }),
+    });
+    const skill = (name: string, extra: Partial<CoachSwitch>) =>
+      sw(`claude/project-skill:${name}`, {
+        kind: "projectSkill",
+        tokens: null,
+        loading: null,
+        format: "json",
+        file: "/h/work/kcal/.claude/settings.local.json",
+        skill: { state: null, project: "kcal" },
+        usage: usage([]),
+        ...extra,
+      });
+    renderPanel("claude", {
+      switches: [
+        skill("old", { isProposed: true }),
+        skill("mine", {
+          enabled: false,
+          isProposed: false,
+          skill: { state: "name-only", project: "kcal" },
+          format: "manual",
+          file: null,
+          instruction: "직접 정한 값이에요.",
+        }),
+      ],
+    });
+    const hide = screen.getByRole("group", { name: /^설명 숨기기 제안/ });
+    expect(screen.queryByText(/끄기 제안/)).toBeNull();
+    // 크기를 모르면 큰 토큰 숫자를 만들지 않는다.
+    expect(screen.queryByText("토큰")).toBeNull();
+    // 직접 정한 값은 현재 상태만 보이고 버튼이 없다.
+    expect(screen.queryByRole("button", { name: /mine/ })).toBeNull();
+    fireEvent.click(within(hide).getByRole("button", { name: "old 설명 숨기기" }));
+    const panel = await screen.findByRole("group", { name: "바꿀 내용 확인" });
+    expect(within(panel).getByText("old 설명 숨기기")).toBeTruthy();
+    expect(within(panel).getByText('+ "old": "user-invocable-only"')).toBeTruthy();
+    fireEvent.click(within(panel).getByRole("button", { name: "확인하고 숨기기" }));
+    const done = await screen.findByRole("group", { name: "적용 결과" });
+    expect(within(done).getByText("old 설명 숨김")).toBeTruthy();
+    expect(within(done).queryByText(/백업:/)).toBeNull();
+    expect(calls.find((c) => c.cmd === "apply_switch")?.args).toMatchObject({
+      target: "claude/project-skill:old",
+      enabled: false,
     });
   });
 

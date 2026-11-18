@@ -23,6 +23,7 @@ import type {
   SwitchFormat,
   SwitchKind,
   SwitchPreview,
+  SkillInfo,
   SwitchUsage,
   ProjectUsage,
   NameList,
@@ -41,7 +42,12 @@ import { isHandoffError, SCOPE_TARGET_PREFIX } from "@/lib/ipc";
 import { AGENT, expectFields, expectValues, fixture, LOADING } from "@/test/ipc-fixture";
 import type { Fields, Values } from "@/test/ipc-fixture";
 
-const SWITCH_KIND = { plugin: true, mcp: true } satisfies Values<SwitchKind>;
+const SWITCH_KIND = {
+  plugin: true,
+  mcp: true,
+  skill: true,
+  projectSkill: true,
+} satisfies Values<SwitchKind>;
 const SWITCH_FORMAT = { toml: true, json: true, manual: true } satisfies Values<SwitchFormat>;
 const COACH_ACTION = { apply: true, undo: true } satisfies Values<CoachAction>;
 const COACH_SWITCH = {
@@ -57,10 +63,12 @@ const COACH_SWITCH = {
   scope: "required",
   scopeMove: "required",
   contents: "required",
+  skill: "required",
   format: "required",
   file: "required",
   instruction: "required",
 } satisfies Fields<CoachSwitch>;
+const SKILL_INFO = { state: "required", project: "required" } satisfies Fields<SkillInfo>;
 const SWITCH_USAGE = {
   days: "required",
   total: "required",
@@ -303,7 +311,11 @@ describe("Rust IPC coach fixtures match ipc.ts types", () => {
     const scopes = switches.flatMap((s) => (s.scope ? [s.scope] : []));
     const moves = switches.flatMap((s) => (s.scopeMove ? [s.scopeMove] : []));
     const contents = switches.flatMap((s) => (s.contents ? [s.contents] : []));
-    expect([usages.length, scopes.length, moves.length, contents.length]).toEqual([1, 1, 1, 1]);
+    const skillInfos = switches.flatMap((s) => (s.skill ? [s.skill] : []));
+    // 사용 기록은 플러그인 하나와 스킬 하나에 있다. 스킬 정보는 개인·프로젝트 스킬 둘.
+    expect([usages.length, scopes.length, moves.length, contents.length]).toEqual([2, 1, 1, 1]);
+    expect(skillInfos.length).toBe(2);
+    skillInfos.forEach((i) => expectFields<SkillInfo>(i, SKILL_INFO, "SkillInfo"));
     contents.forEach((c) => {
       expectFields<PluginContents>(c, PLUGIN_CONTENTS, "PluginContents");
       [c.skills, c.agents, c.commands, c.mcpServers].forEach((l) =>

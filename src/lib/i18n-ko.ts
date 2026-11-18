@@ -274,6 +274,21 @@ export const ko = {
     noSwitches:
       "지금 끄면 아낄 수 있는 스위치가 없어요. 지시문·규칙 파일은 직접 쓴 글이라 고치지 않아요.",
     appliedName: (name: string, enabled: boolean) => `${name} ${enabled ? "켬" : "끔"}`,
+    appliedSkill: (name: string, enabled: boolean) =>
+      `${name} ${enabled ? "설명 다시 보임" : "설명 숨김"}`,
+    skill: "스킬",
+    projectSkill: "프로젝트 스킬",
+    hideSkill: "설명 숨기기",
+    showSkill: "다시 보이기",
+    skillTitle: (name: string, enabled: boolean): string =>
+      enabled ? `${name} 설명 다시 보이기` : `${name} 설명 숨기기`,
+    skillConfirm: (enabled: boolean): string =>
+      enabled ? "확인하고 다시 보이기" : "확인하고 숨기기",
+    skillNote:
+      "아래 한 줄만 바꿔요. 바꾸기 전에 원본 옆에 백업을 만들고, 파일이 없으면 새로 만들어요. 되돌리기로 원래대로 돌릴 수 있어요.",
+    skillStays: (project: string | null) =>
+      `Claude가 보는 설명 목록에서만 빠져요. /이름으로는 계속 부를 수 있어요.${project ? ` (${project} 폴더의 .claude/settings.local.json에 써요. git에 올라가지 않는 파일이에요.)` : ""}`,
+    groupHide: "설명 숨기기 제안",
     scopeAll: "범위: 전체",
     scopeProjects: (names: string) => `범위: 프로젝트 ${names}`,
     unused: (days: number, sessions: number) => `최근 ${days}일 세션 ${sessions}개에서 안 씀`,
@@ -299,10 +314,13 @@ export const ko = {
       fewUses: "사용 적음",
       unknown: "알 수 없음",
       off: "꺼짐",
+      hidden: "숨김",
+      chosen: "직접 정함",
     },
     legendClaude: " 제안 = Claude 기록에서 안 썼거나 일부 프로젝트에서만 씀.",
     undoRestores: "되돌리기로 원래대로 돌릴 수 있어요.",
     summary: (count: number) => `${count}개를 바꾸면 세션마다 이만큼 덜 실려요`,
+    summarySizeless: (count: number) => `${count}개를 바꿀 수 있어요 (줄어드는 양은 몰라요)`,
     basis: (days: number, sessions: number) => `최근 ${days}일 세션 ${sessions}개 기준`,
     tokensUnit: "토큰",
     howToRead: "읽는 법",
@@ -364,7 +382,7 @@ export const ko = {
     done: (name: string, isUndo: boolean) => `${name} ${isUndo ? "되돌림" : "했어요"}`,
     optimize: "최적화",
     diagnose: "진단하기",
-    diagnoseHint: "플러그인·MCP 서버 끄기와 되돌리기",
+    diagnoseHint: "플러그인·MCP 서버 끄기, 스킬 설명 숨기기, 되돌리기",
     loses: (text: string) => `잃는 것: ${text}`,
     fixedUnit: "고침",
     progress: (fixed: string, total: string) => `${total}개 중 ${fixed}개 고침`,

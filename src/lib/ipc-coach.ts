@@ -5,7 +5,8 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Agent, Loading } from "@/lib/ipc";
 
 /** Rust `coach::switches::SwitchKind`. */
-export type SwitchKind = "plugin" | "mcp";
+/** skill = Claude 개인 스킬, projectSkill = 작업 폴더의 프로젝트 스킬(설명을 숨기는 스위치이고 끄는 것이 아니다, 0022 "스킬 단위"). */
+export type SwitchKind = "plugin" | "mcp" | "skill" | "projectSkill";
 
 /** Rust `coach::switches::SwitchFormat`. manual = kcal이 쓰지 않고 `instruction`만 보여 준다(Claude MCP). */
 export type SwitchFormat = "toml" | "json" | "manual";
@@ -31,9 +32,19 @@ export type CoachSwitch = {
   scopeMove: ScopeMove | null;
   /** 끄면 함께 꺼지는 것(플러그인 폴더의 이름들). MCP 스위치·폴더를 못 읽으면 null. */
   contents: PluginContents | null;
+  /** 스킬 스위치(개인·프로젝트)의 현재 값과 프로젝트 이름. 스킬이 아니면 null. */
+  skill: SkillInfo | null;
   format: SwitchFormat;
   file: string | null;
   instruction: string | null;
+};
+
+/** Rust `coach::skills::SkillInfo`. */
+export type SkillInfo = {
+  /** `"on"`이 아닌 현재 `skillOverrides` 값(어느 범위든). 없으면 null. */
+  state: string | null;
+  /** 프로젝트 스킬이면 그 폴더 이름. */
+  project: string | null;
 };
 
 /** Rust `coach::contents::NameList`. 이름순 앞 3개와 전체 개수. */
@@ -124,6 +135,10 @@ export type ScopeMovePreview = {
 
 /** Rust `coach::scope::SCOPE_TARGET_PREFIX`. "프로젝트에서만 켜기" 적용 기록의 `target` 앞부분. */
 export const SCOPE_TARGET_PREFIX = "claude/plugin-scope:";
+
+/** Rust `coach::skills::PERSONAL_PREFIX`·`PROJECT_PREFIX`. 스킬 설명 숨기기 적용 기록의 `target` 앞부분. */
+export const SKILL_TARGET_PREFIX = "claude/skill:";
+export const PROJECT_SKILL_TARGET_PREFIX = "claude/project-skill:";
 
 /** Rust `coach::SwitchPreview`. `beforeHash`를 `applySwitch`에 그대로 보낸다. */
 export type SwitchPreview = {

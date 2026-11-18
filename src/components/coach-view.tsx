@@ -136,10 +136,15 @@ function PreviewPanel({
   onCancel: () => void;
 }) {
   const { target, enabled, preview } = step;
+  const isSkill = target.kind === "skill" || target.kind === "projectSkill";
   return (
     <ChangePanel
-      title={t.coach.switchTitle(target.name, enabled)}
-      note={t.coach.switchNote}
+      title={
+        isSkill
+          ? t.coach.skillTitle(target.name, enabled)
+          : t.coach.switchTitle(target.name, enabled)
+      }
+      note={isSkill ? t.coach.skillNote : t.coach.switchNote}
       file={preview?.file ?? null}
       rows={
         preview
@@ -147,7 +152,7 @@ function PreviewPanel({
           : null
       }
       isUnchanged={preview !== null && !preview.changed}
-      confirmLabel={t.coach.confirm(enabled)}
+      confirmLabel={isSkill ? t.coach.skillConfirm(enabled) : t.coach.confirm(enabled)}
       isBusy={isBusy}
       onConfirm={onConfirm}
       onCancel={onCancel}
@@ -273,9 +278,12 @@ export function DonePanel({
     >
       <h2 className="text-[13px] font-medium">{title ?? doneTitle(applied)}</h2>
       <p className="text-xs">{t.coach.restart}</p>
-      <p className="truncate text-[10px] text-muted-foreground" title={applied.backup}>
-        {t.coach.backup(applied.backup)}
-      </p>
+      {/* 새로 만든 파일(스킬 숨기기)은 백업이 없다. */}
+      {applied.backup && (
+        <p className="truncate text-[10px] text-muted-foreground" title={applied.backup}>
+          {t.coach.backup(applied.backup)}
+        </p>
+      )}
       {!isUndo && <CopyCommand command={applied.undoCommand} />}
       <div className="flex justify-end gap-1.5">
         {!isUndo && (

@@ -281,6 +281,19 @@ export const en: Messages = {
     noSwitches:
       "Nothing to turn off right now. Instruction and rule files are your own writing, so kcal doesn’t edit them.",
     appliedName: (name, enabled) => `${name}: ${enabled ? "on" : "off"}`,
+    appliedSkill: (name, enabled) => `${name}: description ${enabled ? "shown again" : "hidden"}`,
+    skill: "Skill",
+    projectSkill: "Project skill",
+    hideSkill: "Hide description",
+    showSkill: "Show again",
+    skillTitle: (name, enabled) =>
+      enabled ? `Show the description of ${name} again` : `Hide the description of ${name}`,
+    skillConfirm: (enabled) => (enabled ? "Confirm and show again" : "Confirm and hide"),
+    skillNote:
+      "Only the line below changes. A backup is made next to the original first, and the file is created if it’s missing. Undo restores it.",
+    skillStays: (project) =>
+      `It only leaves the list of descriptions Claude sees. You can still call it with /name.${project ? ` (Written to .claude/settings.local.json in ${project}, a file git doesn’t track.)` : ""}`,
+    groupHide: "Suggested to hide the description",
     scopeAll: "Scope: all projects",
     scopeProjects: (names) => `Scope: ${names} only`,
     unused: (days, sessions) =>
@@ -303,9 +316,13 @@ export const en: Messages = {
       fewUses: "Too few uses",
       unknown: "Can’t tell",
       off: "Off",
+      hidden: "Hidden",
+      chosen: "Your setting",
     },
     legendClaude: " Suggested = no use in your Claude logs, or used in only some projects.",
     undoRestores: "Undo restores it.",
+    summarySizeless: (count) =>
+      `You can change ${n(count, "switch", "switches")} (how much this saves is unknown)`,
     summary: (count) =>
       `Change ${n(count, "switch", "switches")} and every session loads this much less`,
     basis: (days, sessions) => `Based on ${n(sessions, "session")} in the last ${n(days, "day")}`,
@@ -369,7 +386,7 @@ export const en: Messages = {
     done: (name, isUndo) => (isUndo ? `Undid: ${name}` : `Done: ${name}`),
     optimize: "Optimize",
     diagnose: "Diagnose",
-    diagnoseHint: "Turn plugins and MCP servers off, or undo",
+    diagnoseHint: "Turn plugins and MCP servers off, hide skill descriptions, or undo",
     loses: (text) => `You lose: ${text}`,
     fixedUnit: "fixed",
     progress: (fixed, total) => `${fixed} of ${total} fixed`,

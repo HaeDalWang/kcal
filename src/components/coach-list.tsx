@@ -56,6 +56,9 @@ function scopeText(item: CoachSwitch): string | null {
   return on.length > 0 ? t.coach.scopeProjects(on.join(", ")) : null;
 }
 
+/** 스킬 스위치(개인·프로젝트): 끄는 것이 아니라 설명을 숨기는 것이라 문구가 다르다(0022 "스킬 단위"). */
+const isSkill = (item: CoachSwitch) => item.kind === "skill" || item.kind === "projectSkill";
+
 /** 켜져 있고 최근에 쓴 것: 끄기를 권하지 않는다. */
 const isKept = (item: CoachSwitch) =>
   item.enabled && !item.scopeMove && (item.usage?.total ?? 0) > 0;
@@ -66,14 +69,17 @@ export function badgeOf(item: CoachSwitch): SwitchBadge {
   if (isSuggested(item)) return "suggested";
   if (hasTooFewUses(item)) return "fewUses";
   if (isKept(item)) return "inUse";
+  if (isSkill(item) && !item.enabled)
+    return item.skill?.state === "user-invocable-only" ? "hidden" : "chosen";
   return item.enabled ? "unknown" : "off";
 }
 
 /** 묶음: 제안(배지 "suggested")은 끄기(`isProposed`)와 프로젝트에서만 켜기(`scopeMove`)로 나누고, 나머지는 그대로 둠. */
-export type SwitchGroup = "off" | "move" | "keep";
+export type SwitchGroup = "off" | "hide" | "move" | "keep";
 export function groupOf(item: CoachSwitch): SwitchGroup {
   if (badgeOf(item) !== "suggested") return "keep";
-  return item.isProposed ? "off" : "move";
+  if (item.isProposed) return isSkill(item) ? "hide" : "off";
+  return "move";
 }
 
 /** "그대로 둠" 줄의 짧은 사유: 배지 글자 + 왜(횟수·기록 적음·크기 모름 등). */
@@ -81,7 +87,8 @@ function keepReason(item: CoachSwitch): string {
   const badge = badgeOf(item);
   const usage = item.usage;
   const why = (() => {
-    if (badge === "off") return null;
+    if (badge === "off" || badge === "hidden") return null;
+    if (badge === "chosen") return item.skill?.state ?? null;
     if ((badge === "inUse" || badge === "fewUses") && usage) return t.coach.reasonUses(usage.total);
     if (!usage) return item.agent === "claude" ? null : t.coach.reasonNoLog;
     if (usage.total === 0 && usage.sessions < usage.minSessions)
@@ -137,6 +144,7 @@ function evidenceChips(item: CoachSwitch, share: number | null): string[] {
 
 function actionLabel(item: CoachSwitch): string {
   if (item.scopeMove) return t.coach.moveToProjects;
+  if (isSkill(item)) return item.enabled ? t.coach.hideSkill : t.coach.showSkill;
   if (item.format === "manual") return t.coach.howToOff;
   return item.enabled ? t.coach.turnOff : t.coach.turnOn;
 }
@@ -188,7 +196,13 @@ const KindChip = ({ item }: { item: CoachSwitch }) => (
     variant="outline"
     className="h-4 shrink-0 px-1.5 py-0 text-[10px] leading-none text-muted-foreground"
   >
-    {item.kind === "mcp" ? "MCP" : t.coach.plugin}
+    {item.kind === "mcp"
+      ? "MCP"
+      : item.kind === "skill"
+        ? t.coach.skill
+        : item.kind === "projectSkill"
+          ? t.coach.projectSkill
+          : t.coach.plugin}
   </Badge>
 );
 
@@ -213,7 +227,11 @@ function SuggestRow({
   const actionRef = useReturnFocus<HTMLButtonElement>(isReturn, onReturned);
   const detailsId = `${item.target}-details`;
   const share = codexShare(item, rate);
-  const loses = isOpen ? contentsText(item) : null;
+  const loses = isOpen
+    ? isSkill(item)
+      ? t.coach.skillStays(item.skill?.project ?? null)
+      : contentsText(item)
+    : null;
   const noLog = !item.usage && item.agent !== "claude";
   return (
     <li
@@ -311,7 +329,8 @@ function KeepRow({
           {`~${integer.format(item.tokens)}`}
         </span>
       )}
-      {!isKept(item) && (
+      {/* 직접 정한 스킬 값(manual)은 kcal이 바꾸지 않아 버튼이 없다. */}
+      {!isKept(item) && !(isSkill(item) && item.format === "manual") && (
         <ActionButton
           item={item}
           isStrong={false}
@@ -328,7 +347,7 @@ function KeepRow({
 function GroupDot({ group, agent }: { group: SwitchGroup; agent: Agent }) {
   const color = AGENT_COLOR[agent];
   const style =
-    group === "off"
+    group === "off" || group === "hide"
       ? { backgroundColor: color }
       : group === "move"
         ? { borderColor: color }
@@ -364,6 +383,7 @@ function Summary({
 }) {
   const [isLegendOpen, setIsLegendOpen] = useState(false);
   const trim = trimSummary(switches, agent);
+  const isSizeless = trim !== null && trim.tokens === 0;
   const basis = switches.find((s) => s.usage)?.usage ?? null;
   const legendId = `${agent}-diagnose-legend`;
   const legend =
@@ -376,15 +396,24 @@ function Summary({
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           {trim ? (
             <>
-              <p className="text-2xl leading-tight font-semibold tabular-nums">
-                <span title={t.info.estimated}>{`~${integer.format(trim.tokens)}`}</span>
-                <span className="ml-1 text-xs font-medium text-muted-foreground">
-                  {t.coach.tokensUnit}
-                </span>
-              </p>
+              {/* 스킬만 제안이면 크기를 몰라 토큰 큰 숫자 대신 문장만 둔다(추측하지 않는다). */}
+              {!isSizeless && (
+                <p className="text-2xl leading-tight font-semibold tabular-nums">
+                  <span title={t.info.estimated}>{`~${integer.format(trim.tokens)}`}</span>
+                  <span className="ml-1 text-xs font-medium text-muted-foreground">
+                    {t.coach.tokensUnit}
+                  </span>
+                </p>
+              )}
               {/* 두 문장은 줄을 나눠 둔다(한 줄로 이으면 좁을 때 "·"가 줄 끝에 홀로 남는다). */}
-              <p className="text-[10px] text-muted-foreground tabular-nums">
-                {t.coach.summary(trim.count)}
+              <p
+                className={
+                  isSizeless
+                    ? "text-sm font-semibold tabular-nums"
+                    : "text-[10px] text-muted-foreground tabular-nums"
+                }
+              >
+                {isSizeless ? t.coach.summarySizeless(trim.count) : t.coach.summary(trim.count)}
               </p>
               {basis && (
                 <p className="text-[10px] text-muted-foreground tabular-nums">
@@ -449,6 +478,7 @@ export function SwitchLists({
   // 펼친 줄은 하나만(강조 버튼 하나, design.md 6절 3). 기본은 모두 접힘.
   const open = useOpenRow(openRow);
   const off = switches.filter((s) => groupOf(s) === "off");
+  const hide = switches.filter((s) => groupOf(s) === "hide");
   const move = switches.filter((s) => groupOf(s) === "move");
   const keep = switches.filter((s) => groupOf(s) === "keep");
   const offDays = off.find((s) => s.usage)?.usage?.days ?? null;
@@ -467,6 +497,11 @@ export function SwitchLists({
   );
   const offTitle =
     offDays === null ? t.coach.groupOff : `${t.coach.groupOff} · ${t.coach.groupOffWhy(offDays)}`;
+  const hideDays = hide.find((s) => s.usage)?.usage?.days ?? null;
+  const hideTitle =
+    hideDays === null
+      ? t.coach.groupHide
+      : `${t.coach.groupHide} · ${t.coach.groupOffWhy(hideDays)}`;
   const moveTitle = t.coach.groupMove(moveProject(move));
   return (
     <>
@@ -482,6 +517,19 @@ export function SwitchLists({
             {offTitle}
           </h2>
           <ul className="flex flex-col gap-1.5">{off.map(row)}</ul>
+        </section>
+      )}
+      {hide.length > 0 && (
+        <section
+          role="group"
+          aria-label={hideTitle}
+          className="flex flex-col gap-1.5 border-t px-5 py-2.5"
+        >
+          <h2 className={GROUP_TITLE}>
+            <GroupDot group="hide" agent={agent} />
+            {hideTitle}
+          </h2>
+          <ul className="flex flex-col gap-1.5">{hide.map(row)}</ul>
         </section>
       )}
       {move.length > 0 && (

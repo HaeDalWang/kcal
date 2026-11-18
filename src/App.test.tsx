@@ -160,6 +160,7 @@ const suggested = (agent: CoachSwitch["agent"], name: string, tokens: number | n
     scope: null,
     scopeMove: null,
     contents: null,
+    skill: null,
     format: "json",
     file: "/h/settings.json",
     instruction: null,
