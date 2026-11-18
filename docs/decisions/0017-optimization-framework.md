@@ -267,7 +267,7 @@ kcal의 몫은 점검 결과를 해석해 주는 것이다. 설정을 모르는 
 - steering `auto` → `deferred`(0005 "모델이 찾을 때"): 문서는 Kiro가 요청을 description과 대조해 자동으로 포함한다고 적는다. 표현이 다르다.
 - AGENTS.md: 코드는 steering 폴더 안과 작업 공간 루트의 AGENTS.md를 읽는다. 문서는 전역 steering 폴더 또는 작업 공간 루트이고 하위 폴더 AGENTS.md도 발견해 함께 싣는다. 하위 폴더 것은 코드가 읽지 않는다. → 2026-11-07 실측(2.32.0): 하위 폴더 AGENTS.md는 시작 때 실리지 않아 코드를 그대로 둔다(0005 "skill 위치").
 - 스킬 위치: 코드는 `~/.kiro/skills`만 읽는다. 문서는 workspace `.kiro/skills/`도 있다. 시작 때 name·description만 싣는 점은 front matter 바이트 추정과 같은 방향이다. → 2026-11-07 고침: workspace `.kiro/skills`도 센다. 같은 이름은 workspace 쪽에서 한 번(추정, 0005).
-- 세션 기록: 0005는 `~/.kiro/sessions/<hash>/sess_*/messages.jsonl`을 읽는다. 문서의 CLI 세션 저장 위치는 `~/.kiro/` 아래 SQLite 데이터베이스이고 V3는 V2와 별도 session store를 쓴다. `messages.jsonl`·`session_start` 줄·`contextUsage`는 문서에 없다. 어느 하네스의 기록을 읽는지 확인이 필요하다.
+- 세션 기록: 0005는 `~/.kiro/sessions/<hash>/sess_*/messages.jsonl`을 읽는다. 문서의 CLI 세션 저장 위치는 `~/.kiro/` 아래 SQLite 데이터베이스이고 V3는 V2와 별도 session store를 쓴다. `messages.jsonl`·`session_start` 줄·`contextUsage`는 문서에 없다. 어느 하네스의 기록을 읽는지 확인이 필요하다. → 2026-11-18 실측: kiro-cli 3.4.0(V3)이 `~/.kiro/sessions/<hash>/…/messages.jsonl`을 쓴다(최근 하루 35개). 코드가 읽는 곳이 V3 저장소라 그대로 둔다. 문서의 SQLite는 V2 저장소로 추정.
 - custom agent `conditional`(0005 "고를 때 들어감"): 문서에서 `file://` 리소스는 에이전트 시작 때 컨텍스트에 직접 로드되고 기본 리소스도 상속한다. 에이전트를 골랐을 때 이 리소스가 얼마나 실리는지는 0005가 세지 않는다.
 - power(0005 "개수만"): 문서는 키워드로 동적 활성화한다고 적고 CLI는 V3에서만 지원한다. 2.32.0 기본 하네스에는 해당 없다.
 - 0013 Kiro 한 턴 몫: 월 한도 10,000 크레딧은 문서의 Power 플랜(월 10,000)과 같다. 모델별 비율은 다르다. 문서 배수는 Auto 1.0x · Sonnet 5.5 1.3x · Opus 5.5 2.0x · Opus 5 2.2x인데 0013 실측은 auto 0.0083% · sonnet-5.5 0.099% · opus-5.5 0.18% · opus-5 0.39%다. 문서도 같은 배수여도 작업당 크레딧이 같지 않다고 적으므로 처방의 절약 추정에 배수를 쓰지 않는다.
