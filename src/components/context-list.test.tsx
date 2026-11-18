@@ -1,9 +1,9 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { emit } from "@tauri-apps/api/event";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { describe, expect, it } from "vitest";
 
-import { ContextList, TOP_ITEMS } from "@/components/context-list";
+import { ContextList, TOP_PER_GROUP } from "@/components/context-list";
 import { RateLine } from "@/components/rate-line";
 import { DEFAULT_TUNING } from "@/test/tuning";
 import type { CodexRate, ContextItem, ContextSnapshot, RateSnapshot } from "@/lib/ipc";
@@ -25,7 +25,7 @@ const item = (
 const COMPUTED_AT = new Date().toISOString();
 
 function snapshot(): ContextSnapshot {
-  const filler = Array.from({ length: TOP_ITEMS }, (_, i) => item(`rule-${i}.md`, 10));
+  const filler = Array.from({ length: 8 }, (_, i) => item(`rule-${i}.md`, 10));
   return {
     computedAt: COMPUTED_AT,
     agents: [
@@ -37,7 +37,7 @@ function snapshot(): ContextSnapshot {
           item("leak-scan.md", 1546, { kind: "agents", loading: "conditional" }),
           item("hook 19개", null, { kind: "hooks", loading: "conditional" }),
         ],
-        totalStartupTokens: 3045 + TOP_ITEMS * 10,
+        totalStartupTokens: 3045 + 8 * 10,
         firstRequestTokens: null,
         firstRequestChars: null,
         model: null,
@@ -49,7 +49,7 @@ function snapshot(): ContextSnapshot {
 }
 
 describe("ContextList", () => {
-  it("shows top items with ~ for estimated values, the rest as one line, and warnings", async () => {
+  it("groups items with subtotals, keeps the top rows, and unfolds the rest and the notes on demand", async () => {
     let calls = 0;
     mockIPC((cmd, args) => {
       if (cmd !== "get_context") return undefined;
@@ -66,13 +66,53 @@ describe("ContextList", () => {
     expect(group.querySelector("[data-slot=details]")!.textContent).toContain(
       "측정한 값 3,045 토큰 · 예상한 값 80 토큰",
     );
+    expect(within(group).getByRole("img", { name: "구성 비율" })).toBeTruthy();
+    // 묶음 소계: 값 칸의 ~는 예상이 섞였을 때만 붙는다.
+    expect(within(group).getByText("시스템·도구").parentElement!.parentElement!.textContent).toBe(
+      "시스템·도구3,045",
+    );
+    expect(within(group).getByText("지시 파일").parentElement!.parentElement!.textContent).toBe(
+      "지시 파일~80",
+    );
+
     const rows = within(group).getAllByRole("listitem");
-    expect(rows).toHaveLength(TOP_ITEMS);
+    expect(rows).toHaveLength(1 + TOP_PER_GROUP);
     expect(rows[0].textContent).toBe("시스템 프롬프트 (블록 3개)3,045");
     expect(rows[1].textContent).toBe("rule-0.md~10");
-    expect(within(group).getByText("나머지 3개 · 시작 10 토큰")).toBeTruthy();
+    // 필요할 때만 실리는 항목은 한 줄 요약으로 맨 끝에 둔다.
+    expect(within(group).getByText("필요할 때만 2개 · ~1,546 토큰")).toBeTruthy();
+    expect(within(group).queryByText("leak-scan.md")).toBeNull();
+    expect(within(group).queryByText(/hook 19개/)).toBeNull();
+
+    const more = within(group).getByRole("button", { name: "7개 더 보기" });
+    expect(more.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(more);
+    expect(more.getAttribute("aria-expanded")).toBe("true");
+    expect(more.textContent).toBe("접기");
+    expect(within(group).getAllByRole("listitem")).toHaveLength(1 + 8 + 2);
+    expect(within(group).getByText("leak-scan.md").parentElement!.textContent).toBe(
+      "leak-scan.md~1,546",
+    );
     expect(within(group).getByText(/hook 19개: 출력 크기는/)).toBeTruthy();
+    fireEvent.click(more);
+    expect(within(group).queryByText(/hook 19개: 출력 크기는/)).toBeNull();
     expect(calls).toBe(1);
+  });
+
+  it("shows the share of the context window in its own column only when the window is known", async () => {
+    const withWindow = snapshot();
+    withWindow.agents[0].contextWindow = 1_000_000;
+    mockIPC((cmd) => (cmd === "get_context" ? withWindow : undefined));
+    render(<ContextList agent="claude" charsPerToken={DEFAULT_TUNING.bytesPerToken} />);
+    await screen.findByText("시스템 프롬프트 (블록 3개)");
+    const group = screen.getByRole("group", { name: "시작 컨텍스트" });
+    const rows = within(group).getAllByRole("listitem");
+    expect(rows[0].textContent).toBe("시스템 프롬프트 (블록 3개)3,0450.3%");
+    // 0.01% 미만은 줄여 쓴다.
+    expect(rows[1].textContent).toBe("rule-0.md~10<0.01%");
+    expect(within(group).getAllByText("0.3%")[0].getAttribute("title")).toBe(
+      "컨텍스트 창에서 차지하는 몫",
+    );
   });
 
   it("shows the first request tokens in the details when the agent reports them", async () => {
@@ -270,22 +310,23 @@ describe("ContextList Codex share", () => {
     );
   }
 
-  it("adds the estimated share of the 5-hour limit to startup items, the total and the uncounted remainder", async () => {
+  it("adds the estimated limit share to the description and, once unfolded, the range and the uncounted remainder", async () => {
     renderTab("codex", codex);
-    await screen.findByText("~1.90%");
+    await screen.findByText("요청마다 다시 실려서 5시간 한도의 ~1.90%");
     const group = screen.getByRole("group", { name: "시작 컨텍스트" });
-    const share = within(group).getByText("~1.90%");
-    expect(share.getAttribute("title")).toBe("예상: 기록으로 계산한 값");
-    // 범위: 보통 구간 × fold max = 100×9/2000 + 100×1/200 = 0.95, 바쁠 때 구간 × fold min = 100×18/500 + 100×2/50 = 7.6
-    expect(group.querySelector("[data-slot=details]")!.textContent).toContain(
-      "한도 몫: 보통 ~1.90%, 범위 ~0.95–7.60% (바쁠 때(상위 10%) 포함)",
-    );
+    // 행에는 한도 몫이 붙지 않는다(컨텍스트 창을 모르면 값 칸은 토큰 하나).
     const rows = within(group).getAllByRole("listitem");
-    expect(rows[0].textContent).toBe("AGENTS.md~100~1.90%");
-    // 필요할 때만 실리는 항목에는 붙이지 않는다.
-    expect(rows[1].textContent).toBe("skill-a필요할 때만~50");
-    expect(within(group).getByText("요청마다 다시 실려서 5시간 한도의 ~1.90%")).toBeTruthy();
+    expect(rows[0].textContent).toBe("AGENTS.md~100");
+    expect(within(group).queryByText(/한도 몫: 보통/)).toBeNull();
+
+    fireEvent.click(within(group).getByRole("button", { name: "1개 더 보기" }));
+    // 범위: 보통 구간 × fold max = 100×9/2000 + 100×1/200 = 0.95, 바쁠 때 구간 × fold min = 100×18/500 + 100×2/50 = 7.6
+    expect(
+      within(group).getByText("한도 몫: 보통 ~1.90% · 범위 ~0.95–7.60% (바쁠 때 포함)"),
+    ).toBeTruthy();
     expect(within(group).getByText(/내장 도구·첫 메시지 ~200 토큰/)).toBeTruthy();
+    // 필요할 때만 실리는 항목은 펼쳐야 줄로 보인다.
+    expect(within(group).getByText("skill-a").parentElement!.textContent).toBe("skill-a~50");
   });
 
   it.each([
@@ -318,16 +359,9 @@ describe("ContextList Codex share", () => {
     expect(screen.queryByText(/측정한 값 0 토큰/)).toBeNull();
   });
 
-  it("adds the same estimated share to Claude startup items once the Claude rate is estimated", async () => {
+  it("adds the same estimated limit share to Claude once the Claude rate is estimated", async () => {
     renderTab("claude", collecting, codex);
-    await screen.findByText("~1.90%");
-    const group = screen.getByRole("group", { name: "시작 컨텍스트" });
-    const rows = within(group).getAllByRole("listitem");
-    expect(rows[0].textContent).toBe("AGENTS.md~100~1.90%");
-    expect(rows[1].textContent).toBe("skill-a필요할 때만~50");
-    expect(within(group).getByText("요청마다 다시 실려서 5시간 한도의 ~1.90%")).toBeTruthy();
-    expect(within(group).getByText("~1.90%").getAttribute("title")).toBe(
-      "예상: 기록으로 계산한 값",
-    );
+    const line = await screen.findByText("요청마다 다시 실려서 5시간 한도의 ~1.90%");
+    expect(line.getAttribute("title")).toBe("예상: 기록으로 계산한 값");
   });
 });

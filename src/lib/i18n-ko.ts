@@ -135,9 +135,21 @@ export const ko = {
     claudeNoneHint: "Claude Code 기록이 필요해요. 한동안 쓴 뒤 새로고침하세요.",
   },
   context: {
-    whenNeeded: "필요할 때만",
     range: (point: string, low: string, high: string) =>
-      `보통 ~${point}%, 범위 ~${low}–${high}% (바쁠 때(상위 10%) 포함)`,
+      `보통 ~${point}% · 범위 ~${low}–${high}% (바쁠 때 포함)`,
+    groups: {
+      tools: "시스템·도구",
+      files: "지시 파일",
+      skills: "스킬",
+      mcp: "MCP 서버",
+      other: "기타",
+    },
+    barLabel: "구성 비율",
+    windowShare: "컨텍스트 창에서 차지하는 몫",
+    onDemand: (count: number, tokens: string | null) =>
+      `필요할 때만 ${count}개${tokens === null ? "" : ` · ~${tokens} 토큰`}`,
+    more: (count: number) => `${count}개 더 보기`,
+    less: "접기",
     description: "첫 메시지 전에 기본으로 실리는 지시문·도구 설명이에요.",
     sources: (measured: string, estimated: string) =>
       `측정한 값 ${measured} 토큰 · 예상한 값 ${estimated} 토큰`,
@@ -147,7 +159,6 @@ export const ko = {
     remainder: (tokens: string, range: string) =>
       `내장 도구·첫 메시지 ~${tokens} 토큰 · 한도 몫 ${range}`,
     assembled: (chars: string, tokens: string) => `시작 때 조립한 글 ${chars}자(~${tokens} 토큰)`,
-    rest: (count: number, tokens: string) => `나머지 ${count}개 · 시작 ${tokens} 토큰`,
     nothingFound: "찾은 설정 없음",
   },
   behavior: {
