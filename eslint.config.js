@@ -5,7 +5,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
-  globalIgnores(["dist", "src-tauri", ".artifacts"]),
+  globalIgnores(["dist", "src-tauri", ".artifacts", ".claude/worktrees"]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [
