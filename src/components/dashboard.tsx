@@ -125,7 +125,8 @@ function AgentPanels({ settings, usage: state }: { settings: Settings; usage: Us
               )}
               {/* 시작 컨텍스트는 오른쪽 `ContextList` 하나로 보인다(같은 값·구성이 두 번 나오지 않게). */}
               <MetricLines agent={agent} />
-              <UsageBars agent={agent} className="h-24" />
+              {/* 막대가 적으면(Kiro 하루 1개 등) 넓은 대시보드에서 한 덩어리로 보인다. 폭을 막고 최근 쪽(오른쪽)에 붙인다. 트레이는 그대로. */}
+              <UsageBars agent={agent} className="h-24 justify-end [&>li]:max-w-6" />
             </div>
             <RateLine
               agent={agent}
