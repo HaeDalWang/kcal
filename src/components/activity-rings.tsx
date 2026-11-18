@@ -52,6 +52,9 @@ export function ActivityRings({ rings, size, stroke, gap, label, className }: Pr
       {rings.map((ring, i) => {
         const radius = center - stroke / 2 - i * (stroke + gap);
         if (radius <= 0) return null;
+        // 둥근 끝은 양쪽으로 굵기의 반씩 더 그린다. 호가 굵기 2배보다 짧으면 실제보다 큰 구슬로 보이므로
+        // 각진 끝으로 그려 길이가 값 그대로 보이게 한다.
+        const isShort = ring.fraction * 2 * Math.PI * radius < stroke * 2;
         return (
           <g key={ring.agent} fill="none" strokeWidth={stroke}>
             <circle cx={center} cy={center} r={radius} stroke={trackColor(ring.agent)} />
@@ -61,7 +64,7 @@ export function ActivityRings({ rings, size, stroke, gap, label, className }: Pr
                 cy={center}
                 r={radius}
                 stroke={AGENT_COLOR[ring.agent]}
-                strokeLinecap="round"
+                strokeLinecap={isShort ? "butt" : "round"}
                 pathLength={100}
                 strokeDasharray={`${ring.fraction * 100} 100`}
               />
