@@ -10,7 +10,7 @@ import { StateText } from "@/components/state-text";
 import { AGENT_LABEL, minRemaining, useUsageSnapshot } from "@/components/usage-popover";
 import { t } from "@/lib/i18n";
 import { useSettings } from "@/lib/use-settings";
-import { alertCount, noChecksText } from "@/lib/check-copy";
+import { alertCount, isCheckedAgent, noChecksText } from "@/lib/check-copy";
 import { useOpenRow } from "@/lib/open-row";
 import {
   errorMessage,
@@ -144,6 +144,7 @@ export function ChecksTab({ agents, focusKey, onShowEffect }: ChecksTabProps) {
                   checks={checks.filter((c) => c.agent === agent)}
                   log={log}
                   emptyText={noChecksText(agent, AGENT_LABEL[agent], isMissing(agent))}
+                  isClear={isCheckedAgent(agent, isMissing(agent))}
                   onChanged={load}
                   handoff={handoff}
                   fixedSince={fixedSince}

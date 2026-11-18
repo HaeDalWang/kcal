@@ -4,8 +4,15 @@
 // 목록 모양(시안 J: 진행 표시 + 한 줄 목록 + 한 줄만 펼침)은 `checks-list.tsx`, 문구는 `src/lib/check-copy.ts`.
 import { useState } from "react";
 
-import { CheckRow, FixedRow, ProgressSummary, type HandoffContext } from "@/components/checks-list";
-import { ChangePanel, DonePanel } from "@/components/coach-view";
+import {
+  AllClear,
+  CheckRow,
+  FixedRow,
+  ProgressSummary,
+  type HandoffContext,
+} from "@/components/checks-list";
+import { AGENT_COLOR } from "@/components/agent-metrics";
+import { ChangePanel, DonePanel, LiveStatus } from "@/components/coach-view";
 import { RulesPanel } from "@/components/rules-panel";
 import { Button } from "@/components/ui/button";
 import {
@@ -93,6 +100,7 @@ export function AgentChecks({
   checks,
   log = [],
   emptyText,
+  isClear = false,
   onChanged,
   handoff = NO_USAGE,
   fixedSince = null,
@@ -104,6 +112,8 @@ export function AgentChecks({
   /** 적용 기록(`get_coach_log`). 이 칸은 이 에이전트의 점검 기록 중 되돌리지 않은 것을 "고친 줄"로 보인다. */
   log?: AppliedSwitch[];
   emptyText: string;
+  /** 점검이 돌았고 고칠 것이 없다: 빈 문장 대신 체크 표시와 함께 보인다. */
+  isClear?: boolean;
   onChanged: () => void;
   /** 긴 안내문 카드의 한도 문. 없으면 한도를 모르는 것으로 본다(버튼 꺼짐). */
   handoff?: HandoffContext;
@@ -236,14 +246,20 @@ export function AgentChecks({
 
   const isListEmpty = rows.length === 0 && fixed.length === 0;
   const busy = isBusy || isRunning(active?.step);
+  const doneApplied = active?.step.kind === "done" ? active.step.applied : undone;
   return (
     <div className="flex flex-col">
+      <LiveStatus
+        text={doneApplied && t.checksView.done(doneApplied.name, doneApplied.action === "undo")}
+      />
       {error && (
         <p role="alert" className="px-5 pt-1.5 text-[10px] text-destructive">
           {error}
         </p>
       )}
-      {isListEmpty ? (
+      {isListEmpty && isClear ? (
+        <AllClear agent={agent} text={emptyText} />
+      ) : isListEmpty ? (
         <p className="px-5 py-2.5 text-xs text-muted-foreground wrap-break-word select-text">
           {emptyText}
         </p>
@@ -266,16 +282,22 @@ export function AgentChecks({
           ))}
           {rows.map((check) =>
             active?.check.id === check.id ? (
-              <ActivePanel
+              // 미리보기·완료도 펼친 줄과 같은 테두리 카드 안에 둔다(줄이 그 자리에서 다음 단계로 넘어간 것으로 읽힌다).
+              <div
                 key={check.id}
-                step={active.step}
-                timeoutSecs={handoff.timeoutSecs}
-                isBusy={isBusy}
-                onConfirm={confirm}
-                onApplyRule={applyRule}
-                onUndo={undo}
-                onClose={close}
-              />
+                className="mx-3 rounded-lg border [&>section]:border-t-0 [&>section]:px-2 [&>section]:py-1.5"
+                style={{ borderColor: AGENT_COLOR[check.agent] }}
+              >
+                <ActivePanel
+                  step={active.step}
+                  timeoutSecs={handoff.timeoutSecs}
+                  isBusy={isBusy}
+                  onConfirm={confirm}
+                  onApplyRule={applyRule}
+                  onUndo={undo}
+                  onClose={close}
+                />
+              </div>
             ) : (
               <CheckRow
                 key={check.id}

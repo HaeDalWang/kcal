@@ -433,6 +433,10 @@ export const CLAUDE_CODE = "Claude Code";
 const CHECKED_AGENTS: readonly Agent[] = ["claude"];
 
 /** 대시보드 점검 탭에서 그 에이전트의 보이는 카드가 없을 때. `label`은 화면의 에이전트 이름. */
+/** 점검이 실제로 돈 에이전트인가(못 찾은 경우 제외). 그때의 빈 목록은 "고칠 것 없음"(보상)이다. */
+export const isCheckedAgent = (agent: Agent, isMissing = false) =>
+  CHECKED_AGENTS.includes(agent) && !isMissing;
+
 export function noChecksText(agent: Agent, label: string, isMissing = false): string {
   if (!CHECKED_AGENTS.includes(agent)) return t.checks.noChecks(label);
   return isMissing ? t.checks.notChecked(CLAUDE_CODE) : t.checks.empty;

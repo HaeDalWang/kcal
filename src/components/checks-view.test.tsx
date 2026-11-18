@@ -211,10 +211,12 @@ describe("AgentChecks", () => {
     fireEvent.click(within(openCard(EFFORT_TITLE)).getByRole("button", { name: /옛 설정 지우기/ }));
     const panel = screen.getByRole("group", { name: "바꿀 내용 확인" });
     await within(panel).findByText('- "high"');
-    expect(within(panel).getByText("+ (지움)")).toBeTruthy();
-    // 미리보기는 그 카드 자리(첫 자리)에 있고, 다른 카드는 그대로다.
-    expect(panel.previousElementSibling).toBeNull();
-    expect(panel.nextElementSibling).toBe(card(GIT_TITLE));
+    // 지우는 줄은 `-`만 보인다(가짜 "+ (지움)" 줄 없음).
+    expect(within(panel).queryByText("+ (지움)")).toBeNull();
+    // 미리보기는 그 카드 자리(첫 자리)의 테두리 카드 안에 있고, 다른 카드는 그대로다.
+    const frame = panel.parentElement;
+    expect(frame?.previousElementSibling).toBeNull();
+    expect(frame?.nextElementSibling).toBe(card(GIT_TITLE));
     expect(screen.queryByRole("group", { name: EFFORT_TITLE })).toBeNull();
     expect(calls.some((c) => c.cmd === "apply_check")).toBe(false);
     expect(calls.find((c) => c.cmd === "preview_check")?.args).toEqual({

@@ -344,7 +344,16 @@ function Details({ check, copy }: { check: CoachCheck; copy: CheckCopy }) {
 }
 
 /** 줄 앞 체크 원. 고친 줄은 에이전트 색으로 채우고 체크 표시(색만으로 알리지 않는다: 취소선·"고침" 읽기 이름도 있다). */
-function CheckMark({ agent, isOn }: { agent: Agent; isOn: boolean }) {
+function CheckMark({
+  agent,
+  isOn,
+  isDecorative = false,
+}: {
+  agent: Agent;
+  isOn: boolean;
+  /** 옆 글자가 뜻을 말하면 읽기 이름을 빼고 숨긴다. */
+  isDecorative?: boolean;
+}) {
   if (!isOn) {
     return (
       <span
@@ -355,8 +364,9 @@ function CheckMark({ agent, isOn }: { agent: Agent; isOn: boolean }) {
   }
   return (
     <span
-      role="img"
-      aria-label={t.checksView.fixed}
+      role={isDecorative ? undefined : "img"}
+      aria-hidden={isDecorative || undefined}
+      aria-label={isDecorative ? undefined : t.checksView.fixed}
       style={{ backgroundColor: AGENT_COLOR[agent] }}
       className="inline-grid size-3.5 shrink-0 place-items-center rounded-full text-background"
     >
@@ -454,7 +464,7 @@ export function CheckRow({
     <div
       role="group"
       aria-label={copy.title}
-      className={`flex flex-col gap-1.5 border text-xs ${isOpen ? "mx-3 px-2 py-1.5" : "mx-5 border-transparent"}`}
+      className={`flex flex-col gap-1.5 rounded-lg border text-xs ${isOpen ? "mx-3 px-2 py-1.5" : "mx-5 border-transparent"}`}
       style={isOpen ? { borderColor: AGENT_COLOR[check.agent] } : undefined}
     >
       {/* 줄 전체가 펼치기 버튼의 누르는 자리다: 버튼의 ::after가 줄을 덮고, 작은 버튼만 그 위(z-10)에 둔다(중첩 button 없음). */}
@@ -621,5 +631,15 @@ export function ProgressSummary({
         </p>
       )}
     </div>
+  );
+}
+
+/** 고칠 것이 없을 때(점검은 돌았다): 빈칸 대신 고친 줄과 같은 체크 표시로 "다 됐다"를 보인다. */
+export function AllClear({ agent, text }: { agent: Agent; text: string }) {
+  return (
+    <p className="flex items-center gap-1.5 px-5 py-2.5 text-xs font-medium">
+      <CheckMark agent={agent} isOn isDecorative />
+      {text}
+    </p>
   );
 }
