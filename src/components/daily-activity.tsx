@@ -175,7 +175,7 @@ export function DailyActivity({ days, selected, onSelect, settings, kiroUsage }:
               onClick={() => onSelect(i)}
               className="group flex w-full flex-col items-center gap-1.5 rounded-2xl py-2 outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring aria-pressed:bg-muted aria-pressed:ring-1 aria-pressed:ring-foreground/15"
             >
-              <span className="text-xs font-medium text-muted-foreground group-aria-pressed:font-bold">
+              <span className="text-xs font-medium text-muted-foreground group-aria-pressed:font-semibold group-aria-pressed:text-foreground">
                 {t.daily.weekday(day)}
               </span>
               <ActivityRings
@@ -234,7 +234,7 @@ function TodayCard({ values }: { values: readonly AgentDay[] }) {
             <li
               key={v.agent}
               title={measuredTitle(ringsLabel([v], isEmpty))}
-              className="flex flex-col items-center px-2 pt-2 pb-1.5"
+              className="flex min-w-0 flex-col items-center pt-2 pb-1.5"
             >
               <span className="flex items-center gap-1.5 text-sm font-medium">
                 <span
@@ -244,11 +244,18 @@ function TodayCard({ values }: { values: readonly AgentDay[] }) {
                 />
                 {AGENT_LABEL[v.agent]}
               </span>
-              <span
-                className={`text-2xl leading-tight font-semibold tabular-nums ${isOver ? "text-warn" : ""}`}
-              >
-                {isEmpty ? t.common.noRecord : v.isUnread ? "—" : amount.format(v.activity.used)}
-              </span>
+              {/* 빈 날은 "기록 없음"을 숫자 자리 높이 그대로 조용히 둔다(세 칸 모두 큰 글씨면 시끄럽다). */}
+              {isEmpty ? (
+                <span className="flex h-[1.875rem] items-center text-sm text-muted-foreground">
+                  {t.common.noRecord}
+                </span>
+              ) : (
+                <span
+                  className={`text-2xl leading-tight font-semibold tabular-nums ${isOver ? "text-warn" : ""}`}
+                >
+                  {v.isUnread ? "—" : amount.format(v.activity.used)}
+                </span>
+              )}
               {!isEmpty && !v.isUnread && (
                 <span className="text-xs text-muted-foreground">{t.daily.unit(v.isCredits)}</span>
               )}
@@ -256,7 +263,7 @@ function TodayCard({ values }: { values: readonly AgentDay[] }) {
               {isOver && <span className="text-xs font-medium text-warn">{t.daily.over}</span>}
               {/* 빈 날은 목표 줄을 보이지 않는다(design.md 1절: 모르는 값은 줄 숨김). */}
               {!isEmpty && (
-                <span className="mt-1.5 w-full border-t pt-1 text-center text-xs text-muted-foreground tabular-nums">
+                <span className="mt-1.5 w-full border-t pt-1 text-center text-xs text-balance text-muted-foreground tabular-nums">
                   {v.isUnread
                     ? t.daily.limitUnread
                     : v.goal === null

@@ -167,9 +167,7 @@ export const en: Messages = {
     requests: (count) => `${count} req`,
     composition: "What usually fills the 5-hour limit",
     caption: (days) =>
-      [days === null ? null : `last ${n(days, "day")}`, "sum of 5-hour limit %"]
-        .filter(Boolean)
-        .join(" · "),
+      days === null ? "Sum of 5-hour limit %" : `Last ${n(days, "day")} · sum of 5-hour limit %`,
     validation: (used, predicted) => `kcal’s estimate ${predicted}% · actual ${used}%`,
     compositionHint:
       "An estimate that splits one typical 5-hour window. Setup is the startup context resent with every request.",
@@ -184,7 +182,7 @@ export const en: Messages = {
     amount: (value, isCredits) => (isCredits ? `${value} credits` : `${value}%`),
     unit: (isCredits) => (isCredits ? "credits" : "% of weekly limit"),
     goal: (goal) => ` / daily share ${goal}`,
-    goalLabel: (goal) => `daily share ${goal}`,
+    goalLabel: (goal) => `Daily share ${goal}`,
     today: "Today",
     yesterday: "Yesterday",
     previous: "Previous day",

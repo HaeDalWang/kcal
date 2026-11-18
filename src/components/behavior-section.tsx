@@ -127,8 +127,10 @@ function SessionRows({ sessions }: { sessions: CodexSession[] }) {
     <ul aria-label={t.behavior.sessions} className="flex flex-col gap-1">
       {sessions.map((s, i) => (
         <li key={`${s.cwd ?? s.name}-${s.startedAt}`} className="flex flex-col">
-          <div className="flex items-center gap-1.5 text-[10px] tabular-nums">
-            <span className="min-w-0 truncate text-[11px] font-medium">{labels[i].name}</span>
+          <div className="flex items-center gap-1.5 text-xs tabular-nums">
+            <span className="min-w-0 truncate font-medium" title={s.cwd ?? labels[i].name}>
+              {labels[i].name}
+            </span>
             <span className="shrink-0 text-muted-foreground">{labels[i].when}</span>
             {sessionBadges(s).map((badge) => (
               <span
@@ -145,7 +147,7 @@ function SessionRows({ sessions }: { sessions: CodexSession[] }) {
               {`~${formatShare(s.share)}%`}
             </span>
           </div>
-          <span className="text-[10px] text-muted-foreground tabular-nums">{sessionDetail(s)}</span>
+          <span className="text-xs text-muted-foreground tabular-nums">{sessionDetail(s)}</span>
         </li>
       ))}
     </ul>
