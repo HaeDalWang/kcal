@@ -114,7 +114,6 @@ export const ko = {
     rangeHint: "기록과 덜 맞아 범위로 보여 줘요. 5시간 한도 1%로 보낼 수 있는 입력 토큰이에요.",
     unknown: "아직 알 수 없어요",
     unknownHint: "기록만으로는 정확히 계산하지 못했어요.",
-    kiroTurn: (share: string) => `질문 1번 = 월 한도의 ${share}%`,
     perPercent: "1%당 토큰",
     pattern: "사용 패턴",
     patternValue: (requests: string) => `5시간마다 보통 ${requests}번 요청`,
@@ -123,9 +122,13 @@ export const ko = {
     busy: (requests: string, misses: string) =>
       `바쁠 때(상위 10%): 요청 ${requests}번 · 캐시되지 않은 요청 ${misses}번`,
     typical: (misses: string, windows: number) =>
-      `보통: 캐시되지 않은 요청 ${misses}번 (비율은 중앙값끼리 나눈 근사값) · 5시간 구간 ${windows}개`,
+      `보통: 캐시되지 않은 요청 ${misses}번 · 5시간 구간 ${windows}개 중\n비율은 중앙값끼리 나눈 근사값이에요.`,
     perQuestion: "질문당 크레딧",
-    perQuestionHint: "질문 1번당 쓰는 크레딧이에요. 모델마다 달라요.",
+    perQuestionHint: "질문 1번당 쓰는 크레딧과 월 한도 몫이에요.",
+    perQuestionMixed: "모델마다 달라요",
+    colModel: "모델",
+    colCredits: "크레딧",
+    colShare: "월 한도 몫",
     perQuestionEmpty: "질문을 몇 번 하면 보여 줘요.",
     turns: (model: string, turns: number) => `${model}: 질문 ${turns}번 기준`,
     claudeNone: "아직 기록이 없어요",

@@ -16,9 +16,8 @@ import { numberFormat, t } from "@/lib/i18n";
 
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 const credits = numberFormat({ minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const r2Format = numberFormat({ minimumFractionDigits: 2, maximumFractionDigits: 2 });
-/** 구간 통계는 정수가 대부분이고 짝수 개 중앙값·상위 10% 보간만 소수가 된다. */
-const count = numberFormat({ maximumFractionDigits: 1 });
+/** 요청 수는 정수로 보인다(짝수 개 중앙값·상위 10% 보간의 소수는 반올림). */
+const count = numberFormat({ maximumFractionDigits: 0 });
 const percent = numberFormat({ maximumFractionDigits: 1 });
 const small = numberFormat({ maximumSignificantDigits: 2 });
 const whole = numberFormat({ maximumFractionDigits: 0 });
@@ -39,13 +38,18 @@ function formatBounds({ min, max }: Bounds): string {
   return max === null ? `≥${formatTokens(min)}` : `${formatTokens(min)}~${formatTokens(max)}`;
 }
 
-/** "R² 0.92 · 5시간 구간 40개"(자세히 안). */
-function sampleText(rate: CodexRate): string {
-  const r2 = rate.r2 === null ? null : `R²\u00a0${r2Format.format(rate.r2)}`;
-  return [r2, t.rate.windows(rate.windows)].filter(Boolean).join(" · ");
+/** 값 툴팁에 붙는 표본 크기("5시간 구간 40개"). R²는 사용자에게 보이지 않는다. 구간이 없으면 null. */
+function sampleText(rate: CodexRate): string | null {
+  return rate.status === "no_data" || rate.windows === 0 ? null : t.rate.windows(rate.windows);
 }
 
-/** 토큰 종류별 1%당 값(자세히 안). 숫자가 없으면 null. */
+/** 값 툴팁 여러 줄. 빈 줄은 뺀다. */
+function lines(...parts: (string | null | false | undefined)[]): string | undefined {
+  const text = parts.filter(Boolean).join("\n");
+  return text || undefined;
+}
+
+/** 토큰 종류별 1%당 값(값 툴팁). 숫자가 없으면 null. */
 export function codexDetailText(rate: CodexRate): string | null {
   const { perPercent, foldRange } = rate;
   if (rate.status === "estimated" && perPercent) {
@@ -136,17 +140,18 @@ export function modelLabel(model: string): string {
   return model.replace(/^claude-/, "");
 }
 
-/** "질문 1번 = 월 한도의 0.19%"(측정 ÷ 측정이라 `~`·`≈` 없음). 월 한도를 모르면 null. */
+/** 질문 1번의 월 한도 몫("0.19%", 측정 ÷ 측정이라 `~` 없음). 월 한도를 모르면 null. */
 export function kiroTurnText(model: KiroModelCredits, limit: number | null): string | null {
   const share = kiroTurnShare(model.creditsPerTurn, limit);
-  return share === null ? null : t.rate.kiroTurn(formatShare(share));
+  return share === null ? null : `${formatShare(share)}%`;
 }
 
-/** Kiro 모델별 크레딧/턴 한 줄(측정). 기록이 없으면 null. */
-export function kiroRateText(models: KiroModelCredits[]): string | null {
+/** Kiro 큰 값: 모델이 하나면 그 크레딧, 여럿이면 "모델마다 달라요"(값은 아래 표). 기록이 없으면 null. */
+export function kiroHeadline(models: KiroModelCredits[]): string | null {
   if (models.length === 0) return null;
-  const parts = models.map((m) => `${modelLabel(m.model)} ${credits.format(m.creditsPerTurn)}`);
-  return t.common.credits(parts.join(" · "));
+  return models.length > 1
+    ? t.rate.perQuestionMixed
+    : t.common.credits(credits.format(models[0].creditsPerTurn));
 }
 
 function CodexSections({
@@ -167,21 +172,19 @@ function CodexSections({
       <InfoSection
         title={t.rate.perPercent}
         value={tokens.value}
-        valueTitle={tokens.isNumber ? t.info.estimated : undefined}
+        valueTitle={lines(tokens.isNumber && t.info.estimated, detail, sampleText(rate))}
         description={tokens.hint}
         aside={aside}
-        details={
-          <>
-            {detail && <span>{detail}</span>}
-            {rate.status !== "no_data" && <span>{sampleText(rate)}</span>}
-          </>
-        }
       />
       {pattern && (
         <InfoSection
           title={t.rate.pattern}
           value={t.rate.patternValue(count.format(pattern.requests.median))}
-          valueTitle={t.info.measured}
+          valueTitle={lines(
+            t.info.measured,
+            t.rate.busy(count.format(pattern.requests.p90), count.format(pattern.misses.p90)),
+            t.rate.typical(count.format(pattern.misses.median), pattern.windows),
+          )}
           description={
             <>
               {uncached !== null && (
@@ -190,14 +193,6 @@ function CodexSections({
                 </span>
               )}
               {t.rate.lastDays(pattern.days)}
-            </>
-          }
-          details={
-            <>
-              <span>
-                {t.rate.busy(count.format(pattern.requests.p90), count.format(pattern.misses.p90))}
-              </span>
-              <span>{t.rate.typical(count.format(pattern.misses.median), pattern.windows)}</span>
             </>
           }
         />
@@ -209,28 +204,48 @@ function CodexSections({
 type KiroSectionProps = { models: KiroModelCredits[]; aside: ReactNode; limit: number | null };
 
 function KiroSection({ models, aside, limit }: KiroSectionProps) {
-  const text = kiroRateText(models);
+  const headline = kiroHeadline(models);
   return (
     <InfoSection
       title={t.rate.perQuestion}
-      value={text ?? t.rate.collecting}
-      valueTitle={text ? t.info.measured : undefined}
-      description={text ? t.rate.perQuestionHint : t.rate.perQuestionEmpty}
+      value={headline ?? t.rate.collecting}
+      valueTitle={headline ? t.info.measured : undefined}
+      description={headline ? t.rate.perQuestionHint : t.rate.perQuestionEmpty}
       aside={aside}
-      details={
-        text && (
-          <>
-            {models.map((m) => (
-              <span key={m.model}>
-                {[t.rate.turns(modelLabel(m.model), m.turns), kiroTurnText(m, limit)]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
-            ))}
-          </>
-        )
-      }
-    />
+    >
+      {headline && (
+        <table className="mt-1 w-full text-xs tabular-nums">
+          <thead>
+            <tr className="text-muted-foreground">
+              <th scope="col" className="py-0.5 text-left font-normal">
+                {t.rate.colModel}
+              </th>
+              <th scope="col" className="py-0.5 text-right font-normal">
+                {t.rate.colCredits}
+              </th>
+              <th scope="col" className="py-0.5 pl-4 text-right font-normal">
+                {t.rate.colShare}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...models]
+              .sort((a, b) => b.turns - a.turns)
+              .map((m) => (
+                <tr key={m.model} title={t.rate.turns(modelLabel(m.model), m.turns)}>
+                  <td className="py-0.5 text-left">{modelLabel(m.model)}</td>
+                  <td className="py-0.5 text-right font-medium">
+                    {credits.format(m.creditsPerTurn)}
+                  </td>
+                  <td className="py-0.5 pl-4 text-right text-muted-foreground">
+                    {kiroTurnText(m, limit) ?? "—"}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      )}
+    </InfoSection>
   );
 }
 

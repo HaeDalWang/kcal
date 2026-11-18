@@ -189,18 +189,13 @@ export function CodexBehaviorDetails() {
         <InfoSection
           title={t.behavior.composition}
           value={parts.map((p) => `${p.label} ~${formatShare(p.value)}%`).join(" · ")}
-          valueTitle={t.info.estimated}
+          valueTitle={`${t.info.estimated}\n${t.behavior.compositionDetail(
+            validationText(composition),
+            window.requests,
+            window.misses,
+            window.windows,
+          )}`}
           description={t.behavior.compositionHint}
-          details={
-            <span>
-              {t.behavior.compositionDetail(
-                validationText(composition),
-                window.requests,
-                window.misses,
-                window.windows,
-              )}
-            </span>
-          }
         >
           <CompositionBar parts={parts} />
         </InfoSection>

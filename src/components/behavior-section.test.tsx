@@ -158,7 +158,8 @@ describe("CodexBehaviorDetails", () => {
   it("puts the validation line and session details on the dashboard", async () => {
     load(rates(codex));
     render(<CodexBehaviorDetails />);
-    expect(await screen.findByText(/실제 50% · 예상 48%/)).toBeTruthy();
+    const value = await screen.findByTitle(/실제 50% · 예상 48%/);
+    expect(value.textContent).not.toContain("실제");
     expect(screen.getByText(/요청당 입력 126K 토큰 · 캐시 미스 17번/)).toBeTruthy();
   });
 });
