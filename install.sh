@@ -43,9 +43,14 @@ app_running() {
   return 1
 }
 
+# SIGTERM instead of `osascript quit`: Apple Events to another app can raise a
+# Terminal → kcal Automation prompt. kcal writes its files by atomic rename.
 quit_running_app() {
   app_running "$1" || return 0
-  osascript -e 'quit app "kcal"' >/dev/null 2>&1 || true
+  for d in /Applications "$HOME/Applications" "$1"; do
+    esc=$(printf '%s' "$d/$APP/Contents/MacOS/" | sed 's/[][\.*^$+?(){}|/]/\\&/g')
+    pkill -TERM -f "^$esc" >/dev/null 2>&1 || true
+  done
   i=0
   while app_running "$1" && [ "$i" -lt "$QUIT_WAIT_SECS" ]; do
     sleep 1
