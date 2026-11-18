@@ -134,7 +134,11 @@ fn session_model(session_dir: &Path) -> String {
 /// 모델별 턴 수와 평균 크레딧. 턴이 많은 순(같으면 이름순). 기록이 없으면 빈 목록.
 pub fn credits(home: &Path) -> Vec<KiroModelCredits> {
     let mut totals: BTreeMap<String, (u64, f64)> = BTreeMap::new();
-    for file in kiro_session::message_files(home) {
+    let files = kiro_session::message_files(home);
+    super::warm_each(&files, |file| {
+        parsed(file);
+    });
+    for file in files {
         let turns = file_credits(&file);
         if turns.is_empty() {
             continue;

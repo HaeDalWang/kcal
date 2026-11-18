@@ -192,8 +192,34 @@ pub struct RateSnapshot {
 
 pub const RATES_UPDATED_EVENT: &str = "rates-updated";
 
-// Codex rollout·Claude 기록은 파일별 (mtime, 크기) 메모로 바뀐 파일만 다시 읽는다(Codex 154개, release). 첫 계산은 메모에 없는 파일을 최대 4스레드로 미리 읽는다(같은 디스크 캐시에서 2.6초 → 1.5초), 그 뒤 약 10ms.
-// ponytail: Kiro 세션은 매번 전체를 읽는다. 무거워지면 같은 메모를 둔다.
+/// 첫 계산에서 동시에 파싱할 최대 스레드 수. 나머지 코어는 앱·다른 작업에 남긴다.
+const WARM_THREADS: usize = 4;
+
+/// 파일마다 `read`(메모를 채우는 읽기)를 최대 `WARM_THREADS`개 스레드로 나눠 부른다.
+pub(crate) fn warm_each(files: &[PathBuf], read: impl Fn(&Path) + Sync) {
+    let threads = std::thread::available_parallelism()
+        .map_or(1, |n| n.get())
+        .min(WARM_THREADS)
+        .min(files.len());
+    if threads < 2 {
+        return;
+    }
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    std::thread::scope(|scope| {
+        for _ in 0..threads {
+            scope.spawn(|| {
+                while let Some(file) =
+                    files.get(next.fetch_add(1, std::sync::atomic::Ordering::Relaxed))
+                {
+                    read(file);
+                }
+            });
+        }
+    });
+}
+
+// Codex rollout·Kiro 세션·Claude 기록은 파일별 (mtime, 크기) 메모로 바뀐 파일만 다시 읽는다.
+// 첫 계산은 메모에 없는 Codex·Kiro 파일을 `warm_each`로 나눠 읽는다(release, 같은 디스크 캐시).
 fn compute(home: &Path, history_file: &Path, tuning: &Tuning) -> RateSnapshot {
     let now = OffsetDateTime::now_utc();
     let advanced = &tuning.advanced;
