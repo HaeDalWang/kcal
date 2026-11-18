@@ -1,7 +1,9 @@
-import { useSyncExternalStore, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 
-import { startupTitle, startupValue } from "@/components/agent-metrics";
-import { InfoSection } from "@/components/info-section";
+import { AGENT_COLOR, startupTitle, startupValue } from "@/components/agent-metrics";
+import { InfoSection, SUMMARY_CLASS } from "@/components/info-section";
+import { formatShare } from "@/components/rate-line";
 import { SnapshotAge } from "@/components/snapshot-age";
 import { StateText } from "@/components/state-text";
 import { shareOf, tokenRateOf, type Share } from "@/lib/breakdown";
@@ -10,17 +12,14 @@ import {
   type AgentContext,
   type CodexRate,
   type ContextItem,
+  type ContextKind,
   type ContextSource,
-  type Loading,
 } from "@/lib/ipc";
 import { contextStore, ratesStore, useSnapshot } from "@/lib/snapshot-store";
 import { numberFormat, t } from "@/lib/i18n";
 
-/** 기본으로 이만큼만 줄로 보이고 나머지는 한 줄로 묶는다(`maxItems`로 바꾼다). */
-export const TOP_ITEMS = 8;
-
-/** 시작 때 실리지 않는 항목 표시. */
-const loadingLabel = (loading: Loading) => (loading === "startup" ? null : t.context.whenNeeded);
+/** 접힌 상태에서 묶음마다 보이는 줄 수(큰 순). 나머지는 "N개 더 보기"로 편다. */
+export const TOP_PER_GROUP = 3;
 
 const integer = numberFormat({ maximumFractionDigits: 0 });
 const points = numberFormat({ minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -46,30 +45,139 @@ export function startupTokensBySource(items: ContextItem[]): Record<ContextSourc
   return sums;
 }
 
-function ItemRow({ item, share }: { item: ContextItem; share: Share | null }) {
-  const loading = loadingLabel(item.loading);
-  const isEstimated = item.source === "estimated";
+type GroupId = keyof typeof t.context.groups;
+
+/** `ContextKind` → 묶음. 데이터에 있는 종류만 쓴다. */
+const GROUP_OF: Record<ContextKind, GroupId> = {
+  system: "tools",
+  tools: "tools",
+  instructions: "files",
+  rules: "files",
+  skills: "skills",
+  mcp: "mcp",
+  mcpInstructions: "mcp",
+  agents: "other",
+  plugins: "other",
+  hooks: "other",
+};
+const GROUP_ORDER: GroupId[] = ["tools", "files", "skills", "mcp", "other"];
+/** 묶음 색: 에이전트 색의 불투명도 단계(새 색 토큰 없음). 막대와 표시 점이 같은 값을 쓴다. */
+const GROUP_OPACITY = [1, 0.75, 0.55, 0.4, 0.3];
+
+type Group = { id: GroupId; items: ContextItem[]; tokens: number; isEstimated: boolean };
+
+/** 시작 항목을 묶음별로 모은다. 묶음 안은 토큰 큰 순, 모르는 값(null)은 끝. 빈 묶음은 뺀다. */
+function groupItems(items: ContextItem[]): Group[] {
+  return GROUP_ORDER.map((id) => {
+    const own = items
+      .filter((i) => GROUP_OF[i.kind] === id)
+      .sort((a, b) => (b.tokens ?? -1) - (a.tokens ?? -1));
+    return {
+      id,
+      items: own,
+      tokens: own.reduce((sum, i) => sum + (i.tokens ?? 0), 0),
+      isEstimated: own.some((i) => i.source === "estimated"),
+    };
+  }).filter((g) => g.items.length > 0);
+}
+
+const MIN_PERCENT = 0.01;
+const mark = (isEstimated: boolean) => (isEstimated ? "~" : "");
+
+/** 값 줄: 이름 · 토큰 · (컨텍스트 창을 알면) 창 대비 %. 에이전트와 상관없이 같은 칸 모양이다. */
+const rowClass = (hasWindow: boolean) =>
+  `grid items-baseline gap-x-2 text-xs ${
+    hasWindow ? "grid-cols-[minmax(0,1fr)_auto_3.5rem]" : "grid-cols-[minmax(0,1fr)_auto]"
+  }`;
+
+/** 창 대비 %. 0.01% 미만은 "<0.01%"로 줄여 칸 너비를 지킨다. */
+function windowPercent(tokens: number, window: number, isEstimated: boolean): string {
+  const value = (tokens / window) * 100;
+  return value < MIN_PERCENT ? `<${MIN_PERCENT}%` : `${mark(isEstimated)}${formatShare(value)}%`;
+}
+
+function ValueCells({
+  tokens,
+  isEstimated,
+  window,
+  className = "",
+}: {
+  tokens: number | null;
+  isEstimated: boolean;
+  window: number | null;
+  className?: string;
+}) {
+  const percent = tokens === null || !window ? null : windowPercent(tokens, window, isEstimated);
   return (
-    <li className="flex items-baseline gap-1.5 text-xs">
-      <span className="min-w-0 flex-1 truncate" title={item.path ?? item.name}>
-        {item.name}
-      </span>
-      {loading && <span className="shrink-0 text-muted-foreground">{loading}</span>}
+    <>
       <span
-        className="shrink-0 tabular-nums"
-        title={item.tokens === null ? undefined : isEstimated ? t.info.estimated : t.info.measured}
+        className={`text-right tabular-nums ${className}`}
+        title={tokens === null ? undefined : isEstimated ? t.info.estimated : t.info.measured}
       >
-        {item.tokens === null ? "—" : `${isEstimated ? "~" : ""}${integer.format(item.tokens)}`}
+        {tokens === null ? "—" : `${mark(isEstimated)}${integer.format(tokens)}`}
       </span>
-      {share && (
+      {window !== null && (
         <span
-          className="shrink-0 whitespace-nowrap text-muted-foreground tabular-nums"
-          title={t.info.estimated}
+          className="text-right whitespace-nowrap text-muted-foreground tabular-nums"
+          title={percent === null ? undefined : t.context.windowShare}
         >
-          ~{points.format(share.point)}%
+          {percent}
         </span>
       )}
+    </>
+  );
+}
+
+function ItemRow({ item, window }: { item: ContextItem; window: number | null }) {
+  return (
+    <li className={rowClass(window !== null)}>
+      <span className="min-w-0 truncate" title={item.path ?? item.name}>
+        {item.name}
+      </span>
+      <ValueCells
+        tokens={item.tokens}
+        isEstimated={item.source === "estimated"}
+        window={window}
+        className="text-muted-foreground"
+      />
     </li>
+  );
+}
+
+function ItemList({ items, window }: { items: ContextItem[]; window: number | null }) {
+  return (
+    <ul className="flex flex-col gap-0.5 pl-3">
+      {items.map((item, index) => (
+        <ItemRow
+          key={`${item.kind}:${item.path ?? item.name}:${index}`}
+          item={item}
+          window={window}
+        />
+      ))}
+    </ul>
+  );
+}
+
+const groupColor = (agent: Agent, id: GroupId) => ({
+  backgroundColor: AGENT_COLOR[agent],
+  opacity: GROUP_OPACITY[GROUP_ORDER.indexOf(id)],
+});
+
+/** 시작 토큰의 묶음별 비율. 장식이라 글자 값은 아래 묶음 줄에 있다. */
+function CompositionBar({ agent, groups }: { agent: Agent; groups: Group[] }) {
+  const total = groups.reduce((sum, g) => sum + g.tokens, 0);
+  if (total === 0) return null;
+  return (
+    <div role="img" aria-label={t.context.barLabel} className="flex h-1.5 gap-px">
+      {groups.map((g) => (
+        <span
+          key={g.id}
+          title={`${t.context.groups[g.id]} ${integer.format(g.tokens)}`}
+          className="h-full first:rounded-l-full last:rounded-r-full"
+          style={{ width: `${(g.tokens / total) * 100}%`, ...groupColor(agent, g.id) }}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -78,18 +186,21 @@ function ContextBody({
   charsPerToken,
   share,
   aside,
-  maxItems,
 }: {
   context: AgentContext;
   charsPerToken: number;
   share: ShareOf;
   aside: ReactNode;
-  maxItems: number;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
   const sums = startupTokensBySource(context.items);
-  const shown = context.items.slice(0, maxItems);
-  const rest = context.items.slice(maxItems);
-  const restStartup = startupTokensBySource(rest);
+  const groups = groupItems(context.items.filter((i) => i.loading === "startup"));
+  const onDemand = context.items.filter((i) => i.loading !== "startup");
+  const window = context.contextWindow;
+  const hiddenCount =
+    groups.reduce((sum, g) => sum + Math.max(0, g.items.length - TOP_PER_GROUP), 0) +
+    onDemand.length;
+  const onDemandTokens = onDemand.reduce((sum, i) => sum + (i.tokens ?? 0), 0);
   const totalShare = share(context.totalStartupTokens);
   // 첫 요청 측정값 − 시작 합계: 세지 못한 내장 도구 정의와 첫 사용자 메시지.
   const remainder =
@@ -97,7 +208,9 @@ function ContextBody({
       ? 0
       : context.firstRequestTokens - context.totalStartupTokens;
   const remainderShare = remainder > 0 ? share(remainder) : null;
-  // 대시보드의 시작 컨텍스트는 이 칸 하나다(트레이 `StartupSummary`와 같은 값 줄 + 항목별 목록·한도 몫).
+  // 접을 것이 없으면 펼친 것과 같다. 근거·주의 줄은 펼친 아래에만 둔다.
+  const isExpanded = isOpen || hiddenCount === 0;
+  // 대시보드의 시작 컨텍스트는 이 칸 하나다(트레이 `StartupSummary`와 같은 값 줄 + 묶음별 목록·한도 몫).
   return (
     <InfoSection
       title={t.common.startupContext}
@@ -113,12 +226,59 @@ function ContextBody({
       }
       aside={aside}
       details={
-        <>
-          <span>
-            {sums.measured === 0
-              ? t.context.estimatedOnly(integer.format(sums.estimated))
-              : t.context.sources(integer.format(sums.measured), integer.format(sums.estimated))}
-          </span>
+        <span>
+          {sums.measured === 0
+            ? t.context.estimatedOnly(integer.format(sums.estimated))
+            : t.context.sources(integer.format(sums.measured), integer.format(sums.estimated))}
+        </span>
+      }
+    >
+      <CompositionBar agent={context.agent} groups={groups} />
+      <div className="flex flex-col gap-2">
+        {groups.map((g) => (
+          <div key={g.id} className="flex flex-col gap-0.5">
+            <div className={`${rowClass(window !== null)} font-medium`}>
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span
+                  aria-hidden
+                  className="size-1.5 shrink-0 rounded-full"
+                  style={groupColor(context.agent, g.id)}
+                />
+                <span className="truncate">{t.context.groups[g.id]}</span>
+              </span>
+              <ValueCells tokens={g.tokens} isEstimated={g.isEstimated} window={window} />
+            </div>
+            <ItemList
+              items={isExpanded ? g.items : g.items.slice(0, TOP_PER_GROUP)}
+              window={window}
+            />
+          </div>
+        ))}
+        {onDemand.length > 0 && (
+          <div className="flex flex-col gap-0.5">
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {t.context.onDemand(
+                onDemand.length,
+                onDemandTokens > 0 ? integer.format(onDemandTokens) : null,
+              )}
+            </p>
+            {isExpanded && <ItemList items={onDemand} window={window} />}
+          </div>
+        )}
+      </div>
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          aria-expanded={isOpen}
+          onClick={() => setIsOpen(!isOpen)}
+          className={`${SUMMARY_CLASS} flex items-center gap-0.5 text-xs text-muted-foreground`}
+        >
+          <ChevronDown className={`size-3 ${isOpen ? "rotate-180" : ""}`} aria-hidden />
+          {isOpen ? t.context.less : t.context.more(hiddenCount)}
+        </button>
+      )}
+      {isExpanded && (
+        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground tabular-nums">
           {totalShare && (
             <span title={t.info.estimated}>{t.context.limitRange(shareRange(totalShare))}</span>
           )}
@@ -138,37 +298,15 @@ function ContextBody({
               )}
             </span>
           )}
-        </>
-      }
-    >
-      <ul className="flex flex-col gap-0.5">
-        {shown.map((item, index) => (
-          <ItemRow
-            key={`${item.kind}:${item.path ?? item.name}:${index}`}
-            item={item}
-            share={item.loading === "startup" && item.tokens !== null ? share(item.tokens) : null}
-          />
-        ))}
-      </ul>
-      {rest.length > 0 && (
-        <p className="text-xs text-muted-foreground tabular-nums">
-          {t.context.rest(
-            rest.length,
-            integer.format(restStartup.measured + restStartup.estimated),
-          )}
-        </p>
+          <Warnings warnings={context.warnings} />
+        </div>
       )}
-      <Warnings warnings={context.warnings} />
     </InfoSection>
   );
 }
 
 function Warnings({ warnings }: { warnings: string[] }) {
-  return warnings.map((warning) => (
-    <p key={warning} className="text-xs text-muted-foreground">
-      {warning}
-    </p>
-  ));
+  return warnings.map((warning) => <p key={warning}>{warning}</p>);
 }
 
 const NO_SHARE: ShareOf = () => null;
@@ -187,11 +325,10 @@ function shareFor(rate: CodexRate | null): ShareOf {
 export function ContextList({
   agent,
   charsPerToken,
-  maxItems = TOP_ITEMS,
 }: {
   agent: Agent;
   charsPerToken: number;
-  /** 줄로 보일 항목 수. 나머지는 한 줄로 묶는다. */
+  /** @deprecated 쓰지 않는다. 묶음마다 `TOP_PER_GROUP`줄만 보이고 나머지는 펼친다. 호출하는 쪽에서 지운다. */
   maxItems?: number;
 }) {
   const { value: snapshot, error } = useSnapshot(contextStore, agent);
@@ -204,13 +341,7 @@ export function ContextList({
 
   if (context && context.items.length > 0) {
     return (
-      <ContextBody
-        context={context}
-        charsPerToken={charsPerToken}
-        share={share}
-        aside={aside}
-        maxItems={maxItems}
-      />
+      <ContextBody context={context} charsPerToken={charsPerToken} share={share} aside={aside} />
     );
   }
   return (
@@ -219,7 +350,11 @@ export function ContextList({
       {!snapshot && !error && <StateText kind="loading" />}
       {context === null && <StateText kind="empty" />}
       {context && <p className="text-xs text-muted-foreground">{t.context.nothingFound}</p>}
-      {context && <Warnings warnings={context.warnings} />}
+      {context && (
+        <div className="text-xs text-muted-foreground">
+          <Warnings warnings={context.warnings} />
+        </div>
+      )}
     </InfoSection>
   );
 }

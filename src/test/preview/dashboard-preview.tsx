@@ -49,11 +49,13 @@ import {
   freshUsage,
   previewSettings,
 } from "@/test/preview/fresh";
+import { bigContext } from "@/test/preview/big-context";
 import "@/index.css";
 
 const HOUR_MS = 3_600_000;
 const isEmpty = new URLSearchParams(location.search).has("empty");
 const isBlank = new URLSearchParams(location.search).has("blank");
+const isBigContext = new URLSearchParams(location.search).has("bigcontext");
 
 /** 에이전트별 하루 모양(지역 시각별 요청 수 가중치)과 요청당 쓴 양. 결정적이다. */
 const SHAPE: Record<Agent, { peak: number; scale: number; perRequest: number }> = {
@@ -191,7 +193,7 @@ mockIPC(
       case "get_rates":
         return rates;
       case "get_context":
-        return context;
+        return isBigContext ? bigContext(now) : context;
       case "get_health":
         return healthReport;
       case "get_checks":

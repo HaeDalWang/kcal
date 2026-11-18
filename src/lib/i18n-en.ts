@@ -142,9 +142,20 @@ export const en: Messages = {
       "Needs some Claude Code history. Use Claude Code for a while, then press Refresh.",
   },
   context: {
-    whenNeeded: "When needed",
-    range: (point, low, high) =>
-      `typically ~${point}%, range ~${low}–${high}% (incl. busy, top 10%)`,
+    range: (point, low, high) => `typically ~${point}% · range ~${low}–${high}% (incl. busy)`,
+    groups: {
+      tools: "System & tools",
+      files: "Instruction files",
+      skills: "Skills",
+      mcp: "MCP servers",
+      other: "Other",
+    },
+    barLabel: "Composition",
+    windowShare: "Share of the context window",
+    onDemand: (count, tokens) =>
+      `When needed: ${n(count, "item")}${tokens === null ? "" : ` · ~${tokens} tokens`}`,
+    more: (count) => `Show ${count} more`,
+    less: "Show less",
     description: "Instructions and tool descriptions loaded before your first message.",
     sources: (measured, estimated) => `Measured ${measured} tokens · estimated ${estimated} tokens`,
     estimatedOnly: (estimated) => `Estimated ${estimated} tokens (nothing measured yet)`,
@@ -153,7 +164,6 @@ export const en: Messages = {
     remainder: (tokens, range) =>
       `Built-in tools and first message ~${tokens} tokens · share of the limit ${range}`,
     assembled: (chars, tokens) => `Assembled at start: ${chars} characters (~${tokens} tokens)`,
-    rest: (count, tokens) => `${count} more · ${tokens} tokens at start`,
     nothingFound: "No settings found",
   },
   behavior: {
