@@ -107,7 +107,7 @@ function AgentPanels({ settings, usage: state }: { settings: Settings; usage: Us
         aria-labelledby={`dashboard-${agent}`}
         className={`${CARD} flex flex-col gap-2 p-3`}
       >
-        <h2 id={`dashboard-${agent}`} className="flex items-center gap-1.5 px-1 font-medium">
+        <h2 id={`dashboard-${agent}`} className="flex items-center gap-1.5 px-3 font-semibold">
           <AgentIcon agent={agent} className="size-5" />
           {AGENT_LABEL[agent]}
         </h2>
@@ -118,12 +118,15 @@ function AgentPanels({ settings, usage: state }: { settings: Settings; usage: Us
                 {error}
               </p>
             )}
-            {usage && !isUnreadable(usage) && (
-              <AgentSection usage={usage} now={now} lowPercent={lowPercent} />
-            )}
-            {/* 시작 컨텍스트는 오른쪽 `ContextList` 하나로 보인다(같은 값·구성이 두 번 나오지 않게). */}
-            <MetricLines agent={agent} />
-            <UsageBars agent={agent} className="h-24" />
+            {/* 트레이용 20px 안쪽 여백(`AgentSection`·`MetricLines`·`UsageBars`)을 아래 칸(`InfoSection` px-3)의 왼쪽 선에 맞춘다. */}
+            <div className="flex flex-col gap-3 empty:hidden [&>:is(ul,div)]:px-3 [&>section>*]:px-3">
+              {usage && !isUnreadable(usage) && (
+                <AgentSection usage={usage} now={now} lowPercent={lowPercent} />
+              )}
+              {/* 시작 컨텍스트는 오른쪽 `ContextList` 하나로 보인다(같은 값·구성이 두 번 나오지 않게). */}
+              <MetricLines agent={agent} />
+              <UsageBars agent={agent} className="h-24" />
+            </div>
             <RateLine
               agent={agent}
               breakdownDays={breakdownDays}
@@ -131,7 +134,8 @@ function AgentPanels({ settings, usage: state }: { settings: Settings; usage: Us
             />
             {agent === "codex" && <CodexBehaviorDetails />}
           </div>
-          <div className="min-w-0">
+          {/* 2열일 때 오른쪽 첫 칸은 위 구분선 없이 왼쪽 첫 줄과 같은 높이에서 시작한다. */}
+          <div className="min-w-0 min-[900px]:[&>section:first-child]:border-t-0">
             <ContextList agent={agent} charsPerToken={bytesPerToken} maxItems={Infinity} />
           </div>
         </div>
@@ -199,7 +203,7 @@ export function Dashboard() {
   const shownError = error ?? refreshError ?? tabError;
   return (
     <div className="h-full overflow-y-auto bg-background">
-      <main className="mx-auto flex max-w-5xl flex-col gap-3 p-4">
+      <main className="mx-auto flex max-w-5xl flex-col gap-3 p-4 break-keep">
         <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
           <h1 className="text-base font-semibold">{t.dashboard.title}</h1>
           {view.tab === "usage" ? (
