@@ -359,3 +359,16 @@ fn codex_parity_on_real_rollouts() {
         );
     }
 }
+
+#[test]
+fn for_each_line_stops_at_overlong_line() {
+    let home = TempDir::new("overlong");
+    let path = home.write("rollout-x.jsonl", "ok\n0123456789abcdef\nlater\n");
+    let mut got = Vec::new();
+    for_each_line_capped(&path, 8, |l| got.push(l.to_vec()));
+    assert_eq!(got, [b"ok\n".to_vec()]);
+    // 상한 이하이면 모두 읽는다(상한 길이 줄 + 개행 포함).
+    let mut all = 0;
+    for_each_line_capped(&path, 16, |_| all += 1);
+    assert_eq!(all, 3);
+}

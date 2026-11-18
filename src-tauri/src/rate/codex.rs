@@ -158,12 +158,12 @@ fn event(row: &Value, file: &str) -> Option<Event> {
 }
 
 /// rollout 한 파일의 줄을 차례로 `f`에 준다(`.jsonl.zst`는 풀어서). 열 수 없거나 압축 머리가 깨졌으면 아무것도 주지 않고,
-/// 중간에 깨지면 그 앞 줄까지만 준다.
+/// 중간에 깨지거나 한 줄이 `MAX_LINE_BYTES`를 넘으면 그 앞 줄까지만 준다.
 pub(crate) fn for_each_line(file: &Path, f: impl FnMut(&[u8])) {
     for_each_line_capped(file, MAX_LINE_BYTES, f);
 }
 
-fn for_each_line_capped(file: &Path, _cap: usize, mut f: impl FnMut(&[u8])) {
+fn for_each_line_capped(file: &Path, cap: usize, mut f: impl FnMut(&[u8])) {
     let Ok(handle) = std::fs::File::open(file) else {
         return;
     };
@@ -180,8 +180,10 @@ fn for_each_line_capped(file: &Path, _cap: usize, mut f: impl FnMut(&[u8])) {
     let mut line = Vec::new();
     loop {
         line.clear();
-        match reader.read_until(b'\n', &mut line) {
+        // 상한 + 1바이트까지만 읽는다. 개행 없이 그만큼 찼으면 깨진 파일이라 여기서 멈춘다.
+        match std::io::Read::take(&mut reader, cap as u64 + 1).read_until(b'\n', &mut line) {
             Ok(0) | Err(_) => break,
+            Ok(_) if line.len() > cap && line.last() != Some(&b'\n') => break,
             Ok(_) => f(&line),
         }
     }
