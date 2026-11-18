@@ -9,7 +9,7 @@ import { SUMMARY_CLASS } from "@/components/info-section";
 import { formatShare } from "@/components/rate-line";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AGENT_COLOR } from "@/lib/agents";
+import { AGENT_COLOR, AGENT_LABEL, hasFeature } from "@/lib/agents";
 import { shareOf } from "@/lib/breakdown";
 import { CLAUDE_CODE, isSuggested, trimSummary } from "@/lib/check-copy";
 import { numberFormat, t } from "@/lib/i18n";
@@ -20,7 +20,7 @@ const integer = numberFormat({ maximumFractionDigits: 0 });
 
 /** Codex 스위치의 5시간 한도 몫(%, 추론). 환율·창 패턴이 없으면 null. */
 function codexShare(item: CoachSwitch, rate: CodexRate | undefined): number | null {
-  if (item.agent !== "codex" || item.tokens === null || !rate) return null;
+  if (!hasFeature(item.agent, "switchShare") || item.tokens === null || !rate) return null;
   return shareOf(item.tokens, rate)?.point ?? null;
 }
 
@@ -90,7 +90,7 @@ function keepReason(item: CoachSwitch): string {
     if (badge === "off" || badge === "hidden") return null;
     if (badge === "chosen") return item.skill?.state ?? null;
     if ((badge === "inUse" || badge === "fewUses") && usage) return t.coach.reasonUses(usage.total);
-    if (!usage) return item.agent === "claude" ? null : t.coach.reasonNoLog;
+    if (!usage) return hasFeature(item.agent, "usageEvidence") ? null : t.coach.reasonNoLog;
     if (usage.total === 0 && usage.sessions < usage.minSessions)
       return t.coach.reasonFewSessions(usage.sessions);
     if (usage.isPartial) return t.coach.partial;
@@ -232,7 +232,7 @@ function SuggestRow({
       ? t.coach.skillStays(item.skill?.project ?? null)
       : contentsText(item)
     : null;
-  const noLog = !item.usage && item.agent !== "claude";
+  const noLog = !item.usage && !hasFeature(item.agent, "usageEvidence");
   return (
     <li
       className={`flex flex-col gap-1.5 rounded-lg border text-xs ${isOpen ? "-mx-2 px-2 py-1.5" : "border-transparent"}`}
@@ -282,9 +282,7 @@ function SuggestRow({
             ))}
           </ul>
           {noLog && (
-            <p className="text-muted-foreground">
-              {t.coach.noUsageLog(item.agent === "codex" ? "Codex" : "Kiro")}
-            </p>
+            <p className="text-muted-foreground">{t.coach.noUsageLog(AGENT_LABEL[item.agent])}</p>
           )}
           {loses && <p className="text-muted-foreground">{loses}</p>}
         </div>
@@ -386,10 +384,9 @@ function Summary({
   const isSizeless = trim !== null && trim.tokens === 0;
   const basis = switches.find((s) => s.usage)?.usage ?? null;
   const legendId = `${agent}-diagnose-legend`;
-  const legend =
-    agent === "claude"
-      ? t.coach.legendTokens + t.coach.legendClaude + t.coach.evidenceSource
-      : t.coach.legendTokens;
+  const legend = hasFeature(agent, "usageEvidence")
+    ? t.coach.legendTokens + t.coach.legendClaude + t.coach.evidenceSource
+    : t.coach.legendTokens;
   return (
     <div className="flex flex-col gap-1 px-5 pt-2.5 pb-2">
       <div className="flex items-start gap-2">
@@ -556,9 +553,9 @@ export function SwitchLists({
               className="size-[12px] shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none"
             />
           </summary>
-          {agent !== "claude" && (
+          {!hasFeature(agent, "usageEvidence") && (
             <p className="pt-1 text-[10px] text-muted-foreground">
-              {t.coach.noUsageLog(agent === "codex" ? "Codex" : "Kiro")}
+              {t.coach.noUsageLog(AGENT_LABEL[agent])}
             </p>
           )}
           <ul className="flex flex-col gap-1.5 pt-1.5">

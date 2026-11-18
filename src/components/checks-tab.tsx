@@ -8,7 +8,7 @@ import { CoachPanel } from "@/components/coach-view";
 import { CARD } from "@/components/daily-activity";
 import { StateText } from "@/components/state-text";
 import { minRemaining, useUsageSnapshot } from "@/components/usage-popover";
-import { AGENT_LABEL } from "@/lib/agents";
+import { AGENT_LABEL, hasFeature } from "@/lib/agents";
 import { t } from "@/lib/i18n";
 import { useSettings } from "@/lib/use-settings";
 import { alertCount, isCheckedAgent, noChecksText } from "@/lib/check-copy";
@@ -105,7 +105,7 @@ export function ChecksTab({ agents, focusKey, onShowEffect }: ChecksTabProps) {
   };
 
   const hidden = checks?.filter((c) => c.isDismissed && agents.includes(c.agent)) ?? [];
-  const claudeUsage = usage.snapshot?.agents.find((a) => a.agent === "claude");
+  const claudeUsage = usage.snapshot?.agents.find((a) => hasFeature(a.agent, "handoff"));
   const handoff: HandoffContext = {
     remaining: claudeUsage ? minRemaining(claudeUsage, usage.now) : null,
     minRemaining: settings?.tuning.claudeHandoffMinRemaining ?? DEFAULT_MIN_REMAINING,
@@ -114,7 +114,8 @@ export function ChecksTab({ agents, focusKey, onShowEffect }: ChecksTabProps) {
   // 고친 줄은 옆 진단하기 "최근 D일"과 같은 D(Rust `SwitchUsage.days` = tuning `diagnoseUsageDays`). 설정을 아직 모르면 기간 제한 없음.
   const recentDays = settings?.tuning.diagnoseUsageDays ?? null;
   const fixedSince = recentDays !== null && logAt !== null ? logAt - recentDays * DAY_MS : null;
-  const isMissing = (agent: Agent) => agent === "claude" && installed?.includes(agent) === false;
+  const isMissing = (agent: Agent) =>
+    hasFeature(agent, "checks") && installed?.includes(agent) === false;
   return (
     <div className="flex flex-col gap-3">
       {error && (

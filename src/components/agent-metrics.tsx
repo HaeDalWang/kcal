@@ -4,7 +4,7 @@
 import { useState, useSyncExternalStore } from "react";
 
 import { formatShare, formatTokens } from "@/components/rate-line";
-import { AGENT_COLOR } from "@/lib/agents";
+import { AGENT_COLOR, AGENT_DESCRIPTORS, hasFeature } from "@/lib/agents";
 import type { Agent, AgentContext, AgentMetrics, UsageBar } from "@/lib/ipc";
 import { contextStore, metricsStore, useSnapshot } from "@/lib/snapshot-store";
 import { numberFormat, t } from "@/lib/i18n";
@@ -40,7 +40,9 @@ export function startupValue(context: AgentContext): string {
 /** Claude는 시스템 프롬프트·내장 도구가 측정돼야 합계다. 측정된 항목이 하나도 없으면 합계처럼 보이지 않게 표시한다. */
 function withEstimateOnly(context: AgentContext, value: string): string {
   const isMeasured = context.items.some((i) => i.tokens !== null && i.source === "measured");
-  return context.agent === "claude" && !isMeasured ? `${value} ${t.metrics.estimateOnly}` : value;
+  return hasFeature(context.agent, "measuredStartup") && !isMeasured
+    ? `${value} ${t.metrics.estimateOnly}`
+    : value;
 }
 
 /** 개요 카드의 짧은 값: 영어는 "8.5% of context window"(토큰은 툴팁), 한국어는 `startupValue`와 같다. */
@@ -74,7 +76,10 @@ export function metricLines(metrics: AgentMetrics): Line[] {
   const lines: Line[] = [];
   if (metrics.recentRequests !== null) {
     lines.push({
-      label: metrics.agent === "kiro" ? t.metrics.recentQuestions : t.metrics.recentRequests,
+      label:
+        AGENT_DESCRIPTORS[metrics.agent].unit === "question"
+          ? t.metrics.recentQuestions
+          : t.metrics.recentRequests,
       value: t.common.times(integer.format(metrics.recentRequests)),
       title: t.info.measured,
     });

@@ -3,6 +3,7 @@
 import type { Agent, AgentUsage, HourBucket, Tuning } from "@/lib/ipc";
 import { kiroMonthlyLimit } from "@/lib/breakdown";
 import { t } from "@/lib/i18n";
+import { hasFeature } from "@/lib/agents";
 
 export const HOURS_PER_DAY = 24;
 
@@ -64,12 +65,12 @@ export function daysInMonth(day: Date): number {
 export function dailyGoal(
   agent: Agent,
   tuning: Pick<Tuning, "dailyGoalPercent" | "kiroDailyCredits">,
-  kiroUsage: AgentUsage | undefined,
+  usage: AgentUsage | undefined,
   day: Date,
 ): number | null {
-  if (agent !== "kiro") return tuning.dailyGoalPercent;
+  if (!hasFeature(agent, "creditLimit")) return tuning.dailyGoalPercent;
   if (tuning.kiroDailyCredits > 0) return tuning.kiroDailyCredits;
-  const limit = kiroMonthlyLimit(kiroUsage);
+  const limit = kiroMonthlyLimit(usage);
   return limit === null ? null : limit / daysInMonth(day);
 }
 

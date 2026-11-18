@@ -6,7 +6,7 @@ import { ActivityRings, type Ring } from "@/components/activity-rings";
 import { HourlyChart } from "@/components/hourly-chart";
 import { measuredTitle } from "@/components/info-section";
 import { Button } from "@/components/ui/button";
-import { AGENT_COLOR, AGENT_LABEL } from "@/lib/agents";
+import { AGENT_COLOR, AGENT_DESCRIPTORS, AGENT_LABEL, hasFeature } from "@/lib/agents";
 import {
   busiestHour,
   dailyGoal,
@@ -47,18 +47,23 @@ function agentDays(
   agents: readonly Agent[],
   metrics: MetricsSnapshot | undefined,
   settings: Settings,
-  kiroUsage: AgentUsage | undefined,
+  usages: readonly AgentUsage[] | undefined,
   day: Date,
 ): AgentDay[] {
   return agents.map((agent) => {
     const m = metrics?.agents.find((a) => a.agent === agent);
     const activity = dayActivity(m?.hourly ?? [], day);
-    const isCredits = agent === "kiro";
+    const isCredits = hasFeature(agent, "creditLimit");
     const isUnread = !isCredits && m !== undefined && m.bars.length === 0 && activity.used === 0;
     return {
       agent,
       activity,
-      goal: dailyGoal(agent, settings.tuning, kiroUsage, day),
+      goal: dailyGoal(
+        agent,
+        settings.tuning,
+        usages?.find((u) => u.agent === agent),
+        day,
+      ),
       isCredits,
       // 5시간 막대(`bars`)는 한도 표본으로만 생긴다. 비어 있으면 그날 %도 읽지 못한 것이다.
       isUnread,
@@ -162,13 +167,13 @@ export function DayPicker({ days, selected, onSelect }: DayPickerProps) {
 
 type Props = DayPickerProps & {
   settings: Settings;
-  kiroUsage: AgentUsage | undefined;
+  usages: readonly AgentUsage[] | undefined;
 };
 
-export function DailyActivity({ days, selected, onSelect, settings, kiroUsage }: Props) {
+export function DailyActivity({ days, selected, onSelect, settings, usages }: Props) {
   const { value: metrics, error } = useSnapshot(metricsStore, "daily");
   const agents = settings.enabledAgents;
-  const week = days.map((day) => agentDays(agents, metrics, settings, kiroUsage, day));
+  const week = days.map((day) => agentDays(agents, metrics, settings, usages, day));
   const today = week[selected];
   return (
     <>
@@ -321,12 +326,13 @@ function HourlyCard({ values }: { values: readonly AgentDay[] }) {
   return (
     <section aria-label={t.daily.hourly} className={`${CARD} flex flex-col gap-5 p-5`}>
       {active.map((v) => {
-        const noun = v.agent === "kiro" ? t.daily.question : t.daily.request;
+        const isQuestion = AGENT_DESCRIPTORS[v.agent].unit === "question";
+        const noun = isQuestion ? t.daily.question : t.daily.request;
         const busiest = busiestHour(v.activity.requests) ?? 0;
         const summary = t.daily.busiestAt(
           hourRangeText(busiest),
           integer.format(v.activity.requests[busiest]),
-          v.agent === "kiro",
+          isQuestion,
         );
         return (
           <div key={v.agent} className="flex flex-col gap-2">

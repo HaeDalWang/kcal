@@ -13,6 +13,7 @@ import {
 } from "@/lib/ipc";
 import { ratesStore, useSnapshot } from "@/lib/snapshot-store";
 import { numberFormat, t } from "@/lib/i18n";
+import { hasFeature } from "@/lib/agents";
 
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 const credits = numberFormat({ minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -261,7 +262,7 @@ export function RateLine({
   kiroLimit?: number | null;
 }) {
   const { value: snapshot, error } = useSnapshot(ratesStore, agent);
-  const title = agent === "kiro" ? t.rate.perQuestion : t.rate.perPercent;
+  const title = hasFeature(agent, "creditLimit") ? t.rate.perQuestion : t.rate.perPercent;
 
   if (!snapshot) {
     return (
@@ -273,7 +274,7 @@ export function RateLine({
   const aside = <SnapshotAge computedAt={snapshot.computedAt} />;
   if (agent === "codex")
     return <CodexSections rate={snapshot.codex} aside={aside} breakdownDays={breakdownDays} />;
-  if (agent === "kiro")
+  if (hasFeature(agent, "creditLimit"))
     return <KiroSection models={snapshot.kiro} aside={aside} limit={kiroLimit} />;
   const claude = snapshot.claude;
   // Claude도 Codex와 같은 판정·화면(0006). 5시간 구간이 하나도 없을 때만 따로 안내한다.

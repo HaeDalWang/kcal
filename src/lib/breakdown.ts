@@ -4,13 +4,14 @@
 // ponytail: 입력 두 개(환율·창 패턴, 항목 토큰)가 이미 프론트 store에 있어 계산을 TS에 둔다.
 // 5층 코칭에서 Rust가 몫을 써야 하면 `src-tauri/src/rate/`로 옮긴다.
 import type { Agent, AgentUsage, CodexRate, RateSnapshot } from "@/lib/ipc";
+import { hasFeature } from "@/lib/agents";
 
 /** 토큰 환율이 있는 에이전트(Codex·Claude)의 환율. Kiro는 크레딧/질문이라 null. */
 export function tokenRateOf(
   rates: RateSnapshot | null | undefined,
   agent: Agent,
 ): CodexRate | null {
-  if (!rates || agent === "kiro") return null;
+  if (!rates || hasFeature(agent, "creditLimit")) return null;
   return agent === "codex" ? rates.codex : rates.claude;
 }
 

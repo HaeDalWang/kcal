@@ -2,7 +2,7 @@
 // 값은 Rust `get_health`와 `health-updated` event로만 바뀐다(타이머 없음). 숫자는 모두 기록에서 잰 값이다.
 import { CARD } from "@/components/daily-activity";
 import { StateText } from "@/components/state-text";
-import { AGENT_COLOR, AGENT_LABEL } from "@/lib/agents";
+import { AGENT_COLOR, AGENT_LABEL, hasFeature } from "@/lib/agents";
 import { appliedName } from "@/lib/check-copy";
 import {
   getHealth,
@@ -39,7 +39,7 @@ const perDay = (count: number | null, p: PeriodStats) =>
 
 /** 에이전트별 지표. 모두 적을수록 아낀 것이다. */
 function metricsOf(agent: Agent): Metric[] {
-  if (agent === "kiro") {
+  if (hasFeature(agent, "creditLimit")) {
     return [
       { label: t.health.perQuestion, unit: "", pick: (p) => p.avgCredits, format: amount.format },
       { label: t.health.dailyCredits, unit: "", pick: (p) => p.dailyUsed, format: amount.format },
@@ -54,7 +54,7 @@ function metricsOf(agent: Agent): Metric[] {
     },
     { label: t.health.dailyWeekly, unit: "%", pick: (p) => p.dailyUsed, format: amount.format },
   ];
-  if (agent !== "codex") return common;
+  if (!hasFeature(agent, "behaviorDetails")) return common;
   return [
     ...common,
     {

@@ -15,7 +15,7 @@ import { reasonStateKind, StateText } from "@/components/state-text";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgentSection, useUsageSnapshot } from "@/components/usage-popover";
-import { AGENT_LABEL } from "@/lib/agents";
+import { AGENT_LABEL, hasFeature } from "@/lib/agents";
 import { kiroMonthlyLimit } from "@/lib/breakdown";
 import { recentDays } from "@/lib/daily";
 import {
@@ -140,7 +140,7 @@ function AgentPanels({ settings, usage: state }: { settings: Settings; usage: Us
               breakdownDays={breakdownDays}
               kiroLimit={kiroMonthlyLimit(usage)}
             />
-            {agent === "codex" && <CodexBehaviorDetails />}
+            {hasFeature(agent, "behaviorDetails") && <CodexBehaviorDetails />}
           </div>
           {/* 2열일 때 오른쪽 첫 칸은 위 구분선 없이 왼쪽 첫 줄과 같은 높이에서 시작한다. */}
           <div className="min-w-0 min-[900px]:[&>section:first-child]:border-t-0">
@@ -254,7 +254,7 @@ export function Dashboard() {
                   selected={selected}
                   onSelect={select}
                   settings={settings}
-                  kiroUsage={usage.snapshot?.agents.find((a) => a.agent === "kiro")}
+                  usages={usage.snapshot?.agents}
                 />
                 <HealthCompare
                   refreshKey={`${settings.tuning.compareDays}:${settings.enabledAgents.join(",")}`}
