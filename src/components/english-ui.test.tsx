@@ -190,7 +190,7 @@ describe("English UI", () => {
       await screen.findByRole("tab", { name: "Usage" });
       fireEvent.click(screen.getByRole("tab", { name: "Checks" }));
       await screen.findAllByText(
-        "Nothing was checked: kcal didn't find Claude Code on this computer. Run claude once and sign in, then press Refresh. Not installed yet? https://code.claude.com/docs/en/setup",
+        "Nothing was checked: kcal didn’t find Claude Code on this computer. Run claude once and sign in, then press Refresh. Not installed yet? https://code.claude.com/docs/en/setup",
       );
       expect(screen.queryByText("Nothing to fix right now.")).toBeNull();
       expect(hangulIn(container)).toEqual([]);
@@ -225,7 +225,7 @@ describe("English UI", () => {
       const second = render(<Dashboard />);
       await screen.findByRole("tab", { name: "Usage" });
       fireEvent.click(screen.getByRole("tab", { name: "Checks" }));
-      const reason = await screen.findByText("Can't tell · Little history (3 sessions)");
+      const reason = await screen.findByText("Can’t tell · Little history (3 sessions)");
       expect(reason.getAttribute("title")).toMatch(
         /^Not enough Claude history to tell if you use this \(3 sessions in 30 days\)/,
       );

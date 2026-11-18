@@ -248,7 +248,7 @@ export const en: Messages = {
     limitShare: (share) => `~${share}% of the 5-hour limit`,
     review: "Review the change",
     previewing: "Previewing…",
-    unchanged: "It already has that value, so there's nothing to change.",
+    unchanged: "It already has that value, so there’s nothing to change.",
     switchTitle: (name, enabled) => `${enabled ? "Turn on" : "Turn off"} ${name}`,
     switchNote: "Only the line below changes. A backup is made next to the original first.",
     confirm: (enabled) => `Confirm and turn ${enabled ? "on" : "off"}`,
@@ -265,7 +265,7 @@ export const en: Messages = {
     showEffect: "See effect",
     noneOn: "No plugins or MCP servers are turned on, so there is nothing to turn off.",
     noSwitches:
-      "Nothing to turn off right now. Instruction and rule files are your own writing, so kcal doesn't edit them.",
+      "Nothing to turn off right now. Instruction and rule files are your own writing, so kcal doesn’t edit them.",
     appliedName: (name, enabled) => `${name}: ${enabled ? "on" : "off"}`,
     scopeAll: "Scope: all projects",
     scopeProjects: (names) => `Scope: ${names} only`,
@@ -273,10 +273,10 @@ export const en: Messages = {
       `Not used in ${n(sessions, "Claude session")} in the last ${n(days, "day")}`,
     fewSessions: (days, sessions) =>
       sessions === 0
-        ? `No Claude sessions found in the last ${n(days, "day")}, so kcal can't tell if you use this`
+        ? `No Claude sessions found in the last ${n(days, "day")}, so kcal can’t tell if you use this`
         : `Not enough Claude history to tell if you use this (${n(sessions, "session")} in ${n(days, "day")})`,
     noUsageLog: (agent) =>
-      `kcal can't see how often you use this in ${agent}, so it doesn't suggest turning it off`,
+      `kcal can’t see how often you use this in ${agent}, so it doesn’t suggest turning it off`,
     used: (days, sessions, total, last) =>
       `${n(total, "use")} in ${n(sessions, "Claude session")} over ${n(days, "day")}` +
       (last ? ` · last used ${dayText.format(last.at * 1000)} in ${last.project}` : ""),
@@ -287,7 +287,7 @@ export const en: Messages = {
       suggested: "Suggested",
       inUse: "In use",
       fewUses: "Too few uses",
-      unknown: "Can't tell",
+      unknown: "Can’t tell",
       off: "Off",
     },
     legendClaude: " Suggested = no use in your Claude logs, or used in only some projects.",
@@ -339,7 +339,7 @@ export const en: Messages = {
     copy: "Copy",
     details: "Details",
     file: (file) => `File: ${file}`,
-    changesIf: (label) => `What "${label}" changes`,
+    changesIf: (label) => `What “${label}” changes`,
     personal: (path) => `My skill: ${path}`,
     plugin: (id, path) => `Plugin ${id}: ${path}`,
     ruleChars: (name, chars) => `${name} · ${chars} chars`,
@@ -348,9 +348,9 @@ export const en: Messages = {
     requests: "Requests",
     current: "Current",
     verdict: "Verdict",
-    unknownModels: (list) => `Models kcal couldn't judge: ${list}`,
+    unknownModels: (list) => `Models kcal couldn’t judge: ${list}`,
     diff: "Changed lines",
-    note: "Only what's below changes. A backup is made next to the original first.",
+    note: "Only what’s below changes. A backup is made next to the original first.",
     confirm: "Confirm and change",
     done: (name, isUndo) => (isUndo ? `Undid: ${name}` : `Done: ${name}`),
     optimize: "Optimize",
@@ -365,7 +365,7 @@ export const en: Messages = {
       `${count} left · fixing ${known} of them saves ${tokens} tokens per session`,
     allFixed: "Nothing left to fix",
     legend:
-      'Fixed / total = what you fixed here and haven\'t undone / that plus the cards left. ~tokens = what loads less every session (estimated). "Uses limit" = a card that asks Claude and uses your limit.',
+      "Fixed / total = what you fixed here and haven’t undone / that plus the cards left. ~tokens = what loads less every session (estimated). “Uses limit” = a card that asks Claude and uses your limit.",
     fixed: "Fixed",
     rowFix: "Fix",
     rowAsk: "Ask Claude",
@@ -401,7 +401,7 @@ export const en: Messages = {
       defaultEffort: (label, value, fallback) =>
         `${label} ignores this value (${value}) and runs at its default ${fallback}.`,
       moved: (names, value) =>
-        ` For ${names}, it's copied to that model's own setting so it keeps running at ${value}.`,
+        ` For ${names}, it’s copied to that model’s own setting so it keeps running at ${value}.`,
       more: "Thinking deeper uses more of your limit.",
       less: "Thinking less uses less of your limit.",
       what: (moved) => `Deletes the old line that has no effect.${moved}`,
@@ -422,7 +422,7 @@ export const en: Messages = {
       budgetShort: "Thinking-token limit has no effect",
       budgetTitle: "The thinking-token limit has no effect on the current model",
       budgetIgnored: (ignored) => `${ignored} decides how much to think and ignores this number.`,
-      offIgnored: (ignored) => `${ignored} can't turn thinking off, so it ignores this setting.`,
+      offIgnored: (ignored) => `${ignored} can’t turn thinking off, so it ignores this setting.`,
       what: "Deletes the line that has no effect.",
       remove: "Delete the setting",
       keep: (affected) => `It still has an effect on ${affected}.`,
@@ -432,16 +432,16 @@ export const en: Messages = {
       status:
         "The git status summary added at session start (branch, changed files, recent commits)",
       trailer:
-        "The commit sign-off line (Co-Authored-By). Your rules don't spell it out, so turning this off drops it.",
+        "The commit sign-off line (Co-Authored-By). Your rules don’t spell it out, so turning this off drops it.",
       preCommit: (skills) => `The note to run the ${skills} skill before committing`,
       keepTrailer: "Turning it off drops the commit sign-off.",
       keepPreCommit: "Turning it off drops the pre-commit check note.",
       title: "Two sets of commit instructions can confuse Claude",
       short: "Two sets of commit instructions",
       headline: (files) =>
-        `Your rules (${files}) and Claude Code's built-in instructions both load.`,
+        `Your rules (${files}) and Claude Code’s built-in instructions both load.`,
       note: "When they disagree, Claude may follow either one (official docs).",
-      what: "Turns off Claude Code's built-in commit and PR instructions.",
+      what: "Turns off Claude Code’s built-in commit and PR instructions.",
       mine: (count) =>
         `Your rules stay as they are. Only ${n(count, "thing")} from Claude Code ${count === 1 ? "goes" : "go"} away.`,
       better: "Commits and PRs follow your rules only.",
@@ -450,8 +450,8 @@ export const en: Messages = {
     hook: {
       user: `kcal removes just that hook from the settings. ${WHO_BACKUP}`,
       project:
-        "This hook is in the project settings your team shares, so kcal won't edit it. Delete the line below yourself.",
-      local: "This hook is in a settings file kcal doesn't edit. Delete the line below yourself.",
+        "This hook is in the project settings your team shares, so kcal won’t edit it. Delete the line below yourself.",
+      local: "This hook is in a settings file kcal doesn’t edit. Delete the line below yourself.",
       title: "The same instructions load twice",
       short: "Same instructions load twice",
       headline: (tokens) => `AGENTS.md (${tokens} tokens) loads twice every session.`,
@@ -467,14 +467,14 @@ export const en: Messages = {
       headline: (name, plugin) =>
         `The \`${name}\` skill is in your skills folder and in the \`${plugin}\` plugin, so its description loads twice every time.`,
       what: (name) =>
-        `Hides your folder's copy from Claude's list only. You can still type /${name}.`,
+        `Hides your folder’s copy from Claude’s list only. You can still type /${name}.`,
       same: "Nothing. Both skills have the same content.",
-      different: "The two skills differ. Once hidden, Claude only sees the plugin's copy.",
+      different: "The two skills differ. Once hidden, Claude only sees the plugin’s copy.",
       who: "kcal changes one setting value. The skill files stay as they are.",
-      action: "Hide my folder's copy",
+      action: "Hide my folder’s copy",
       keep: "The two skills have different content.",
     },
-    handoffNote: "Uses your limit (runs only if there's limit left)",
+    handoffNote: "Uses your limit (runs only if there’s limit left)",
     handoffLabel: "Ask Claude to shorten it",
     long: {
       user: "Global",
@@ -501,32 +501,32 @@ export const en: Messages = {
       title: (count) => `${ns(count, "rule")} that always load`,
       note: "Rules only needed for certain files or tasks still add to every session when they always load (official docs).",
       what: "Asks Claude where each rule belongs: load only for certain files, move to a skill loaded on demand, or keep. You see the suggestions first.",
-      mine: "Only the rule files you pick change. Rule text isn't touched; kcal adds front matter at the top or moves the file into a skill folder.",
+      mine: "Only the rule files you pick change. Rule text isn’t touched; kcal adds front matter at the top or moves the file into a skill folder.",
       who: "Claude (Opus 5.5) suggests a change per rule; if you pick one, kcal keeps a backup and applies it. You can undo it here.",
       better: "Less loads every session, which saves your limit.",
     },
     problem: {
-      missing: "Claude didn't answer for this rule",
+      missing: "Claude didn’t answer for this rule",
       duplicate: "There are two answers for the same rule",
-      choice: "The chosen option isn't recognized",
-      skillName: "The skill name isn't lowercase letters, digits, or - within 64 characters",
-      description: "The skill description isn't one line or is too long",
+      choice: "The chosen option isn’t recognized",
+      skillName: "The skill name isn’t lowercase letters, digits, or - within 64 characters",
+      description: "The skill description isn’t one line or is too long",
       pathsCount: "The file list is empty or has more than 20 entries",
       pathText: "A file list value has the wrong shape",
       pathAbsolute: "The file list starts with / or ~",
     },
     rule: {
       referenced: (count) =>
-        `${count === "1" ? "1 other rule links" : `${count} other rules link`} to this file. Those links aren't updated.`,
+        `${count === "1" ? "1 other rule links" : `${count} other rules link`} to this file. Those links aren’t updated.`,
       tooLong: (limit) =>
-        `The body is over ${limit} characters, so loading it only when needed would cut the end. kcal won't change it.`,
+        `The body is over ${limit} characters, so loading it only when needed would cut the end. kcal won’t change it.`,
       hasFrontMatter: "It already has front matter, so the line goes inside it.",
-      frontMatterSkill: "Rules with front matter aren't moved yet.",
-      skillExists: "A skill with the same name already exists, so it isn't moved.",
+      frontMatterSkill: "Rules with front matter aren’t moved yet.",
+      skillExists: "A skill with the same name already exists, so it isn’t moved.",
       title: (name, chars) => `\`${name}\` · ${chars} chars`,
       paths: (paths) => `Load only for these files: ${paths}`,
       pathsLoses:
-        "The rule doesn't load until one of those files is opened. It drops out when the conversation is compacted and comes back when the file is opened again.",
+        "The rule doesn’t load until one of those files is opened. It drops out when the conversation is compacted and comes back when the file is opened again.",
       skill: (name, description) => `Move to the \`${name}\` skill: ${description}`,
       skillLoses: (name) =>
         `It loads only when Claude finds it relevant or you call /${name}. Only a one-line description always loads.`,
@@ -534,7 +534,7 @@ export const en: Messages = {
       unusable: (problem) => `${UNUSABLE} (${problem})`,
     },
     rulesPreview: {
-      title: "Claude's suggestion for each rule",
+      title: "Claude’s suggestion for each rule",
       apply: "Apply this",
       done: "Done. To undo, press Undo on the fixed line at the top of Optimize.",
       note: "Only the rules you pick change. A backup is made next to the original first.",
@@ -544,7 +544,7 @@ export const en: Messages = {
     unknownKeys: (count) => `${UNUSABLE} (it answered for ${ns(count, "unknown rule")})`,
     rulesRunning: (minutes) =>
       `Claude is reading the rules. This can take up to ${n(minutes, "minute")}.`,
-    gateUnknown: "Your limit isn't known yet.",
+    gateUnknown: "Your limit isn’t known yet.",
     gateLow: (min) => `Less than ${min}% of your limit is left.`,
     remainingUnknown: "Limit left now: unknown",
     remaining: (percent) => `Limit left now: ${percent}%`,
@@ -552,28 +552,28 @@ export const en: Messages = {
       `Claude is rewriting it. This can take up to ${n(minutes, "minute")}.`,
     handoffError: {
       busy: "Waiting for the earlier request to Claude to finish.",
-      limitUnknown: `Your limit isn't known yet.${UNCHANGED}`,
+      limitUnknown: `Your limit isn’t known yet.${UNCHANGED}`,
       limitTooLow: (min, now) =>
         `Less than ${min}% of your limit is left (now ${now}%).${UNCHANGED}`,
-      cliMissing: `Claude Code wasn't found on this computer.${UNCHANGED}`,
-      opusUnavailable: `This account can't use Opus 5.5, so Claude can't be asked.${UNCHANGED}`,
-      timeout: (minutes) => `Claude didn't finish within ${n(minutes, "minute")}.${UNCHANGED}`,
-      failed: (reason) => `Couldn't ask Claude (${reason}).${UNCHANGED}`,
+      cliMissing: `Claude Code wasn’t found on this computer.${UNCHANGED}`,
+      opusUnavailable: `This account can’t use Opus 5.5, so Claude can’t be asked.${UNCHANGED}`,
+      timeout: (minutes) => `Claude didn’t finish within ${n(minutes, "minute")}.${UNCHANGED}`,
+      failed: (reason) => `Couldn’t ask Claude (${reason}).${UNCHANGED}`,
       internal: "Something went wrong inside kcal.",
     },
     handoffPreview: {
-      title: "Claude's rewrite",
+      title: "Claude’s rewrite",
       removedTitle: "What Claude merged or removed",
       missingTitle: "Missing imports",
       missingNote:
         "The rewrite drops these import lines. If you apply it, those files no longer load with it.",
       cannotApply:
-        "The rewrite is empty, longer than the original, or the same, so kcal won't apply it.",
+        "The rewrite is empty, longer than the original, or the same, so kcal won’t apply it.",
       note: "Nothing changes until you confirm. A backup is made next to the original first.",
       confirm: "Confirm and change",
     },
     lines: (before, after) => `${before} lines → ${after} lines`,
-    thinkingOnForced: "Thinking on (can't turn off)",
+    thinkingOnForced: "Thinking on (can’t turn off)",
     thinkingOff: "Thinking off",
     ignored: "Ignored",
     applies: "Applies",
@@ -583,7 +583,7 @@ export const en: Messages = {
       "Hides this card. Your settings stay the same, and kcal tells you again if things change.",
     empty: "Nothing to fix right now.",
     notChecked: (name) =>
-      `Nothing was checked: kcal didn't find ${name} on this computer. Run claude once and sign in, then press Refresh. Not installed yet? https://code.claude.com/docs/en/setup`,
+      `Nothing was checked: kcal didn’t find ${name} on this computer. Run claude once and sign in, then press Refresh. Not installed yet? https://code.claude.com/docs/en/setup`,
     restore: "Show again",
     noChecks: (label) =>
       `No optimization checks for ${label} yet. Only Claude Code is checked so far.`,
