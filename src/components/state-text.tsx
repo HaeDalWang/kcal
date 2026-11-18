@@ -6,12 +6,13 @@ import type { ReactNode } from "react";
 import { t } from "@/lib/i18n";
 import type { AgentUsage } from "@/lib/ipc";
 
+// 오류·할 일 문구는 명령·주소를 복사할 수 있게 고를 수 있다(앱 루트는 select-none).
 const CLASS = {
   loading: "text-[11px] text-muted-foreground",
   empty: "text-[11px] text-pretty text-muted-foreground",
-  error: "text-[11px] text-destructive",
+  error: "text-[11px] text-destructive select-text",
   // 할 일이 남은 상태(설치·로그인·허용). 고장이 아니므로 붉게 쓰지 않고 알림 역할도 주지 않는다.
-  setup: "flex items-start gap-1 text-[11px] text-muted-foreground",
+  setup: "flex items-start gap-1 text-[11px] text-muted-foreground select-text",
 } as const;
 
 /** 사용량 이유를 어떤 모양으로 보일지. 종류를 모르면 오류로 둔다(숨기는 쪽보다 낫다). */

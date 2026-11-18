@@ -85,7 +85,13 @@ function EmptyGuide({
     const m = metrics?.agents.find((a) => a.agent === agent);
     return !!m && (m.bars.length > 0 || m.hourly.some((h) => h.requests > 0));
   });
-  if (isChecking || hasRecords) return null;
+  // 모든 에이전트가 읽지 못한 상태면 `UnreadableNotices`가 이미 할 일을 말한다(같은 안내를 두 번 띄우지 않는다).
+  const isAllUnreadable =
+    settings.enabledAgents.length > 0 &&
+    settings.enabledAgents.every((agent) =>
+      isUnreadable(snapshot.agents.find((a) => a.agent === agent)),
+    );
+  if (isChecking || hasRecords || isAllUnreadable) return null;
   return (
     <section className={`${CARD} flex items-center justify-between gap-3 p-3`}>
       <p className="px-1 text-sm text-muted-foreground">{t.dashboard.emptyGuide}</p>

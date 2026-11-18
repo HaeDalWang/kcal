@@ -126,6 +126,27 @@ describe("Dashboard", () => {
     await screen.findByText(/한 번 쓰고 새로고침하면/);
   });
 
+  it("does not repeat the empty-run guide when every agent already shows what to do", async () => {
+    const unreadable = {
+      agents: (usage as { agents: object[] }).agents.map((a) => ({
+        ...a,
+        windows: [],
+        reason: "로그인하세요.",
+        reasonKind: "setup",
+        checkedAt: "2026-11-04T12:00:00Z",
+      })),
+    };
+    mockIPC(
+      (cmd) =>
+        cmd === "get_metrics" ? null : cmd === "get_usage" ? unreadable : (FIXTURE[cmd] ?? null),
+      { shouldMockEvents: true },
+    );
+    render(<Dashboard />);
+    await screen.findByText("Claude: 로그인하세요.");
+    await waitFor(() => expect(metricsStore.getSnapshot().value).not.toBeUndefined());
+    expect(screen.queryByText(/한 번 쓰고 새로고침하면/)).toBeNull();
+  });
+
   it("does not guide while usage rows are still pending (checkedAt null)", async () => {
     const pending = {
       agents: (usage as { agents: object[] }).agents.map((a) => ({
