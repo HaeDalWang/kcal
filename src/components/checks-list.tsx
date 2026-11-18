@@ -1,7 +1,7 @@
 // 최적화 목록(시안 J, 2026-11-14): 맨 위 "고친 수 / 전체" + 얇은 진행 막대 + 회색 한 줄. 아래는 고친 줄(체크·취소선·되돌리기)
 // 다음에 남은 카드 한 줄씩. 누른 줄 하나만 진단하기(E)와 같은 테두리 카드로 펼쳐 설명·근거 칩·바뀌는 줄·버튼을 보인다.
 // 펼친 카드의 주 버튼만 강조 버튼이다(design.md 6절 3). 무엇을 하나·파일 경로·명령·문서는 접힌 "파일 위치와 출처" 안.
-import { Check } from "lucide-react";
+import { Check, ChevronRight } from "lucide-react";
 import { useId, useState } from "react";
 
 import { AGENT_COLOR } from "@/components/agent-metrics";
@@ -476,6 +476,10 @@ export function CheckRow({
           onClick={onToggle}
           className="flex min-h-6 min-w-0 flex-1 cursor-pointer items-center gap-1.5 text-left after:absolute after:inset-0 after:rounded-md after:content-[''] focus-visible:outline-none focus-visible:after:ring-3 focus-visible:after:ring-ring active:translate-y-px"
         >
+          <ChevronRight
+            aria-hidden
+            className={`size-[12px] shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none ${isOpen ? "rotate-90" : ""}`}
+          />
           <CheckMark agent={check.agent} isOn={false} />
           <span className="truncate font-medium" title={copy.title}>
             {copy.shortTitle}
@@ -501,7 +505,7 @@ export function CheckRow({
         )}
       </div>
       {isOpen && (
-        <div id={detailsId} className="flex flex-col gap-1.5 pl-5">
+        <div id={detailsId} className="flex flex-col gap-1.5 pl-[38px]">
           <p className="text-xs">
             <Inline text={copy.headline} />
           </p>
@@ -554,7 +558,7 @@ export function FixedRow({
 }) {
   const name = appliedName(entry);
   return (
-    <div className="mx-5 flex min-h-6 items-center gap-2 text-xs text-muted-foreground">
+    <div className="mx-5 flex min-h-6 items-center gap-2 pl-[18px] text-xs text-muted-foreground">
       <CheckMark agent={entry.agent} isOn />
       <s
         className="min-w-0 flex-1 truncate decoration-muted-foreground"
