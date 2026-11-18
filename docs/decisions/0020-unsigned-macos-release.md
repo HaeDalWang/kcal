@@ -1,5 +1,13 @@
 # 0020. 서명 없는 macOS 릴리스와 한 줄 설치
 
+## Summary (English)
+
+- Decision: kcal ships for macOS without Developer ID signing or notarization. The app is only ad-hoc signed (`signingIdentity = "-"`). The main install path is `curl ... install.sh | sh`; a dmg is also published.
+- Why: there is no Apple Developer account, and Gatekeeper blocks unsigned apps downloaded in a browser. Files downloaded with `curl` got no quarantine flag on the author's Mac, so the script install opens without a prompt (observed once; not yet confirmed on a fresh Mac).
+- Release: a GitHub Actions workflow builds a universal app on a `v*` tag or manual run and uploads a draft release with tar.gz, dmg and SHA-256 files. File names have no version, so `install.sh` can use `releases/latest`.
+- Risks: macOS may change the quarantine behavior. SHA-256 only checks integrity, not who made the file. `curl | sh` runs the script from `main`, so write access to `main` is install access.
+- Later: with an Apple Developer account, switch to Developer ID signing and notarization. Windows, auto-update and a first real release run are not done yet.
+
 - 상태: 결정(구현함). 릴리스 게시는 사람이 한다.
 - 날짜: 2026-11-11
 - 앞선 결정: [0001](0001-initial-stack.md) 스택, CI 규칙(`.github/workflows/ci.yml`의 SHA 고정)

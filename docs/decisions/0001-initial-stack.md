@@ -1,5 +1,13 @@
 # 0001. 초기 스택, Skills, MCP 선정
 
+## Summary (English)
+
+- Decision: the initial stack is Tauri 2, React 19, Vite 8, Tailwind CSS 4, shadcn, TypeScript 6, ESLint 10, Vitest 5, Rust stable and pnpm, with the versions listed below (checked on 2026-10-28).
+- TypeScript stays on 6.x because typescript-eslint does not yet accept 7.
+- Seven agent skills cover the required areas; UI testing is split between `tauri-testing` and the MCP server.
+- MCP: `hypothesi/mcp-server-tauri` was chosen (MIT, active, screenshots, DOM, IPC, logs). `P3GLEG/tauri-plugin-mcp` has no license and `dirvine/tauri-mcp` has not been updated for over a year.
+- Safety: the bridge is bound to `127.0.0.1`, built only with the `mcp` feature in debug builds, its config lives in an overlay file, and the server package version is pinned.
+
 - 상태: 채택
 - 날짜: 2026-10-28
 
