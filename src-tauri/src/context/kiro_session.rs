@@ -113,7 +113,9 @@ pub fn latest(
         .find_map(|file| {
             let folders = workspace_paths(file.parent()?);
             if let Some(workspace) = workspace
-                && !folders.iter().any(|f| Path::new(f).starts_with(workspace))
+                && !folders
+                    .iter()
+                    .any(|f| fsutil::is_inside(Path::new(f), workspace))
             {
                 return None;
             }

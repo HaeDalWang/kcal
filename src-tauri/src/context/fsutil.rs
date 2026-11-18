@@ -268,6 +268,20 @@ pub fn plugin_cache_directory(agent_root: &Path, plugin_id: &str) -> Option<Path
     versions.last().map(|v| root.join(v))
 }
 
+/// 세션 `cwd`가 작업 폴더 안인가. Windows 경로는 대소문자를 가리지 않아(`c:\\`와 `C:\\`) 소문자로 맞춰 비교한다.
+pub fn is_inside(path: &Path, root: &Path) -> bool {
+    if cfg!(windows) {
+        starts_with_ignoring_case(path, root)
+    } else {
+        path.starts_with(root)
+    }
+}
+
+fn starts_with_ignoring_case(path: &Path, root: &Path) -> bool {
+    let lower = |p: &Path| PathBuf::from(p.to_string_lossy().to_lowercase());
+    lower(path).starts_with(lower(root))
+}
+
 #[cfg(test)]
 pub mod testing {
     use std::path::{Path, PathBuf};
@@ -305,6 +319,18 @@ pub mod testing {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn starts_with_ignoring_case_matches_folders_that_differ_only_in_case() {
+        assert!(super::starts_with_ignoring_case(
+            Path::new("/Work/App/src"),
+            Path::new("/work/app")
+        ));
+        assert!(!super::starts_with_ignoring_case(
+            Path::new("/work/apple"),
+            Path::new("/work/app")
+        ));
+    }
+
     use super::*;
 
     #[test]

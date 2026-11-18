@@ -98,7 +98,7 @@ fn read_session(file: &Path, workspace: Option<&Path>) -> Option<CodexSession> {
             if let Some(workspace) = workspace
                 && !cwd
                     .as_deref()
-                    .is_some_and(|c| Path::new(c).starts_with(workspace))
+                    .is_some_and(|c| fsutil::is_inside(Path::new(c), workspace))
             {
                 return None;
             }
