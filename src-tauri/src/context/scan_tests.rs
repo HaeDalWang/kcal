@@ -465,3 +465,19 @@ fn global_session_note_names_session_folder_on_any_os() {
     assert!(global_session_note("Claude", Some(r"C:\Users\me\app")).contains("작업 폴더 app)"));
     assert!(global_session_note("Claude", None).contains("작업 폴더 알 수 없음)"));
 }
+
+#[test]
+fn codex_plugins_without_enabled_follow_the_default_section() {
+    let config = r#"
+[plugins._default]
+enabled = true
+[plugins."a@m"]
+[plugins."b@m"]
+enabled = false
+"#;
+    assert_eq!(codex_enabled_plugins(config), ["a@m"]);
+    assert_eq!(
+        codex_enabled_plugins("[plugins.\"a@m\"]\n"),
+        Vec::<String>::new()
+    );
+}

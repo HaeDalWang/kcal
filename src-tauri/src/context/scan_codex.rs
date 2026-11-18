@@ -23,31 +23,51 @@ pub(crate) struct TomlSwitchState {
     pub enabled: bool,
 }
 
-/// `[plugins."<id>"]` 전부와 켜짐 여부. `enabled = true`가 없으면 꺼짐.
+/// `[plugins."<id>"]` 전부와 켜짐 여부. `enabled`가 없으면 `[plugins._default]`의 `enabled`를 따르고(0017 E),
+/// 그것도 없으면 꺼짐으로 본다. 설정 파일에 section이 없는 설치된 플러그인은 여기서 알 수 없다.
 pub(crate) fn codex_plugin_states(config: &str) -> Vec<TomlSwitchState> {
     static PLUGIN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"^plugins\."(.+)"$"#).unwrap());
+    static DEFAULT: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r#"^plugins\.(?:_default|"_default")$"#).unwrap());
     static ENABLED: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"^\s*enabled\s*=\s*true(?:\s*(?:#.*)?)?$").unwrap());
-    let mut states: Vec<TomlSwitchState> = Vec::new();
-    let mut current: Option<usize> = None;
+        LazyLock::new(|| Regex::new(r"^\s*enabled\s*=\s*(true|false)(?:\s*(?:#.*)?)?$").unwrap());
+    let mut states: Vec<(TomlSwitchState, Option<bool>)> = Vec::new();
+    let mut default = false;
+    // 지금 section: 플러그인이면 Some(번호), `_default`면 None.
+    let mut current: Option<Option<usize>> = None;
     let headers = section_headers(config);
     for (line, header) in config.split('\n').zip(&headers) {
         if let Some(section) = header {
-            current = PLUGIN.captures(section).map(|c| {
-                states.push(TomlSwitchState {
-                    name: c[1].to_owned(),
-                    section: section.to_owned(),
-                    enabled: false,
-                });
-                states.len() - 1
-            });
-        } else if let Some(i) = current
-            && ENABLED.is_match(line)
+            current = if DEFAULT.is_match(section) {
+                Some(None)
+            } else {
+                PLUGIN.captures(section).map(|c| {
+                    let state = TomlSwitchState {
+                        name: c[1].to_owned(),
+                        section: section.to_owned(),
+                        enabled: false,
+                    };
+                    states.push((state, None));
+                    Some(states.len() - 1)
+                })
+            };
+        } else if let Some(target) = current
+            && let Some(c) = ENABLED.captures(line)
         {
-            states[i].enabled = true;
+            let value = &c[1] == "true";
+            match target {
+                Some(i) => states[i].1 = Some(value),
+                None => default = value,
+            }
         }
     }
     states
+        .into_iter()
+        .map(|(state, explicit)| TomlSwitchState {
+            enabled: explicit.unwrap_or(default),
+            ..state
+        })
+        .collect()
 }
 
 pub(super) fn codex_enabled_plugins(config: &str) -> Vec<String> {
@@ -102,7 +122,7 @@ fn codex_skill_places(home: &Path, workspace: Option<&Path>) -> Vec<(&'static st
     let root = paths::codex_root(home);
     let repo = workspace
         .map(|w| {
-            instructions::codex_project_directories(w)
+            instructions::codex_project_directories(home, w)
                 .into_iter()
                 .rev()
                 .map(|d| d.join(".agents").join("skills"))

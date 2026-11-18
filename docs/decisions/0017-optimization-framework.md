@@ -210,9 +210,9 @@ kcal의 몫은 점검 결과를 해석해 주는 것이다. 설정을 모르는 
 - "Codex MCP는 항상 `deferred`"(0005 "로딩 시점 판정"): 문서에는 도구 검색이 기본인지 설명이 없고(행 A·MCP), 서버별 `omit_tools_from`이 direct·deferred·code_mode 면에서 도구를 뺀다. 문서만으로 "항상 deferred"를 뒷받침할 수 없고 서버마다 다를 수 있다.
 - 스킬 위치: 0005는 위치를 적지 않고 코드(`context/scan.rs`)는 `~/.codex/skills`와 `~/.codex/.agents/skills`를 읽는다. 문서의 위치는 저장소 `.agents/skills`(작업 폴더에서 저장소 루트까지), `$HOME/.agents/skills`, `/etc/codex/skills`, 번들 스킬이라 `~/.codex/skills`는 문서에 없고 나머지는 코드가 보지 않는다(행 A·스킬 위치). → 2026-11-07 고침: 저장소 `.agents/skills`(작업 폴더~git 루트)·`$HOME/.agents/skills`를 세고, `~/.codex/skills`는 실측으로 실려서 계속 센다. `/etc/codex/skills`만 안 센다(0005 "skill 위치").
 - 스킬 목록 크기: 0005는 front matter 바이트 ÷ 4 추정이다. 문서는 초기 목록에 이름·설명·경로가 들어가고 설명 예산이 창의 2%(모르면 8,000자)이며, 넘으면 설명을 줄이거나 일부를 목록에서 뺀다. 스킬이 많은 사용자는 추정이 실제보다 클 수 있다.
-- 프로젝트 루트: 코드는 `.git`이 있는 폴더를 루트로 삼는다. 문서의 기본도 같지만 `project_root_markers`로 바꿀 수 있고 코드는 이 키를 읽지 않는다.
+- 프로젝트 루트: 코드는 `.git`이 있는 폴더를 루트로 삼는다. 문서의 기본도 같지만 `project_root_markers`로 바꿀 수 있고 코드는 이 키를 읽지 않는다. → 2026-11-18 고침: 최상위 `project_root_markers` 한 줄 배열을 읽고, `[]`이면 작업 폴더만 본다(`config-file/config-advanced`).
 - 확인할 수 없는 것: rules가 프롬프트에 안 들어간다는 0005의 판단(문서는 rules가 샌드박스 밖 명령을 통제한다고만 하고 컨텍스트 여부는 없다), `base_instructions`·`token_count`·`.jsonl.zst`와 날짜 폴더 구조(문서에 세션 파일 구조가 없다).
-- 0005 밖(0014 코드): 플러그인은 `plugins."id"` 섹션의 `enabled = true`만 켜짐으로 읽는다. 문서에는 설치된 플러그인의 기본 상태를 정하는 `plugins._default.enabled`가 있다.
+- 0005 밖(0014 코드): 플러그인은 `plugins."id"` 섹션의 `enabled = true`만 켜짐으로 읽는다. 문서에는 설치된 플러그인의 기본 상태를 정하는 `plugins._default.enabled`가 있다. → 2026-11-18 고침: section에 `enabled`가 없으면 `plugins._default.enabled`를 따른다(둘 다 없으면 꺼짐, 기본값의 기본은 문서에 없음).
 
 ### Kiro
 

@@ -40,7 +40,7 @@
 - [ ] CLAUDE.md 줄이기(0018 작업 A): Opus 없는 플랜의 오류 모양은 모름. Windows 실행 미확인.
 - [ ] `paths` 없는 rules 옮기기(0018 작업 B): 실제 Claude 실행은 해 보지 않았다(제안 품질 모름). 실제 실행 테스트는 한도 문을 거치지 않으니 남은 한도를 먼저 보고 돌린다: `cd src-tauri && cargo test --lib real_claude_proposes_where_rules_belong -- --ignored --nocapture`. 약점: 스킬로 옮기기 되돌리기 중 SKILL.md 지우기만 실패하면 기록 줄 없이 두 파일이 남고(뒤 되돌리기는 거절하고 수동 명령을 안내), 규칙이 심볼릭 링크면 링크가 끊긴다.
 - [ ] 첫 점검의 한계: hook 점검은 최근 세션 폴더만 본다.
-- [ ] Codex·Kiro 사실표(0017)와 코드의 차이 중 고치지 않은 것: Codex `project_root_markers`·`plugins._default.enabled`, Kiro 세션 기록 위치. Codex·Kiro의 다음 점검 후보 3개는 구현하지 않았다.
+- [ ] Codex·Kiro 사실표(0017)와 코드의 차이 중 고치지 않은 것: Kiro 세션 기록 위치. Codex `project_root_markers`(한 줄 배열만)·`plugins._default.enabled`는 2026-11-18에 읽게 고쳤다. config에 section이 없는 설치된 Codex 플러그인은 아직 모른다(설치 목록 출처를 찾아야 함). Codex·Kiro의 다음 점검 후보 3개는 구현하지 않았다.
 - [ ] Codex·Kiro 끄기 제안 정책: 두 에이전트는 사용 기록을 읽는 출처가 없어(근거 없음) 플러그인·MCP 끄기를 제안하지 않고, 사용자가 직접 끌 수만 있다. Claude는 최근 30일 기록(세션 10개 이상)에서 한 번도 안 쓴 것만 제안한다. 같은 기준을 Codex·Kiro에 쓰려면 사용 기록 출처를 먼저 찾아야 한다(결정 0017·0022).
 - [ ] Codex 플러그인은 매니페스트(플러그인 폴더의 설정 파일)에 적힌 스킬·명령 경로를 읽지 않는다(Claude는 공식 규칙대로 읽음). 막힌 곳(2026-11-17): Codex 플러그인 매니페스트 공식 규칙은 모름, 이 Mac의 `~/.codex/plugins`에는 `codex-package.json`·`.mcp.json`·`package.json`만 보인다. 공식 문서를 찾은 뒤에 한다. 최적화 칸의 "고친 것" 줄 문구는 적용한 때의 언어로 남는다.
 
@@ -75,6 +75,7 @@
   - 틀(0017): "끄기"가 아니라 **잃는 것 없는 옮기기**다. "이걸 왜 꺼? 나 쓰는 건데"에 대한 답이 된다. 진단하기의 끄기 제안 옆에 "카탈로그로 보내기"를 둘 수 있다.
   - 새로 만들지 않을 것(추정): Claude 플러그인은 로컬 마켓플레이스(`claude plugin marketplace add <폴더>`)가 카탈로그 역할을 하고, 꺼내기·치우기는 `claude plugin install|uninstall --scope project|local`. kcal은 ① 카탈로그 목록 보기 ② 보내기·꺼내기를 대신 적기(0014 적용·되돌리기) ③ 꺼낸 뒤 N일 안 쓰면 "치울까요" 알려주기(조절 값, 0007)만 한다.
   - 확인할 것: (추정) 설치 안 한 마켓플레이스 플러그인은 시작 컨텍스트 0 — 로컬 마켓플레이스 추가 후 새 세션 `/context`로 확인. (모름) 에이전트가 카탈로그 존재를 어떻게 아나 — 전역 한 줄 안내(규칙·스킬 설명) 비용 vs 사용자가 매번 "카탈로그" 언급. (모름) 플러그인이 아닌 낱개 스킬 폴더, Codex·Kiro의 같은 방식.
+  - 영감: [xingkongliang/skills-manager](https://github.com/xingkongliang/skills-manager)(사용자가 알려 줌, 2026-11-18). 시작 전에 이 저장소가 무엇을 하고 kcal과 어디서 겹치는지 먼저 읽는다.
   - 겹치는 것: 아래 "프로젝트 단위로 켜기"(계속 켜 둠)와 짝. 카탈로그는 "잠깐 켰다 치움"이다. 시작 전 한 결정 기록으로 묶을지 정한다.
 - [ ] Claude Code `/insights` 심층 분석 → kcal "사용자 패턴 평가" 기능 검토. `/doctor`(설치·설정 점검)와 다른 기능이다. `/insights`는 최근 세션 로그로 사용 방식·마찰·CLAUDE.md 개선안을 HTML 리포트로 낸다.
   - 할 일: `/insights`를 돌려 리포트 항목을 정리하고, kcal이 하려는 사람 쪽 진단(무검토 승인, 확증편향·유도형 질문, 근거 요구 빈도)과 겹치는 것·빠진 것을 표로 비교한다.
@@ -134,7 +135,7 @@
 Windows에서 확인할 것:
 
 - [x] `canonicalize`의 `\\?\` 경로(2026-11-18, 확인됨·코드 읽기): `canonicalize` 결과는 모두 다른 `canonicalize` 결과와만 비교한다(`coach/contents.rs` 플러그인·마켓 폴더, `context/scan.rs` 중복 제거, `fsutil::walk_files`). 사용자 경로·세션 `cwd`와 섞지 않는다.
-- [ ] 경로 대소문자(추정): 세션 `cwd`와 작업 폴더를 `Path::starts_with`로 비교한다(`context/codex_session.rs`, `context/kiro_session.rs`). Claude 프로젝트 폴더 이름도 입력 경로 글자 그대로 만든다(`context/shape.rs` `claude_project_dir`). Windows에서 `c:\`와 `C:\`처럼 대소문자만 다르면 같은 폴더를 못 찾을 수 있다. 확인 = Windows에서 작업 폴더를 소문자 드라이브로 넣고 시작 컨텍스트·세션 수가 나오는지 본다.
+- [ ] 경로 대소문자: 세션 `cwd`와 작업 폴더 비교는 Windows에서 대소문자를 가리지 않게 고쳤다(`fsutil::is_inside`, 2026-11-18, macOS 단위 테스트만). Claude 프로젝트 폴더 이름은 입력 경로 글자 그대로 만들지만 NTFS가 대소문자를 가리지 않아 찾을 수 있다(추정). 확인 = Windows에서 작업 폴더를 소문자 드라이브로 넣고 시작 컨텍스트·세션 수가 나오는지 본다.
 - [ ] 32px 메뉴바 막대 화면 확인.
 - [ ] 배율이 다른 다중 모니터에서 팝오버 위치.
 - [ ] 코칭 경로·권한, 6층 검진.

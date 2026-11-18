@@ -201,12 +201,13 @@ fn add_with_imports(found: &mut Collector, file: &Path, home: &Path, hops: usize
 }
 
 /// `~/.codex/config.toml` 첫 section 앞의 최상위 키.
+static QUOTED: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#""([^"]+)""#).unwrap());
+
 fn codex_doc_settings(home: &Path) -> (u64, Vec<String>) {
     static MAX: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"^\s*project_doc_max_bytes\s*=\s*(\d+)").unwrap());
     static FALLBACKS: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"^\s*project_doc_fallback_filenames\s*=\s*\[(.*)\]").unwrap());
-    static QUOTED: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#""([^"]+)""#).unwrap());
     let mut max_bytes = CODEX_DEFAULT_MAX_BYTES;
     let mut fallbacks = Vec::new();
     let text = fsutil::read_text(&paths::codex_root(home).join("config.toml"));
@@ -236,11 +237,35 @@ fn first_non_empty(directory: &Path, names: &[String]) -> Option<(PathBuf, u64)>
     })
 }
 
-/// Codex가 프로젝트 파일(AGENTS.md, `.agents/skills`)을 찾는 폴더: git 루트부터 `workspace`까지.
-/// `.git`이 있는 가장 가까운 위 폴더가 루트이고, 없으면 `workspace`만.
-pub fn codex_project_directories(workspace: &Path) -> Vec<PathBuf> {
+/// Codex `config.toml` 최상위 `project_root_markers`(한 줄 배열). 없으면 `.git`, `[]`이면 위 폴더를 찾지 않는다(0017).
+fn codex_root_markers(home: &Path) -> Vec<String> {
+    static MARKERS: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"^\s*project_root_markers\s*=\s*\[(.*)\]").unwrap());
+    let text = fsutil::read_text(&paths::codex_root(home).join("config.toml"));
+    for line in text.split('\n') {
+        if line.trim_start().starts_with('[') {
+            break;
+        }
+        if let Some(caps) = MARKERS.captures(line) {
+            return QUOTED
+                .captures_iter(&caps[1])
+                .map(|c| c[1].to_owned())
+                .collect();
+        }
+    }
+    vec![".git".to_owned()]
+}
+
+/// Codex가 프로젝트 파일(AGENTS.md, `.agents/skills`)을 찾는 폴더: 프로젝트 루트부터 `workspace`까지.
+/// 루트 표시(`project_root_markers`, 기본 `.git`) 중 하나가 있는 가장 가까운 위 폴더가 루트이고, 없으면 `workspace`만.
+pub fn codex_project_directories(home: &Path, workspace: &Path) -> Vec<PathBuf> {
+    let markers = codex_root_markers(home);
     let chain = lineage(workspace);
-    match chain.iter().rev().find(|d| d.join(".git").exists()) {
+    match chain
+        .iter()
+        .rev()
+        .find(|d| markers.iter().any(|m| d.join(m).exists()))
+    {
         Some(root) => chain
             .iter()
             .filter(|d| d.starts_with(root))
@@ -261,7 +286,7 @@ pub fn codex(home: &Path, workspace: Option<&Path>) -> Instructions {
         let (max_bytes, fallbacks) = codex_doc_settings(home);
         let names: Vec<String> = global_names.into_iter().chain(fallbacks).collect();
         let mut remaining = max_bytes;
-        for directory in codex_project_directories(workspace) {
+        for directory in codex_project_directories(home, workspace) {
             let Some((file, size)) = first_non_empty(&directory, &names) else {
                 continue;
             };
@@ -454,6 +479,27 @@ mod tests {
             ]
         );
         assert!(result.truncated);
+    }
+
+    #[test]
+    fn codex_root_follows_project_root_markers() {
+        let repo = TempDir::new("codex-markers-repo");
+        std::fs::create_dir(repo.path().join(".git")).unwrap();
+        repo.write("pkg/.hg", "");
+        let sub = repo.path().join("pkg/src");
+        std::fs::create_dir_all(&sub).unwrap();
+        let home = TempDir::new("codex-markers-home");
+        assert_eq!(codex_project_directories(home.path(), &sub)[0], repo.path());
+        home.write(".codex/config.toml", "project_root_markers = [\".hg\"]\n");
+        assert_eq!(
+            codex_project_directories(home.path(), &sub)[0],
+            repo.path().join("pkg")
+        );
+        home.write(".codex/config.toml", "project_root_markers = []\n");
+        assert_eq!(
+            codex_project_directories(home.path(), &sub),
+            std::slice::from_ref(&sub)
+        );
     }
 
     #[test]
