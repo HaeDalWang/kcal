@@ -41,3 +41,14 @@
 - 상상한 N개를 위한 칸을 미리 만들지 않는다. 칸은 실제 에이전트(지금 3개 + Antigravity)가 채우는 것만.
 - 새 브랜드색은 이 결정에서 더하지 않는다(design.md: 결정 기록 필요, ④에서).
 - 설치 안 한 에이전트 기본 끄기(`Settings::default`)·모르는 id 처리(`validate_agents`)는 ④ 때 정한다.
+
+## ③ 갱신 2026-11-19: 모델별 한도·추가 사용량·초기화권
+
+새 엔드포인트는 없다. kcal이 이미 부르는 두 응답에서 버리던 필드만 읽는다(실제 응답의 키·타입은 2026-11-19에 확인, 값은 기록하지 않음).
+
+- **Claude** `api/oauth/usage`: `limits[]` 중 `kind: weekly_scoped`이고 `scope.model.display_name`이 있는 항목 → 그 모델의 주간 한도(예: Fable). `session`·`weekly_all`은 기본 5시간·주간 창과 같아 더하지 않는다. `seven_day_opus`·`seven_day_sonnet`은 null이 아니면 "Opus"·"Sonnet"으로 더하되 같은 이름이 이미 있으면 건너뛴다. `extra_usage`는 `is_enabled`가 true이고 `used_credits`·`monthly_limit`이 둘 다 있을 때만 "추가 사용량 $12.50 / $100.00". 금액은 센트(CodexBar `ClaudeUsageFetcher` 소스)라 100으로 나눈다. 숫자는 JSON 숫자와 숫자 문자열을 다 받는다. 켜져 있을 때의 실제 모양은 이 계정(꺼짐)에서 확인하지 못했다(모름).
+- **Codex** `wham/usage`: `additional_rate_limits[]`의 `limit_name`과 `rate_limit.primary_window`·`secondary_window` → 모델별 한도(없으면 줄 없음). `rate_limit_reset_credits.available_count` → "한도 초기화권 N개". 같은 응답에 있어 `/wham/rate-limit-reset-credits`는 부르지 않는다(backlog의 추정은 틀렸다). Codex 잔액 `credits`는 범위 밖.
+- **계약**: `LimitWindow.group`(선택)을 더했다. 모델 창은 `windows`가 아니라 `AgentUsage.modelWindows`에 둔다(없으면 키 없음). `credits`·`resetPasses`도 선택 필드다. Rust `usage::Extras`(`#[serde(flatten)]`)와 `ipc.ts`, fixture `usage-snapshot.json`을 함께 바꿨다. 창 `id`는 기본 창과 같은 `5h`·`7d`를 쓰고(페이스 길이 계산이 맞는다) 구분은 `group`이 한다.
+- **왜 `windows`와 따로**: 트레이 막대·툴팁·낮음 알림·핸드오프 남은 %·페이스 기록은 모두 `windows`를 읽는다(`min_remaining`, `summary`, `HistoryEntry::from_windows`, TS `minRemaining`). 모델 창을 거기 섞으면 Fable 한도가 낮다는 이유로 트레이가 경고색이 된다. 따로 두면 그 코드를 하나도 고치지 않아도 기본 창만 읽는다.
+- **화면**: 팝오버 에이전트 탭과 대시보드 에이전트 카드(`AgentSection`)에서 기본 창 아래에 모델 창마다 막대 한 줄(이름 "Fable 주간"), 그 아래 글 한 줄씩(추가 사용량, 초기화권). 개요 카드·트레이 막대·알림은 그대로. 새 색·새 크기 없음(개요의 보조 창 줄과 같은 10px 줄).
+- 미리보기: `popover.html`·`dashboard.html`에 `?s=extras`.

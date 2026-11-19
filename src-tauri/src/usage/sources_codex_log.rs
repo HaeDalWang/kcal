@@ -29,6 +29,7 @@ pub(super) fn codex_from_log(
     Ok(Some(Reading {
         observed_at: Some(observed_at),
         windows: parse::codex_rollout_windows(&limits, now)?,
+        extras: Default::default(),
     }))
 }
 

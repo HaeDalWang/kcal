@@ -65,6 +65,10 @@ export const en: Messages = {
     left: (label, percent) => `${label} ${percent}% left`,
     remainingBar: (label) => `${label} remaining`,
     creditsLeft: (left, limit) => `${left} / ${limit} credits left`,
+    modelLimit: (model, id) =>
+      `${model} ${id === "5h" ? "5-hour" : id === "7d" ? "weekly" : "monthly"}`,
+    extraUsage: (used, limit) => `Extra usage ${used} of ${limit}`,
+    resetPasses: (count) => `${n(count, "limit reset pass", "limit reset passes")}`,
     reset: "Just reset",
     resetsIn: (duration) => `resets in ${duration}`,
     ago: (duration) => `${duration} ago`,

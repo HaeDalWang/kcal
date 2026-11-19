@@ -237,22 +237,83 @@ export function AgentSection({ usage, now, lowPercent, onOpenDashboard }: Sectio
             agent={usage.agent}
           />
         ))}
+        <ModelWindows usage={usage} now={now} lowPercent={lowPercent} />
+        <ExtraLines usage={usage} />
         <StatusLines usage={usage} />
       </div>
     </section>
   );
 }
 
+/** 모델 전용 한도(Claude Fable 주간, Codex 모델별): 창마다 막대 한 줄. 기본 창 아래에 작게 붙인다. */
+function ModelWindows({
+  usage,
+  now,
+  lowPercent,
+}: Omit<BarProps, "window"> & { usage: AgentUsage }) {
+  const windows = usage.modelWindows ?? [];
+  if (windows.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-[6px]">
+      {windows.map((window) => (
+        <OverviewWindow
+          key={`${window.group}-${window.id}`}
+          window={window}
+          now={now}
+          lowPercent={lowPercent}
+          agent={usage.agent}
+          label={t.popover.modelLimit(window.group ?? "", window.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** 추가 사용량(Claude)·초기화권(Codex) 한 줄씩. 값이 없으면 줄을 숨긴다(1절). */
+function ExtraLines({ usage }: { usage: AgentUsage }) {
+  const { credits, resetPasses } = usage;
+  if (!credits && resetPasses === undefined) return null;
+  return (
+    <div className="flex flex-col gap-[4px] text-[10px] text-muted-foreground tabular-nums">
+      {credits && (
+        <p>
+          {t.popover.extraUsage(
+            money(credits.used, credits.currency),
+            money(credits.limit, credits.currency),
+          )}
+        </p>
+      )}
+      {resetPasses !== undefined && <p>{t.popover.resetPasses(resetPasses)}</p>}
+    </div>
+  );
+}
+
+/** 금액. 모르는 통화 코드면 숫자 뒤에 코드를 붙인다. */
+function money(value: number, currency: string): string {
+  try {
+    return numberFormat({ style: "currency", currency }).format(value);
+  } catch {
+    return `${numberFormat({ maximumFractionDigits: 2 }).format(value)} ${currency}`;
+  }
+}
+
 /** 개요의 보조 창 한 줄: "5-hour [막대] 60% left · 2h 40m". 이름 칸·값 칸 폭을 고정해 카드끼리 막대 양 끝이 맞는다.
  * 다이얼처럼 "남음"을 붙이고, 막대도 다이얼처럼 남은 만큼 찬다. */
-function OverviewWindow({ window, now, lowPercent, agent }: BarProps & { agent: Agent }) {
+function OverviewWindow({
+  window,
+  now,
+  lowPercent,
+  agent,
+  label = t.popover.windowShort[window.id],
+}: BarProps & { agent: Agent; label?: string }) {
   const remaining = remainingPercent(window, now);
   const reset = resetIn(window, now);
-  const label = t.popover.windowShort[window.id];
   const left = t.popover.dial(Math.round(remaining));
   return (
     <div className="flex items-center gap-2 text-[10px] tabular-nums">
-      <span className="min-w-10 shrink-0 font-medium whitespace-nowrap">{label}</span>
+      <span title={label} className="max-w-[140px] min-w-10 shrink-0 truncate font-medium">
+        {label}
+      </span>
       <Bar
         remaining={remaining}
         label={t.popover.remainingBar(label)}

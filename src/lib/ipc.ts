@@ -31,7 +31,12 @@ export type LimitWindow = {
   resetPassed: boolean;
   used?: number;
   limit?: number;
+  /** 모델 전용 한도의 모델 이름(`modelWindows`에만 있다). */
+  group?: string;
 };
+
+/** Rust `usage::Credits`. Claude 추가 사용량(통화 단위 금액). */
+export type Credits = { used: number; limit: number; currency: string };
 
 /** Rust `usage::AgentUsage`. */
 export type AgentUsage = {
@@ -39,6 +44,11 @@ export type AgentUsage = {
   source: UsageSource | null;
   observedAt: string | null;
   windows: LimitWindow[];
+  /** 모델 전용 한도(0027 ③). 트레이 막대·알림은 읽지 않는다(`windows`만). 없으면 키가 없다. */
+  modelWindows?: LimitWindow[];
+  credits?: Credits;
+  /** Codex 한도 초기화권 남은 개수. */
+  resetPasses?: number;
   reason: string | null;
   /** `reason`이 있을 때만 값이 있다. */
   reasonKind: ReasonKind | null;

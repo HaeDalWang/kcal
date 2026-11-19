@@ -15,7 +15,7 @@ use serde_json::Value;
 use time::OffsetDateTime;
 
 use super::parse::{self, Fail, fail, setup};
-use super::{Agent, AgentUsage, LimitWindow, ReasonKind, UsageSource, paths};
+use super::{Agent, AgentUsage, Extras, LimitWindow, ReasonKind, UsageSource, paths};
 use crate::i18n::pick;
 use crate::tr;
 use crate::tuning::Tuning;
@@ -78,6 +78,7 @@ pub struct Outcome {
 struct Reading {
     observed_at: Option<OffsetDateTime>,
     windows: Vec<LimitWindow>,
+    extras: Extras,
 }
 
 enum Api {
@@ -96,9 +97,9 @@ impl Outcome {
             Some(Fail(text, kind)) => (Some(text), Some(kind)),
             None => (None, None),
         };
-        let (source, observed_at, windows) = match value {
-            Some((source, r)) => (Some(source), r.observed_at, r.windows),
-            None => (None, None, Vec::new()),
+        let (source, observed_at, windows, extras) = match value {
+            Some((source, r)) => (Some(source), r.observed_at, r.windows, r.extras),
+            None => (None, None, Vec::new(), Extras::default()),
         };
         Self {
             usage: AgentUsage {
@@ -106,6 +107,7 @@ impl Outcome {
                 source,
                 observed_at,
                 windows,
+                extras,
                 reason,
                 reason_kind,
                 checked_at: Some(OffsetDateTime::now_utc()),
@@ -293,12 +295,14 @@ fn api_reading(
     http: Http,
     now: OffsetDateTime,
     parse: fn(&Value, OffsetDateTime) -> Result<Vec<LimitWindow>, Fail>,
+    extras: fn(&Value, OffsetDateTime) -> Extras,
 ) -> Result<Api, Fail> {
     match http {
         Http::RateLimited(seconds) => Ok(Api::RateLimited(seconds)),
         Http::Body(body) => Ok(Api::Value(Reading {
             observed_at: Some(now),
             windows: parse(&body, now)?,
+            extras: extras(&body, now),
         })),
     }
 }
@@ -446,6 +450,7 @@ async fn claude(ctx: &Context, now: OffsetDateTime, tuning: &Tuning) -> Outcome 
             .await?,
             now,
             parse::claude_api,
+            parse::claude_extras,
         )
     }
     .await;
@@ -477,6 +482,7 @@ fn claude_from_log(
         Some(Ok((observed_at, windows))) => Ok(Some(Reading {
             observed_at,
             windows,
+            extras: Extras::default(),
         })),
         Some(Err(e)) => Err(e),
         None => fail(pick(
@@ -558,6 +564,7 @@ async fn codex(ctx: &Context, now: OffsetDateTime, tuning: &Tuning) -> Outcome {
                 .await?,
                 now,
                 parse::codex_api,
+                parse::codex_extras,
             )
         }
         .await;
@@ -657,6 +664,7 @@ async fn kiro(ctx: &Context, now: OffsetDateTime, tuning: &Tuning) -> Outcome {
                 Reading {
                     observed_at: Some(now),
                     windows,
+                    extras: Extras::default(),
                 },
             )),
             None,

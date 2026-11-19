@@ -54,6 +54,11 @@ export const ko = {
     left: (label: string, percent: number) => `${label} ${percent}% 남음`,
     remainingBar: (label: string) => `${label} 남은 비율`,
     creditsLeft: (left: string, limit: string) => `${left} / ${limit} 크레딧 남음`,
+    /** 모델 전용 한도 줄 이름: "Fable 주간", "Spark 5시간". */
+    modelLimit: (model: string, id: "5h" | "7d" | "month") =>
+      `${model} ${id === "5h" ? "5시간" : id === "7d" ? "주간" : "월"}`,
+    extraUsage: (used: string, limit: string) => `추가 사용량 ${used} / ${limit}`,
+    resetPasses: (count: number) => `한도 초기화권 ${count}개`,
     reset: "초기화됨",
     resetsIn: (duration: string) => `${duration} 후 초기화`,
     ago: (duration: string) => `${duration} 전`,

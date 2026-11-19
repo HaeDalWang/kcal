@@ -16,6 +16,7 @@ import type {
   HourBucket,
   BarUnit,
   AgentUsage,
+  Credits,
   AppError,
   Bounds,
   CodexRate,
@@ -80,12 +81,21 @@ const LIMIT_WINDOW = {
   resetPassed: "required",
   used: "optional",
   limit: "optional",
+  group: "optional",
 } satisfies Fields<LimitWindow>;
+const CREDITS = {
+  used: "required",
+  limit: "required",
+  currency: "required",
+} satisfies Fields<Credits>;
 const AGENT_USAGE = {
   agent: "required",
   source: "required",
   observedAt: "required",
   windows: "required",
+  modelWindows: "optional",
+  credits: "optional",
+  resetPasses: "optional",
   reason: "required",
   reasonKind: "required",
   checkedAt: "required",
@@ -312,7 +322,10 @@ describe("Rust IPC fixtures match ipc.ts types", () => {
   it("usage snapshot has the keys and enum values of UsageSnapshot", () => {
     const snapshot = fixture("usage-snapshot") as UsageSnapshot;
     expectFields<UsageSnapshot>(snapshot, USAGE_SNAPSHOT, "UsageSnapshot");
-    const windows = snapshot.agents.flatMap((a) => a.windows);
+    const windows = snapshot.agents.flatMap((a) => [...a.windows, ...(a.modelWindows ?? [])]);
+    snapshot.agents.forEach(
+      (a) => a.credits && expectFields<Credits>(a.credits, CREDITS, "Credits"),
+    );
     snapshot.agents.forEach((a) => expectFields<AgentUsage>(a, AGENT_USAGE, "AgentUsage"));
     windows.forEach((w) => expectFields<LimitWindow>(w, LIMIT_WINDOW, "LimitWindow"));
     expectValues(

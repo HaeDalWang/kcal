@@ -140,6 +140,7 @@ mod tests {
             reset_passed: false,
             used: None,
             limit: None,
+            group: None,
         }
     }
 

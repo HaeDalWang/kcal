@@ -22,6 +22,7 @@ import type {
   UsageSnapshot,
 } from "@/lib/ipc";
 import { followSystemTheme } from "@/lib/theme";
+import { extrasUsage } from "@/test/preview/extras-usage";
 import context from "@/test/fixtures/ipc/context-snapshot.json";
 import health from "@/test/fixtures/ipc/health-report.json";
 import metrics from "@/test/fixtures/ipc/metrics-snapshot.json";
@@ -132,21 +133,28 @@ const rules = query.get("rules");
 const remaining = Number(query.get("remaining") ?? "64");
 const future = new Date(now + 3 * HOUR_MS).toISOString();
 const usageSnapshot: UsageSnapshot =
-  handoff || rules
-    ? {
-        agents: (usage as UsageSnapshot).agents.map((a) =>
-          a.agent === "claude"
-            ? {
-                ...a,
-                windows: [
-                  { id: "5h", usedPercent: 100 - remaining, resetsAt: future, resetPassed: false },
-                  { id: "7d", usedPercent: 10, resetsAt: future, resetPassed: false },
-                ],
-              }
-            : a,
-        ),
-      }
-    : (usage as UsageSnapshot);
+  query.get("s") === "extras"
+    ? extrasUsage(now)
+    : handoff || rules
+      ? {
+          agents: (usage as UsageSnapshot).agents.map((a) =>
+            a.agent === "claude"
+              ? {
+                  ...a,
+                  windows: [
+                    {
+                      id: "5h",
+                      usedPercent: 100 - remaining,
+                      resetsAt: future,
+                      resetPassed: false,
+                    },
+                    { id: "7d", usedPercent: 10, resetsAt: future, resetPassed: false },
+                  ],
+                }
+              : a,
+          ),
+        }
+      : (usage as UsageSnapshot);
 const checks = [
   ...(rules ? [RULES_CHECK] : []),
   ...(handoff ? [LONG_CHECK] : []),

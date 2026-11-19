@@ -7,7 +7,7 @@ use serde_json::Value;
 use time::format_description::well_known::{Rfc2822, Rfc3339};
 use time::{Date, OffsetDateTime, Time};
 
-use super::{LimitWindow, ReasonKind, WindowId};
+use super::{Credits, Extras, LimitWindow, ReasonKind, WindowId};
 use crate::i18n::pick;
 use crate::tr;
 
@@ -73,6 +73,7 @@ fn limit_window(
         reset_passed: false,
         used: None,
         limit: None,
+        group: None,
     };
     Ok(window.at(now))
 }
@@ -86,6 +87,149 @@ fn object<'a>(value: &'a Value, key: &str, field: &str) -> Result<&'a Value, Fai
 
 fn number(value: &Value, key: &str) -> Option<f64> {
     value.get(key).and_then(Value::as_f64)
+}
+
+/// 부가 값은 원소 단위로 느슨하게 읽는다. 모양이 틀린 원소는 건너뛰고 기본 창 읽기를 막지 않는다.
+fn lenient_number(value: Option<&Value>) -> Option<f64> {
+    match value? {
+        Value::Number(n) => n.as_f64(),
+        Value::String(s) => s.trim().parse().ok(),
+        _ => None,
+    }
+    .filter(|n| n.is_finite())
+}
+
+fn model_window(
+    group: &str,
+    percent: Option<f64>,
+    resets_at: At,
+    now: OffsetDateTime,
+) -> Option<LimitWindow> {
+    let group = group.trim();
+    if group.is_empty() {
+        return None;
+    }
+    let window = limit_window(WindowId::SevenDay, percent, resets_at, now, group).ok()?;
+    Some(LimitWindow {
+        group: Some(group.to_owned()),
+        ..window
+    })
+}
+
+/// Claude 응답의 모델 전용 주간 창과 추가 사용량. `limits[]`의 `weekly_scoped`가 먼저고,
+/// 같은 이름의 `seven_day_opus`·`seven_day_sonnet`은 건너뛴다. `session`·`weekly_all`은 기본 창과 같아 더하지 않는다.
+pub fn claude_extras(body: &Value, now: OffsetDateTime) -> Extras {
+    let mut model_windows: Vec<LimitWindow> = Vec::new();
+    let mut push = |w: Option<LimitWindow>| {
+        if let Some(w) = w {
+            let same = |o: &LimitWindow| {
+                o.group.as_deref().map(str::to_lowercase)
+                    == w.group.as_deref().map(str::to_lowercase)
+            };
+            if !model_windows.iter().any(same) {
+                model_windows.push(w);
+            }
+        }
+    };
+    for entry in body
+        .get("limits")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        if entry.get("kind").and_then(Value::as_str) != Some("weekly_scoped") {
+            continue;
+        }
+        let Some(name) = entry
+            .pointer("/scope/model/display_name")
+            .and_then(Value::as_str)
+        else {
+            continue;
+        };
+        push(model_window(
+            name,
+            lenient_number(entry.get("percent")),
+            iso_at(entry.get("resets_at")),
+            now,
+        ));
+    }
+    for (key, name) in [("seven_day_opus", "Opus"), ("seven_day_sonnet", "Sonnet")] {
+        if let Some(entry) = body.get(key).filter(|v| v.is_object()) {
+            push(model_window(
+                name,
+                lenient_number(entry.get("utilization")),
+                iso_at(entry.get("resets_at")),
+                now,
+            ));
+        }
+    }
+    Extras {
+        model_windows,
+        credits: claude_credits(body),
+        reset_passes: None,
+    }
+}
+
+/// `extra_usage`: 켜져 있고 금액 둘이 다 있을 때만. 응답 금액은 센트다(CodexBar `ClaudeUsageFetcher` 소스).
+fn claude_credits(body: &Value) -> Option<Credits> {
+    let extra = body.get("extra_usage")?;
+    if extra.get("is_enabled").and_then(Value::as_bool) != Some(true) {
+        return None;
+    }
+    let used = lenient_number(extra.get("used_credits"))? / 100.0;
+    let limit = lenient_number(extra.get("monthly_limit"))? / 100.0;
+    let currency = extra
+        .get("currency")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|c| !c.is_empty())
+        .unwrap_or("USD");
+    Some(Credits {
+        used,
+        limit,
+        currency: currency.to_uppercase(),
+    })
+}
+
+/// Codex 응답의 모델별 한도(`additional_rate_limits[]`)와 초기화권 개수(`rate_limit_reset_credits.available_count`).
+pub fn codex_extras(body: &Value, now: OffsetDateTime) -> Extras {
+    let mut model_windows = Vec::new();
+    for entry in body
+        .get("additional_rate_limits")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        let (Some(name), Some(limit)) = (
+            entry.get("limit_name").and_then(Value::as_str),
+            entry.get("rate_limit").filter(|v| v.is_object()),
+        ) else {
+            continue;
+        };
+        for key in ["primary_window", "secondary_window"] {
+            let Some(window) = limit.get(key).filter(|v| v.is_object()) else {
+                continue;
+            };
+            let id = if key == "primary_window" {
+                WindowId::FiveHour
+            } else {
+                WindowId::SevenDay
+            };
+            let at = epoch_at(window.get("reset_at"));
+            let used = lenient_number(window.get("used_percent"));
+            if let Some(w) = model_window(name, used, at, now) {
+                model_windows.push(LimitWindow { id, ..w });
+            }
+        }
+    }
+    let reset_passes = lenient_number(body.pointer("/rate_limit_reset_credits/available_count"))
+        .filter(|n| *n >= 0.0 && n.fract() == 0.0)
+        .map(|n| n as u32);
+    Extras {
+        model_windows,
+        credits: None,
+        reset_passes,
+    }
 }
 
 /// `GET api.anthropic.com/api/oauth/usage`: `five_hour`·`seven_day`의 `utilization`, `resets_at`(ISO).
@@ -299,6 +443,113 @@ mod tests {
             codex_api(&no_secondary, NOW),
             fail("rate_limit.secondary_window 없음")
         );
+    }
+
+    #[test]
+    fn claude_extras_reads_scoped_weekly_and_skips_duplicates() {
+        let body = json!({
+            "five_hour": {"utilization": 1, "resets_at": null},
+            "seven_day": {"utilization": 2, "resets_at": null},
+            "seven_day_opus": {"utilization": 9.5, "resets_at": "2026-11-08T00:00:00Z"},
+            "seven_day_sonnet": {"utilization": 4.0, "resets_at": null},
+            "limits": [
+                {"kind": "session", "group": "session", "percent": 1, "scope": null},
+                {"kind": "weekly_all", "group": "weekly", "percent": 2, "scope": null},
+                {"kind": "weekly_scoped", "group": "weekly", "percent": 31,
+                 "resets_at": "2026-11-08T00:00:00Z",
+                 "scope": {"model": {"id": null, "display_name": "Fable"}, "surface": null}},
+                {"kind": "weekly_scoped", "percent": 50,
+                 "scope": {"model": {"display_name": "opus"}}},
+                {"kind": "weekly_scoped", "percent": "x", "scope": {"model": {"display_name": "Bad"}}},
+                {"kind": "weekly_scoped", "percent": 5, "scope": {"model": {"display_name": ""}}},
+                "junk",
+            ],
+        });
+        let e = claude_extras(&body, NOW);
+        let got: Vec<_> = e
+            .model_windows
+            .iter()
+            .map(|w| (w.group.clone().unwrap(), w.used_percent, w.id))
+            .collect();
+        assert_eq!(
+            got,
+            [
+                ("Fable".to_owned(), 31.0, WindowId::SevenDay),
+                ("opus".to_owned(), 50.0, WindowId::SevenDay),
+                ("Sonnet".to_owned(), 4.0, WindowId::SevenDay),
+            ]
+        );
+        assert_eq!(e.credits, None);
+        // 기본 창 읽기는 그대로 두 개.
+        assert_eq!(claude_api(&body, NOW).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn claude_extras_ignores_malformed_fields() {
+        let body = json!({"limits": "nope", "seven_day_opus": 3, "extra_usage": []});
+        assert_eq!(claude_extras(&body, NOW), Extras::default());
+    }
+
+    #[test]
+    fn claude_credits_need_enabled_and_both_amounts_in_cents() {
+        let on = |used: Value, limit: Value| {
+            claude_extras(
+                &json!({"extra_usage": {"is_enabled": true, "used_credits": used,
+                    "monthly_limit": limit, "currency": "usd"}}),
+                NOW,
+            )
+            .credits
+        };
+        let credits = on(json!(1250), json!("10000")).unwrap();
+        assert_eq!(
+            (credits.used, credits.limit, credits.currency.as_str()),
+            (12.5, 100.0, "USD")
+        );
+        assert_eq!(on(json!(null), json!(100)), None);
+        assert_eq!(on(json!(5), json!(null)), None);
+        let off =
+            json!({"extra_usage": {"is_enabled": false, "used_credits": 1, "monthly_limit": 2}});
+        assert_eq!(claude_extras(&off, NOW).credits, None);
+        let no_currency =
+            json!({"extra_usage": {"is_enabled": true, "used_credits": 100, "monthly_limit": 200}});
+        assert_eq!(
+            claude_extras(&no_currency, NOW).credits.unwrap().currency,
+            "USD"
+        );
+    }
+
+    #[test]
+    fn codex_extras_reads_additional_limits_and_reset_passes() {
+        let window = |p: f64| json!({"used_percent": p, "reset_at": 1_794_300_000});
+        let body = json!({
+            "rate_limit": {"primary_window": window(1.0), "secondary_window": window(2.0)},
+            "additional_rate_limits": [
+                {"limit_name": "Spark", "metered_feature": "x",
+                 "rate_limit": {"primary_window": window(10.0), "secondary_window": window(20.0)}},
+                {"limit_name": "NoLimit", "rate_limit": null},
+                {"rate_limit": {"primary_window": window(5.0)}},
+            ],
+            "rate_limit_reset_credits": {"available_count": 3, "applicable_available_count": 1},
+        });
+        let e = codex_extras(&body, NOW);
+        let got: Vec<_> = e
+            .model_windows
+            .iter()
+            .map(|w| (w.group.as_deref().unwrap(), w.id, w.used_percent))
+            .collect();
+        assert_eq!(
+            got,
+            [
+                ("Spark", WindowId::FiveHour, 10.0),
+                ("Spark", WindowId::SevenDay, 20.0)
+            ]
+        );
+        assert_eq!(e.reset_passes, Some(3));
+        assert_eq!(codex_api(&body, NOW).unwrap().len(), 2);
+        let none = json!({"additional_rate_limits": null,
+            "rate_limit_reset_credits": {"available_count": -1}});
+        assert_eq!(codex_extras(&none, NOW), Extras::default());
+        assert_eq!(codex_extras(&json!({}), NOW), Extras::default());
     }
 
     #[test]

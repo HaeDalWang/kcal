@@ -30,7 +30,8 @@ use crate::rate::{
 };
 use crate::settings::Settings;
 use crate::usage::{
-    Agent, AgentUsage, LimitWindow, ReasonKind, UsageSnapshot, UsageSource, WindowId,
+    Agent, AgentUsage, Credits, Extras, LimitWindow, ReasonKind, UsageSnapshot, UsageSource,
+    WindowId,
 };
 
 #[path = "ipc_fixtures_coach_tests.rs"]
@@ -73,6 +74,7 @@ fn window(id: WindowId, used_percent: f64, reset_passed: bool) -> LimitWindow {
         reset_passed,
         used: None,
         limit: None,
+        group: None,
     }
 }
 
@@ -87,6 +89,18 @@ fn usage_snapshot_matches_fixture() {
             window(WindowId::FiveHour, 12.5, false),
             window(WindowId::SevenDay, 0.0, true),
         ],
+        extras: Extras {
+            model_windows: vec![LimitWindow {
+                group: Some("Fable".into()),
+                ..window(WindowId::SevenDay, 31.0, false)
+            }],
+            credits: Some(Credits {
+                used: 12.5,
+                limit: 100.0,
+                currency: "USD".into(),
+            }),
+            reset_passes: None,
+        },
         reason: None,
         reason_kind: None,
         checked_at: at,
@@ -98,6 +112,10 @@ fn usage_snapshot_matches_fixture() {
             resets_at: None,
             ..window(WindowId::FiveHour, 3.0, false)
         }],
+        extras: Extras {
+            reset_passes: Some(2),
+            ..Extras::default()
+        },
         reason: Some("synthetic reason".into()),
         reason_kind: Some(ReasonKind::Failure),
         ..claude.clone()
@@ -110,6 +128,7 @@ fn usage_snapshot_matches_fixture() {
             limit: Some(1000.0),
             ..window(WindowId::Month, 10.05, false)
         }],
+        extras: Extras::default(),
         reason: Some("synthetic setup".into()),
         reason_kind: Some(ReasonKind::Setup),
         ..claude.clone()

@@ -183,6 +183,7 @@ fn used(agent: Agent, percents: &[f64]) -> AgentUsage {
                 reset_passed: false,
                 used: None,
                 limit: None,
+                group: None,
             })
             .collect(),
         ..AgentUsage::pending(agent)

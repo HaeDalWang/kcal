@@ -13,6 +13,7 @@ import {
   type UsageSnapshot,
 } from "@/lib/ipc";
 import { ratesStore } from "@/lib/snapshot-store";
+import { extrasUsage } from "@/test/preview/extras-usage";
 import rateFixture from "@/test/fixtures/ipc/rate-snapshot.json";
 
 const HOUR_MS = 3_600_000;
@@ -183,6 +184,40 @@ describe("UsagePopover", () => {
 
     await act(() => emit(USAGE_UPDATED_EVENT, snapshot(90)));
     expect(await within(claude).findByText("5시간 10% 남음")).toBeTruthy();
+  });
+
+  it("shows model weekly limits, extra usage and reset passes", async () => {
+    const extras = (cmd: string) =>
+      cmd === "get_usage" ? extrasUsage(Date.now()) : (mockCommands(cmd) ?? null);
+    mockIPC(extras, { shouldMockEvents: true });
+    const { unmount } = render(
+      <UsagePopover
+        agents={[...AGENTS]}
+        selected="claude"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+    const claude = await screen.findByRole("group", { name: "Claude" });
+    expect(within(claude).getByText("Fable 주간")).toBeTruthy();
+    expect(within(claude).getByRole("progressbar", { name: "Fable 주간 남은 비율" })).toBeTruthy();
+    expect(within(claude).getByText(/추가 사용량 (US)?\$12\.50 \/ (US)?\$100\.00/)).toBeTruthy();
+    expect(within(claude).queryByText(/초기화권/)).toBeNull();
+    unmount();
+
+    render(
+      <UsagePopover
+        agents={[...AGENTS]}
+        selected="codex"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+    const codex = await screen.findByRole("group", { name: "Codex" });
+    expect(within(codex).getByText("한도 초기화권 2개")).toBeTruthy();
+    expect(within(codex).getByText("GPT-5.3-Codex-Spark 주간")).toBeTruthy();
   });
 
   it("shows a setup step in muted text without an alert and a real failure as a red alert", async () => {

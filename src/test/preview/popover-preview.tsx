@@ -2,6 +2,7 @@
 // 대시보드 미리보기와 같은 방법으로 연다(src/test/preview/popover.html).
 // 기본은 이 Mac 카드(알림 1개, 점 있음), `?s=none`이면 그대로 두기·숨긴 카드만(점 없음). 앱 번들에는 들어가지 않는다.
 // `?s=fresh`면 갓 설치한 Mac(기록 없음: 빈 지표·컨텍스트·사용량·환율, 점검·스위치 없음)을 그린다.
+// `?s=extras`면 모델 전용 한도·추가 사용량·초기화권이 있는 합성 사용량을 그린다(0027 ③).
 // `&agents=claude,codex`(쉼표 목록)면 켠 에이전트를 그것만으로 덮는다(기본 claude·codex·kiro).
 // `&lang=en|ko`면 화면 언어를 고른다(기본은 브라우저 언어를 따르는 auto라, ko 브라우저면 한국어로 나온다).
 import { mockIPC } from "@tauri-apps/api/mocks";
@@ -10,6 +11,7 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "@/App";
 import type { Settings } from "@/lib/ipc";
+import { extrasUsage } from "@/test/preview/extras-usage";
 import { followSystemTheme } from "@/lib/theme";
 import usage from "@/test/fixtures/ipc/usage-snapshot.json";
 import context from "@/test/fixtures/ipc/context-snapshot.json";
@@ -28,6 +30,7 @@ import "@/index.css";
 const query = new URLSearchParams(location.search);
 const isNone = query.get("s") === "none";
 const isFresh = query.get("s") === "fresh";
+const isExtras = query.get("s") === "extras";
 const checks = isNone ? ALL_HIDDEN : DASHBOARD_CHECKS;
 const allAgents: Settings = previewSettings(query);
 const now = Date.now();
@@ -85,6 +88,7 @@ mockIPC(
       case "get_settings":
         return allAgents;
       case "get_usage":
+        if (isExtras) return extrasUsage(now);
         // fixture 끝의 대기 중 Claude는 직렬화 계약용이다. 실제 스냅샷은 에이전트당 한 줄.
         return {
           agents: usage.agents.filter(

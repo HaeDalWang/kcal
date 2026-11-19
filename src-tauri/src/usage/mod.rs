@@ -93,6 +93,32 @@ pub struct LimitWindow {
     pub used: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<f64>,
+    /// 모델 전용 주간 한도의 모델 이름(예: `Fable`). 기본 5시간·주간 창에는 `None`(0027 ③).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group: Option<String>,
+}
+
+/// Claude 추가 사용량(`extra_usage`). 금액은 통화 단위(응답은 센트).
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Credits {
+    pub used: f64,
+    pub limit: f64,
+    pub currency: String,
+}
+
+/// 기본 5시간·주간 창이 아닌 부가 값. 있을 때만 직렬화한다. `windows`와 따로 둬서
+/// 트레이 막대·알림·페이스 기록처럼 `windows`를 읽는 곳이 모델 창에 영향받지 않는다.
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Extras {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub model_windows: Vec<LimitWindow>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub credits: Option<Credits>,
+    /// Codex 한도 초기화권 남은 개수.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reset_passes: Option<u32>,
 }
 
 impl LimitWindow {
@@ -133,6 +159,8 @@ pub struct AgentUsage {
     #[serde(with = "time::serde::rfc3339::option")]
     pub observed_at: Option<OffsetDateTime>,
     pub windows: Vec<LimitWindow>,
+    #[serde(flatten)]
+    pub extras: Extras,
     /// 주 경로를 못 쓴 이유, 또는 값이 없는 이유.
     pub reason: Option<String>,
     /// `reason`이 있을 때만 `Some`.
@@ -149,6 +177,7 @@ impl AgentUsage {
             source: None,
             observed_at: None,
             windows: Vec::new(),
+            extras: Extras::default(),
             reason: None,
             reason_kind: None,
             checked_at: None,
@@ -169,6 +198,16 @@ impl AgentUsage {
                 .cloned()
                 .map(|w| w.at(now))
                 .collect(),
+            extras: Extras {
+                model_windows: previous
+                    .extras
+                    .model_windows
+                    .iter()
+                    .cloned()
+                    .map(|w| w.at(now))
+                    .collect(),
+                ..previous.extras.clone()
+            },
             ..next
         }
     }
@@ -276,6 +315,7 @@ mod tests {
             reset_passed: false,
             used: None,
             limit: None,
+            group: None,
         }
     }
 
@@ -316,6 +356,58 @@ mod tests {
         );
         assert_eq!(merged.windows[0].used_percent, 0.0);
         assert!(merged.windows[0].reset_passed);
+    }
+
+    #[test]
+    fn keeps_extras_with_last_value_and_zeroes_passed_model_window() {
+        let previous = AgentUsage {
+            windows: vec![window(80.0, datetime!(2026-12-01 0:00 UTC))],
+            extras: Extras {
+                model_windows: vec![LimitWindow {
+                    group: Some("Fable".into()),
+                    ..window(50.0, datetime!(2026-11-04 12:00 UTC))
+                }],
+                reset_passes: Some(2),
+                ..Extras::default()
+            },
+            ..AgentUsage::pending(Agent::Codex)
+        };
+        let merged = AgentUsage::merged(
+            &previous,
+            AgentUsage::pending(Agent::Codex),
+            datetime!(2026-11-04 12:01 UTC),
+        );
+        assert_eq!(merged.extras.reset_passes, Some(2));
+        assert_eq!(merged.extras.model_windows[0].used_percent, 0.0);
+    }
+
+    #[test]
+    fn model_windows_do_not_affect_tray_value_or_tooltip() {
+        let now = datetime!(2026-11-04 11:00 UTC);
+        let usage = AgentUsage {
+            windows: vec![LimitWindow {
+                id: WindowId::FiveHour,
+                ..window(10.0, datetime!(2026-11-04 12:00 UTC))
+            }],
+            extras: Extras {
+                model_windows: vec![LimitWindow {
+                    group: Some("Fable".into()),
+                    ..window(99.0, datetime!(2026-11-04 12:00 UTC))
+                }],
+                ..Extras::default()
+            },
+            ..AgentUsage::pending(Agent::Claude)
+        };
+        assert_eq!(usage.min_remaining(now), Some(90.0));
+        assert_eq!(usage.summary(now), "Claude 5h 90% 남음");
+    }
+
+    #[test]
+    fn omits_empty_extras_from_json() {
+        let json = serde_json::to_value(AgentUsage::pending(Agent::Claude)).unwrap();
+        for key in ["modelWindows", "credits", "resetPasses", "extras"] {
+            assert!(json.get(key).is_none(), "{key}");
+        }
     }
 
     #[test]
