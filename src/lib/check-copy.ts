@@ -5,6 +5,7 @@ import {
   CHECK_TARGET_PREFIX,
   HANDOFF_OPTION,
   PROJECT_SKILL_TARGET_PREFIX,
+  CODEX_SCOPE_TARGET_PREFIX,
   SCOPE_TARGET_PREFIX,
   SKILL_TARGET_PREFIX,
   type Agent,
@@ -484,7 +485,12 @@ export function appliedName({
   enabled,
   target,
 }: Pick<AppliedSwitch, "name" | "enabled" | "target">): string {
-  if (target.startsWith(CHECK_TARGET_PREFIX) || target.startsWith(SCOPE_TARGET_PREFIX)) return name;
+  if (
+    target.startsWith(CHECK_TARGET_PREFIX) ||
+    target.startsWith(SCOPE_TARGET_PREFIX) ||
+    target.startsWith(CODEX_SCOPE_TARGET_PREFIX)
+  )
+    return name;
   if (target.startsWith(SKILL_TARGET_PREFIX) || target.startsWith(PROJECT_SKILL_TARGET_PREFIX))
     return t.coach.appliedSkill(name, enabled);
   return t.coach.appliedName(name, enabled);

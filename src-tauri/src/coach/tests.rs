@@ -500,3 +500,35 @@ fn log_read_skips_a_corrupt_line_and_undo_still_works() {
     assert_eq!(std::fs::read(&f.config).unwrap(), CONFIG.as_bytes());
     assert_eq!(log::read(&f.log), [undone, applied]);
 }
+
+/// `cargo test real_codex_usage -- --ignored --nocapture` (Codex MCP 사용 횟수·프로젝트에서만 켜기 제안, 읽기 전용)
+#[test]
+#[ignore]
+fn real_codex_usage_read_only() {
+    let home = std::env::home_dir().unwrap();
+    let tuning = Tuning::default();
+    let started = std::time::Instant::now();
+    let now = crate::metrics::unix_secs(OffsetDateTime::now_utc());
+    let index = usage::read(&home, &tuning, now);
+    let read_secs = started.elapsed().as_secs_f64();
+    let codex = index.codex.as_deref().unwrap();
+    println!(
+        "Codex 세션 {}개, 시작 프로젝트 {}곳, 일부만 봄: {}, 읽기 {read_secs:.1}초",
+        codex.sessions,
+        codex.projects.len(),
+        codex.is_partial
+    );
+    for s in switches::list(&home, None, Some(&index), &tuning)
+        .iter()
+        .filter(|s| s.agent == crate::usage::Agent::Codex && s.kind == switches::SwitchKind::Mcp)
+    {
+        println!(
+            "{} 켬={} 사용={:?} 프로젝트수={:?} 제안={}",
+            s.name,
+            s.enabled,
+            s.usage.as_ref().map(|u| u.total),
+            s.usage.as_ref().map(|u| u.project_count),
+            s.scope_move.as_ref().map_or(0, |m| m.projects.len())
+        );
+    }
+}

@@ -383,7 +383,7 @@ pub fn undo(
         return Ok(entry);
     }
     // 프로젝트에서만 켜기(0022): 여러 파일을 한 기록으로 함께 되돌린다.
-    if !applied.files.is_empty() || applied.target.starts_with(scope::SCOPE_TARGET_PREFIX) {
+    if !applied.files.is_empty() || scope::is_scope_target(&applied.target) {
         let entry = scope::undo(home, applied, now)?;
         log::append(log_file, &entry)
             .map_err(|e| io_refusal(pick("기록 쓰기", "write the change log"), &e))?;

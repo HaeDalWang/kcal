@@ -500,3 +500,15 @@ fn codex_plugin_skills_follow_the_manifest_path_inside_the_plugin() {
         plugin.path().join("skills")
     );
 }
+
+#[test]
+fn codex_trusted_projects_lists_only_trusted_paths() {
+    let config = "[projects.\"/w/one\"]\ntrust_level = \"trusted\"\n\n[projects.\"/w/two\"]\ntrust_level = \"untrusted\"\n\n[projects.'/w/three']\ntrust_level = 'trusted' # ok\n\n[projects.\"C:\\\\w\\\\four\"]\ntrust_level = \"trusted\"\n\n[projects.\"/w/five\"]\nother = 1\n\n[mcp_servers.x]\ntrust_level = \"trusted\"\n";
+    let trusted = codex_trusted_projects(config);
+    let mut paths: Vec<&str> = trusted.iter().map(String::as_str).collect();
+    paths.sort_unstable();
+    let four = trust_key("C:\\w\\four");
+    let mut expected = vec!["/w/one", "/w/three", four.as_str()];
+    expected.sort_unstable();
+    assert_eq!(paths, expected);
+}

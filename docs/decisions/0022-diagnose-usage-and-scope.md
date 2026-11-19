@@ -90,3 +90,35 @@
 - 개인 스킬의 다른 프로젝트 설정(`settings.json`·local)에 있는 `skillOverrides`는 읽지 않는다. 사용자 설정과 최근 작업 폴더의 두 파일만 본다.
 - 줄이는 토큰 양을 모른다. `~/.claude/commands/<이름>.md`(옛 명령)는 대상이 아니다.
 - `skillOverrides` 값이 실제로 시작 목록에서 설명을 빼는지는 문서 기준이다. 새 세션 스킬 목록으로 직접 확인하지 않았다(추정 → 확인 방법: 숨긴 뒤 새 세션에서 `/context`의 스킬 목록).
+
+## 갱신 2026-11-19: Codex MCP "프로젝트에서만 켜기"
+
+사용자 결정(2026-11-19): Claude 플러그인판과 같은 일을 Codex MCP 서버로 한다. 전역으로 켠 MCP 서버를 1~3개 프로젝트에서만 썼으면 "전역에서 끄고 그 프로젝트에서만 켜기"를 제안한다. 0017 E에 붙인다(새 의존성·보안 경계 변경이 없어 새 결정 기록은 없다). Codex 플러그인은 범위 밖이다(`plugins._default`·마켓 설치 경로가 달라 따로 확인해야 한다).
+
+사실(2026-11-19, 공식 자료):
+
+- 프로젝트 `.codex/config.toml`은 사용자 설정 위에 덮이고, 신뢰한 프로젝트만 읽는다: <https://learn.chatgpt.com/docs/config-file/config-basic>(옛 주소 developers.openai.com/codex/config-basic) "Codex loads project `.codex/` layers only when you trust the project", "closest wins; trusted projects only". MCP를 프로젝트 파일로 좁히는 것: <https://learn.chatgpt.com/docs/extend/mcp?surface=cli>(옛 developers.openai.com/codex/mcp) "scope MCP servers to a project with `.codex/config.toml` (trusted projects only)", `enabled`: "Set `false` to disable a server without deleting it."
+- 키 단위로 겹치는지(프로젝트 파일에 `[mcp_servers.X] enabled = true`만 있어도 되는지)는 산문 문서에 없다. OpenAI 공식 저장소 소스(<https://github.com/openai/codex> `codex-rs/config/src/merge.rs` `merge_toml_values`, `codex-rs/config/src/loader/mod.rs`)로 확인했다: 층을 낮은 순위부터 합치며 표는 키 단위로 깊이 합친다(`mcp_servers.X`의 필드가 겹침). 프로젝트 층에서 지우는 키 목록(`PROJECT_LOCAL_CONFIG_DENYLIST`)에 `mcp_servers`는 없다. 신뢰하지 않은 프로젝트의 층은 "loaded but disabled"라 합치기에서 빠진다. 신뢰 판정은 그 폴더·프로젝트 루트·저장소 루트 중 하나의 `[projects."<경로>"] trust_level = "trusted"`다. 프로젝트 층은 작업 폴더에서 프로젝트 루트(기본 `.git`이 든 폴더)까지 폴더마다 `.codex/config.toml`을 읽는다.
+- `codex mcp list/get`은 사용자 설정만 보여 줘서(소스 `load_global_mcp_servers`: "will not include MCP servers defined in in-repo .codex/ folders") 이 Mac의 `codex` 0.170.0으로는 겹침을 직접 확인하지 못했다(모름 → 확인 방법: 신뢰한 저장소에서 `codex`를 열고 `/mcp`로 그 서버가 켜졌는지 본다).
+- 프로젝트 전용 "커밋하지 않는" 변형(Claude의 `settings.local.json` 같은 것)은 문서에 없다. 그래서 화면이 프로젝트 파일이 저장소에 커밋될 수 있다고 알린다.
+
+| 결정                                                                                                                                                                                                                                                                                                                     | 이유                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| 사용 기록은 최근 `diagnoseUsageDays`일 rollout(`sessions/`·`archived_sessions/`, `.jsonl.zst` 포함, 0026)에서 센다. 읽는 것은 시작 `cwd`와 도구 호출의 서버 이름뿐. 같은 tuning(`diagnoseUsageFiles`·`MaxMib`·`MinSessions`·`scopeMinUses`)을 쓰고 새 키는 없다                                                          | Claude판과 기준이 같아야 한다. 한도·크기 상한도 같다                                                           |
+| 센 것: 코드 모드 `custom_tool_call`(`exec`)의 `input` 코드 안 `tools.mcp__<서버>__<도구>(` 호출 하나당 1회(이 Mac 실측: 코드 모드, `function_call`은 `exec_command` 등뿐), 그리고 `function_call` 이름이 `mcp__<서버>__<도구>`인 것(코드 모드가 아닐 때, 추정). 호출 ID로 중복을 한 번만 센다                            | 이 사용자의 Codex는 MCP를 코드 안에서 부른다. 글자만 있고 `(`로 부르지 않은 것은 세지 않는다                   |
+| 설정의 서버 이름(`code-review-graph`)과 도구 이름의 서버 부분(`code_review_graph`)은 영숫자 밖을 `_`로 맞춰 비교한다(추정). 다른 이름이 같은 꼴로 겹치면 합쳐 센다                                                                                                                                                       | 이 Mac에서 하이픈 서버가 밑줄 이름으로 불렸다. 겹침은 제안이 하나 덜/더 나올 수 있는 쪽이라 받아들인다         |
+| 프로젝트 = 시작 `cwd`에서 올라가며 처음 `.git`이 있는 폴더(없으면 `cwd`). `.codex/config.toml`은 그 폴더에 쓴다                                                                                                                                                                                                          | Codex가 프로젝트 층을 읽는 기준이 프로젝트 루트라 하위 폴더에 써도 루트에서 연 세션엔 안 먹는다                |
+| 제안 조건은 Claude판과 같다(사용자 설정에서 켜져 있고, 1~3곳, 3회 이상, 세션 기준 이상, 홈에서 시작한 세션 없음) + **쓴 프로젝트가 전부 신뢰한 프로젝트**. 하나라도 신뢰하지 않았으면 제안하지 않는다. 폴더가 없어진 곳만 건너뛴다                                                                                       | 신뢰하지 않은 곳은 프로젝트 파일을 안 읽어 서버가 꺼진 채로 남는다(쓰던 곳을 깨뜨린다)                         |
+| 적용: 프로젝트마다 `.codex/config.toml`의 `[mcp_servers.<이름>]`에 `enabled = true`(없으면 파일 끝에 section 추가, 파일·`.codex` 폴더가 없으면 만든다), 마지막에 사용자 `config.toml`의 같은 section `enabled = false`. 백업 → 쓰기 → 기록 한 줄, 되돌리기는 모두 적용 뒤 그대로일 때만 한 번에(Claude판 `scope`의 도구) | 0014·0022와 같은 경로. 새 TOML crate 없이 기존 글자 편집(`edit.rs`)만 쓴다                                     |
+| 거부: 프로젝트 쪽 `.codex` 폴더·`config.toml`이 링크, 해시가 미리보기와 다름, 파일이 `mcp_servers`를 `[mcp_servers.이름]`이 아닌 꼴(인라인·점 키)로 적음(같은 표를 두 번 정의해 Codex가 설정을 못 읽게 될 수 있다)                                                                                                       | 낯선 저장소가 밖의 파일을 가리켜 덮는 것을 막는다. 설정 파싱을 깨뜨리지 않는다                                 |
+| 사용 횟수는 0이 아닐 때만 행에 붙인다. 끄기 제안은 여전히 없다                                                                                                                                                                                                                                                           | 0회는 "안 썼다"가 아니라 "코드 모드가 아닌 호출 경로를 못 셌을 수 있다"다. 근거가 없으면 제안하지 않는다(0017) |
+| 화면은 Claude 플러그인과 같은 행·미리보기·되돌리기다. 미리보기 문구에 "프로젝트의 `.codex/config.toml`은 저장소에 커밋될 수 있고 Codex에는 커밋되지 않는 프로젝트 설정 파일이 없다"를 더한다. 적용 기록 대상 이름은 `codex/mcp-scope:<이름>`                                                                             | 되돌릴 수 있어도 커밋된 파일은 팀에 보일 수 있다. 사용자가 알고 누르게 한다                                    |
+
+한계:
+
+- 프로젝트 층이 키 단위로 겹치는지는 소스로 확인했고 실제 Codex 세션에서는 확인하지 않았다(위 모름). `--strict-config`처럼 층마다 설정을 엄격히 검사하는 모드에서는 `command` 없는 프로젝트 층이 거부될 수 있다(추정, 소스에서 `McpServerConfig`가 전송 방식 없이는 "invalid transport"를 내는 것만 봤다).
+- 서버 이름이 다르게 불리는 호출 경로(도구 검색 등)는 못 센다. 그만큼 사용 횟수가 적게 나온다.
+- 사용 기록을 읽을 때 압축 rollout을 푼다(Claude 기록과 같은 TTL 캐시). 이 Mac 실측은 아래 "측정".
+- Codex 플러그인·Kiro는 이 갱신 범위 밖이다.
+
+측정(이 Mac, release, 2026-11-19, 읽기 전용): `usage::read`(Claude + Codex 합쳐, 캐시 없음) 12.4초. Codex rollout 135개·시작 프로젝트 19곳, 기록 다 봄. Codex만의 시간은 따로 재지 못했다(모름 → 확인 방법: `HOME`을 Codex 폴더만 든 임시 폴더로 두고 `cargo test --release real_codex_usage -- --ignored --nocapture`). 같은 TTL 캐시(`metricsTtlSecs`)를 쓰고 점검 탭이 부를 때만 계산한다. 서버 7개 중 켜져 있고 쓴 것(`node_repl`)에 제안 하나가 나왔고, 이미 꺼진 서버(`code-review-graph`, 6곳에서 사용)와 안 쓴 서버는 제안이 없었다.

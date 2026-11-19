@@ -140,9 +140,9 @@
   - 문제: 플러그인·스킬을 프로젝트마다 켤 수 있다는 것 자체를 모르거나, 알아도 매번 사용자 전체로 켜 두고 프로젝트별로 옮기는 걸 잊는다. 그래서 한 프로젝트에서만 쓰는 것이 모든 세션의 기본 컨텍스트에 실린다.
   - kcal이 할 일: 새 저장소를 만들지 않는다. 기억은 Claude Code 내장(`claude plugin enable --scope project|local` → `.claude/settings.json`·`settings.local.json` `enabledPlugins`)이 맡는다. kcal은 ① **상황 보기**: 플러그인·스킬마다 "켠 범위(사용자/프로젝트) × 실제로 쓴 프로젝트(최근 N일)" 한 장, ② **알려주기**: "사용자 전체로 켜져 있는데 A·B 프로젝트에서만 썼다" → "사용자에서 끄고 A·B에서만 켜기" 제안, ③ **대신 적기**: 0014 적용·되돌리기로 프로젝트 파일에 쓴다.
   - "원할 때 주입": 스킬은 `skillOverrides` `user-invocable-only`(부를 때만 본문, 0017 사실표 E), 플러그인은 세션 중 켜고 끄면 캐시가 깨지므로(0017 사실표 D) 세션 시작 전 프로젝트 파일로.
-  - 겹치는 것: 진단하기 개선의 구멍 5(스킬 단위)·6(작업 폴더 하나만 봄)과 같은 재료(프로젝트별 사용 기록)를 쓴다. 구멍 1(사용 기록 근거)은 0022로 풀려 ①상황 보기와 ②·③ 중 Claude 플러그인 "프로젝트에서만 켜기"(1~3곳에서만, 3번 이상 쓴 것, `.claude/settings.local.json`에 쓰고 한 번에 되돌리기)는 구현됐다. 남음: 스킬 단위, MCP 범위 옮기기, Codex·Kiro.
+  - 겹치는 것: 진단하기 개선의 구멍 5(스킬 단위)·6(작업 폴더 하나만 봄)과 같은 재료(프로젝트별 사용 기록)를 쓴다. 구멍 1(사용 기록 근거)은 0022로 풀려 ①상황 보기와 ②·③ 중 Claude 플러그인 "프로젝트에서만 켜기"(1~3곳에서만, 3번 이상 쓴 것, `.claude/settings.local.json`에 쓰고 한 번에 되돌리기)는 구현됐다. 스킬 단위(0022)와 Codex MCP 서버 "프로젝트에서만 켜기"(2026-11-19, 0022 "Codex MCP", `.codex/config.toml`, 신뢰한 프로젝트만)도 구현됐다. 남음: Claude MCP 범위 옮기기, Codex 플러그인, Kiro.
   - 기존 코드(확인됨): `enabledPlugins` 읽기 `context/scan.rs:179`, 고치기 `coach/edit.rs:206`(지금은 이미 적힌 플러그인만, 사용자 settings 기준).
-  - 확인할 것: (추정) 프로젝트 `enabledPlugins: false`가 사용자 `true`를 덮는다. 한 프로젝트에서 `claude plugin disable <id> --scope local` 뒤 새 세션 `/context`로 확인. (추정) 세션 기록 `cwd`로 프로젝트별 사용 집계가 된다. `~/.claude/projects/*/*.jsonl`의 `cwd`로 확인. (모름) Codex·Kiro의 프로젝트 단위 켜기. Codex `plugins._default.enabled`는 읽지 않고 있고, Kiro는 사실표 확인이 필요하다.
+  - 확인할 것: (추정) 프로젝트 `enabledPlugins: false`가 사용자 `true`를 덮는다. 한 프로젝트에서 `claude plugin disable <id> --scope local` 뒤 새 세션 `/context`로 확인. (추정) 세션 기록 `cwd`로 프로젝트별 사용 집계가 된다. `~/.claude/projects/*/*.jsonl`의 `cwd`로 확인. (확인됨 2026-11-19, 소스) Codex는 신뢰한 프로젝트의 `.codex/config.toml`이 사용자 설정 위에 키 단위로 겹친다(실제 세션 확인은 남음). (모름) Kiro의 프로젝트 단위 켜기. Codex `plugins._default.enabled`는 읽지 않고 있고, Kiro는 사실표 확인이 필요하다.
   - 시작 전: 결정 기록(0017 E에 붙일지 새로 쓸지)과 진단하기 개선과의 순서를 정한다.
   - 2026-11-19 사용자 결정: 0017 E에 붙이고, 진단하기 5 다음에 한다.
 

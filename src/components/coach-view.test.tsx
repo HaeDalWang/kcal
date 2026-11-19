@@ -597,6 +597,24 @@ describe("CoachPanel", () => {
     });
   });
 
+  it("moves a Codex MCP server to the projects that used it, with the committed-file note and Codex wording", async () => {
+    const calls = mock({ preview_scope_move: () => MOVE_PREVIEW });
+    const server = sw("codex/mcp:crg", {
+      tokens: null,
+      isProposed: false,
+      usage: usage([["kcal", 5]]),
+      scopeMove: { projects: [{ name: "kcal", path: "/h/work/kcal" }], skipped: [] },
+    });
+    renderPanel("codex", { switches: [server] });
+    const movable = screen.getByRole("group", { name: "kcal 프로젝트에서만 켜기 제안" });
+    fireEvent.click(within(movable).getByRole("button", { name: "crg 프로젝트에서만 켜기" }));
+    const panel = await screen.findByRole("group", { name: "바꿀 내용 확인" });
+    expect(within(panel).getByText(/커밋될 수 있어요/)).toBeTruthy();
+    expect(calls.find((c) => c.cmd === "preview_scope_move")?.args).toEqual({
+      target: "codex/mcp:crg",
+    });
+  });
+
   it("hides a skill's description instead of turning it off, with skill wording and no backup line for a new file", async () => {
     const calls = mock({
       preview_switch: () => ({

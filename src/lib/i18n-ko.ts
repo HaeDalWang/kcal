@@ -307,8 +307,9 @@ export const ko = {
       sessions: number,
       total: number,
       last: { at: number; project: string } | null,
+      agent = "Claude",
     ) =>
-      `${days}일 · Claude 세션 ${sessions}개 중 ${total}번` +
+      `${days}일 · ${agent} 세션 ${sessions}개 중 ${total}번` +
       (last ? ` · 마지막 ${monthDay(last.at * 1000)} ${last.project}` : ""),
     tooFewUses: "사용 횟수가 적어 프로젝트에서만 켜기를 권하지 않아요",
     evidenceSource: " 사용 횟수는 Claude 세션 기록에서 kcal이 센 값이에요.",
@@ -358,6 +359,9 @@ export const ko = {
     moveTitle: (name: string) => `${name} 프로젝트에서만 켜기`,
     moveNote:
       "아래 파일을 한 번에 바꿔요. 바꾸기 전에 원본 옆에 백업을 만들고, 되돌리기 한 번으로 모두 되돌려요.",
+    moveNoteCodex:
+      "아래 파일을 한 번에 바꿔요. 프로젝트의 .codex/config.toml은 그 저장소에 커밋될 수 있어요(Codex에는 커밋되지 않는 프로젝트 설정 파일이 없어요). Codex는 신뢰한 프로젝트의 이 파일만 읽어요. 바꾸기 전에 원본 옆에 백업을 만들고, 되돌리기 한 번으로 모두 되돌려요.",
+    legendCodexMove: " 제안 = 일부 프로젝트에서만 쓴 MCP 서버를 그 프로젝트에서만 켜기.",
     skipped: (names: string) => `폴더가 없어져 건너뛰어요: ${names}`,
     newFile: "새 파일",
     confirmMove: "확인하고 옮기기",

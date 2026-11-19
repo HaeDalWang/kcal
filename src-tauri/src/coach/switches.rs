@@ -13,7 +13,7 @@ use super::contents::{self, PluginContents};
 use super::edit::{self, Edit};
 use super::scope::{self, ProjectSettings, ScopeMove, SwitchScope};
 use super::skills::{self, SkillInfo};
-use super::usage::{SwitchUsage, UsageIndex, plugin_name};
+use super::usage::{SwitchUsage, UsageIndex, codex_server_key, plugin_name};
 use crate::context::{
     AgentContext, ContextKind, ContextSnapshot, Loading, fsutil, paths, scan, shape,
 };
@@ -217,7 +217,11 @@ fn with_cost(mut switch: CoachSwitch, cost: (Option<u64>, Option<Loading>)) -> C
     switch
 }
 
-fn codex(home: &Path, context: Option<&AgentContext>) -> Vec<CoachSwitch> {
+fn codex(
+    home: &Path,
+    context: Option<&AgentContext>,
+    usage: Option<&UsageIndex>,
+) -> Vec<CoachSwitch> {
     let file = paths::codex_root(home).join("config.toml");
     if !file.is_file() {
         return Vec::new();
@@ -234,8 +238,19 @@ fn codex(home: &Path, context: Option<&AgentContext>) -> Vec<CoachSwitch> {
         );
         with_cost(switch, measured(context, ContextKind::Plugins, &s.name))
     });
+    // MCP 사용 횟수와 "프로젝트에서만 켜기" 제안(0022 Codex 갱신). 0회는 근거로 쓰지 않는다: 코드 모드가 아닌 호출 경로를
+    // 못 셀 수 있어 "안 썼다"가 아니라 "모른다"다. 그래서 끄기 제안은 여전히 없다.
+    let trusted = scan::codex_trusted_projects(&config);
+    let codex_usage = usage.and_then(|u| u.codex.as_deref());
     let servers = scan::codex_mcp_server_states(&config).into_iter().map(|s| {
-        let switch = base(Agent::Codex, SwitchKind::Mcp, &s.name, s.enabled);
+        let mut switch = base(Agent::Codex, SwitchKind::Mcp, &s.name, s.enabled);
+        if let Some(index) = codex_usage {
+            let used = index.for_server(&codex_server_key(&s.name));
+            if used.total > 0 {
+                switch.scope_move = scope::codex::proposal(home, s.enabled, &used, &trusted);
+                switch.usage = Some(used);
+            }
+        }
         let switch = file_switch(
             switch,
             SwitchFormat::Toml,
@@ -373,7 +388,7 @@ pub fn list(
     let context = |agent| snapshot.and_then(|s| s.agents.iter().find(|a| a.agent == agent));
     let mut all: Vec<CoachSwitch> = [
         claude(home, context(Agent::Claude), usage, tuning),
-        codex(home, context(Agent::Codex)),
+        codex(home, context(Agent::Codex), usage),
         kiro(home, context(Agent::Kiro)),
     ]
     .into_iter()

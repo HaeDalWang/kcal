@@ -173,6 +173,10 @@ describe("appliedName", () => {
     );
     expect(appliedName({ name: "p@m", enabled: false, target: "codex/plugin:p@m" })).toBe("p@m 끔");
     expect(appliedName({ name: "p@m", enabled: true, target: "codex/plugin:p@m" })).toBe("p@m 켬");
+    // 프로젝트에서만 켜기 기록은 이름이 이미 행동이라 "켬/끔"을 붙이지 않는다(Claude 플러그인·Codex MCP).
+    const moved = "x: 프로젝트에서만 켬(a)";
+    for (const target of ["claude/plugin-scope:x", "codex/mcp-scope:x"])
+      expect(appliedName({ name: moved, enabled: false, target })).toBe(moved);
   });
 });
 

@@ -31,6 +31,10 @@ use crate::tuning::Tuning;
 pub const TOP_PROJECTS: usize = 3;
 const MIB: u64 = 1024 * 1024;
 
+#[path = "usage_codex.rs"]
+mod codex;
+pub(super) use codex::server_key as codex_server_key;
+
 static USE_MARK: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#""tool_use"|<command-name>"#).unwrap());
 /// `api-request`·`api-request-blob` 줄의 시작(요청 본문의 다시 적기라 건너뛴다).
@@ -74,6 +78,8 @@ pub struct UsageIndex {
     project_sessions: HashMap<PathBuf, usize>,
     /// 기간 안 세션을 시작한 폴더 전부(쓴 것이 없어도).
     pub projects: BTreeSet<PathBuf>,
+    /// Codex rollout에서 센 MCP 사용(0022 Codex 갱신). 같은 구조를 따로 쓴다(세션 수·프로젝트가 에이전트마다 다르다).
+    pub codex: Option<Box<UsageIndex>>,
 }
 
 /// 스위치 하나의 사용 횟수. TS 짝은 `ipc.ts` `SwitchUsage`.
@@ -477,6 +483,7 @@ pub fn read(home: &Path, tuning: &Tuning, now: f64) -> UsageIndex {
         min_sessions: tuning.diagnose_min_sessions,
         scope_min_uses: tuning.scope_min_uses,
         is_partial: files.len() > limit,
+        codex: Some(Box::new(codex::read(home, tuning, now))),
         ..UsageIndex::default()
     };
     let bare = BareNames::load(home);

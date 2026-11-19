@@ -308,8 +308,8 @@ export const en: Messages = {
         : `Not enough Claude history to tell if you use this (${n(sessions, "session")} in ${n(days, "day")})`,
     noUsageLog: (agent) =>
       `kcal can’t see how often you use this in ${agent}, so it doesn’t suggest turning it off`,
-    used: (days, sessions, total, last) =>
-      `${n(total, "use")} in ${n(sessions, "Claude session")} over ${n(days, "day")}` +
+    used: (days, sessions, total, last, agent = "Claude") =>
+      `${n(total, "use")} in ${n(sessions, `${agent} session`)} over ${n(days, "day")}` +
       (last ? ` · last used ${dayText.format(last.at * 1000)} in ${last.project}` : ""),
     tooFewUses: "Too few uses to suggest a project-only scope",
     evidenceSource: " Use counts come from your Claude session logs, counted by kcal.",
@@ -361,6 +361,9 @@ export const en: Messages = {
     moveTitle: (name) => `${name}: on only where used`,
     moveNote:
       "These files change together. Backups are made next to the originals first, and one Undo restores them all.",
+    moveNoteCodex:
+      "These files change together. The project’s .codex/config.toml may be committed to that repository (Codex has no project config file that stays out of version control). Codex only reads this file for projects you trust. Backups are made next to the originals first, and one Undo restores them all.",
+    legendCodexMove: " Suggested = an MCP server used in only some projects, turned on only there.",
     skipped: (names) => `Skipped (folder is gone): ${names}`,
     newFile: "new file",
     confirmMove: "Confirm and move",

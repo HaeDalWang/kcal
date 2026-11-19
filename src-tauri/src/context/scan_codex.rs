@@ -129,6 +129,42 @@ pub(crate) fn codex_mcp_server_states(config: &str) -> Vec<TomlSwitchState> {
     states
 }
 
+/// `[projects."<경로>"]`에 `trust_level = "trusted"`가 적힌 폴더 경로(0022 Codex 갱신). Codex는 신뢰한 프로젝트의
+/// `.codex/config.toml`만 읽는다. Windows는 Codex처럼 대소문자를 접어 비교하도록 소문자로 준다.
+pub(crate) fn codex_trusted_projects(config: &str) -> std::collections::HashSet<String> {
+    static PROJECT: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r#"^projects\.(?:"((?:[^"\\]|\\.)*)"|'([^']*)')$"#).unwrap());
+    static TRUSTED: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r#"^\s*trust_level\s*=\s*(?:"trusted"|'trusted')\s*(?:#.*)?$"#).unwrap()
+    });
+    let mut trusted = std::collections::HashSet::new();
+    let mut current: Option<String> = None;
+    for (line, header) in config.split('\n').zip(section_headers(config)) {
+        if let Some(section) = header {
+            current = PROJECT.captures(&section).and_then(|c| {
+                Some(match c.get(1) {
+                    Some(basic) => basic.as_str().replace("\\\\", "\\").replace("\\\"", "\""),
+                    None => c.get(2)?.as_str().to_owned(),
+                })
+            });
+        } else if TRUSTED.is_match(line.trim_end_matches('\r'))
+            && let Some(path) = current.as_ref()
+        {
+            trusted.insert(trust_key(path));
+        }
+    }
+    trusted
+}
+
+/// 신뢰 목록과 비교하는 경로 문자열(Windows는 대소문자 무시).
+pub(crate) fn trust_key(path: &str) -> String {
+    if cfg!(windows) {
+        path.to_ascii_lowercase()
+    } else {
+        path.to_owned()
+    }
+}
+
 pub(super) fn codex_enabled_mcp_servers(config: &str) -> Vec<String> {
     codex_mcp_server_states(config)
         .into_iter()

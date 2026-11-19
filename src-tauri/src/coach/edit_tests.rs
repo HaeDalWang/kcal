@@ -275,3 +275,43 @@ fn toml_keeps_crlf_when_replacing_or_inserting_enabled() {
         )
     );
 }
+
+#[test]
+fn project_section_is_enabled_in_place_or_appended() {
+    let have = "model = \"x\"\n[mcp_servers.one]\nenabled = false\n";
+    let flipped = enable_toml_section(have, "mcp_servers.one").unwrap();
+    assert_eq!(
+        flipped.content,
+        "model = \"x\"\n[mcp_servers.one]\nenabled = true\n"
+    );
+    // 이미 켜져 있으면 바꿀 것이 없다.
+    let same = enable_toml_section(&flipped.content, "mcp_servers.one").unwrap();
+    assert!(!same.changed);
+    // 없으면 빈 줄 하나를 두고 끝에 덧붙인다(끝 줄바꿈이 없어도).
+    let added = enable_toml_section("model = \"x\"", "mcp_servers.\"a b\"").unwrap();
+    assert_eq!(
+        added.content,
+        "model = \"x\"\n\n[mcp_servers.\"a b\"]\nenabled = true\n"
+    );
+    let fresh = enable_toml_section("", "mcp_servers.one").unwrap();
+    assert_eq!(fresh.content, "[mcp_servers.one]\nenabled = true\n");
+    let crlf = enable_toml_section("a = 1\r\n", "mcp_servers.one").unwrap();
+    assert_eq!(
+        crlf.content,
+        "a = 1\r\n\r\n[mcp_servers.one]\r\nenabled = true\r\n"
+    );
+}
+
+#[test]
+fn project_section_refuses_other_ways_of_defining_mcp_servers() {
+    for config in [
+        "[mcp_servers]\none = { command = \"c\" }\n",
+        "mcp_servers = { one = { command = \"c\" } }\n",
+        "mcp_servers.one.command = \"c\"\n",
+    ] {
+        assert!(
+            enable_toml_section(config, "mcp_servers.two").is_err(),
+            "{config}"
+        );
+    }
+}

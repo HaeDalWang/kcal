@@ -586,7 +586,9 @@ pub use codex_scan::codex;
 use codex_scan::codex_plugin_skills;
 #[cfg(test)]
 use codex_scan::{codex_enabled_mcp_servers, codex_enabled_plugins};
-pub(crate) use codex_scan::{codex_mcp_server_states, codex_plugin_states};
+pub(crate) use codex_scan::{
+    codex_mcp_server_states, codex_plugin_states, codex_trusted_projects, trust_key,
+};
 
 // ---------- Kiro ----------
 

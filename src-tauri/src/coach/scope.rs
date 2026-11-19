@@ -27,8 +27,24 @@ use crate::error::AppError;
 use crate::i18n::pick;
 use crate::usage::Agent;
 
+#[path = "scope_codex.rs"]
+pub mod codex;
+
 /// 적용 기록 `target`의 앞부분. TS 짝은 `ipc.ts` `SCOPE_TARGET_PREFIX`(화면이 이름 뒤 "켬/끔"을 붙이지 않는다).
 pub const SCOPE_TARGET_PREFIX: &str = "claude/plugin-scope:";
+
+/// "프로젝트에서만 켜기" 적용 기록의 `target`인가(Claude 플러그인·Codex MCP).
+pub fn is_scope_target(target: &str) -> bool {
+    target.starts_with(SCOPE_TARGET_PREFIX) || target.starts_with(codex::TARGET_PREFIX)
+}
+
+fn target_prefix(agent: Agent) -> &'static str {
+    if agent == Agent::Codex {
+        codex::TARGET_PREFIX
+    } else {
+        SCOPE_TARGET_PREFIX
+    }
+}
 /// 이 수 이하의 프로젝트에서만 썼으면 옮기기를 제안한다. 더 많으면 "그대로(자주 씀)".
 pub const MAX_PROJECTS: usize = 3;
 const CLAUDE_DIR: &str = ".claude";
@@ -289,19 +305,24 @@ fn plan_project(project: &Path, id: &str) -> Result<Option<Planned>, AppError> {
 fn plan(switch: &CoachSwitch) -> Result<(Vec<Planned>, &ScopeMove), AppError> {
     let moving = switch.scope_move.as_ref().ok_or_else(|| {
         refuse(pick(
-            "이 플러그인은 프로젝트에서만 켜기 대상이 아닙니다.",
-            "This plugin isn't a candidate for turning on only in projects.",
+            "이 항목은 프로젝트에서만 켜기 대상이 아닙니다.",
+            "This item isn't a candidate for turning on only in projects.",
         ))
     })?;
     let mut planned = Vec::new();
     for project in &moving.projects {
-        planned.extend(plan_project(Path::new(&project.path), &switch.name)?);
+        let dir = Path::new(&project.path);
+        planned.extend(if switch.agent == Agent::Codex {
+            codex::plan_project(dir, codex::section(switch)?)?
+        } else {
+            plan_project(dir, &switch.name)?
+        });
     }
     let path = switch.path().ok_or(AppError::Internal)?;
     let (bytes, text) = read_text(&path)?;
-    let user = edit::set_json_plugin_enabled(&text, &switch.name, false).map_err(refuse)?;
+    let user = switch.plan(&text, false).map_err(refuse)?;
     if !user.changed {
-        return Err(refuse(pick("이미 꺼져 있어요.", "It's already off.")));
+        return Err(codex::already_off());
     }
     planned.push(Planned {
         change: ScopeFileChange {
@@ -499,8 +520,8 @@ pub fn apply(
         id: record_id(now),
         at: now,
         action: CoachAction::Apply,
-        target: format!("{SCOPE_TARGET_PREFIX}{}", switch.name),
-        agent: Agent::Claude,
+        target: format!("{}{}", target_prefix(switch.agent), switch.name),
+        agent: switch.agent,
         name: log_name(&switch.name, moving),
         file: path.to_string_lossy().into_owned(),
         backup: backup.to_string_lossy().into_owned(),
@@ -543,10 +564,16 @@ pub fn undo(
 ) -> Result<AppliedSwitch, AppError> {
     let file = PathBuf::from(&applied.file);
     let backup = PathBuf::from(&applied.backup);
-    let is_known = applied.target.starts_with(SCOPE_TARGET_PREFIX)
+    let is_known_file: fn(&LoggedFile) -> bool = if applied.target.starts_with(codex::TARGET_PREFIX)
+    {
+        codex::is_known_project_file
+    } else {
+        is_known_project_file
+    };
+    let is_known = is_scope_target(&applied.target)
         && switches::writable_files(home).contains(&file)
         && is_backup_of(&backup, &file)
-        && applied.files.iter().all(is_known_project_file);
+        && applied.files.iter().all(is_known_file);
     if !is_known {
         return Err(refuse(pick(
             "기록의 파일·백업 경로가 kcal이 만든 것이 아니라 되돌리지 않아요.",

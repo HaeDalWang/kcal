@@ -30,6 +30,7 @@ import rates from "@/test/fixtures/ipc/rate-snapshot.json";
 import usage from "@/test/fixtures/ipc/usage-snapshot.json";
 import {
   CODEX_APPLIED,
+  CODEX_SCOPE_PREVIEW,
   DASHBOARD_CHECKS,
   DASHBOARD_SWITCHES,
   EFFORT_APPLIED,
@@ -168,7 +169,7 @@ const askRules = () =>
 
 mockWindows("dashboard");
 mockIPC(
-  (cmd) => {
+  (cmd, args) => {
     if (isBlank) {
       switch (cmd) {
         case "get_settings":
@@ -217,7 +218,9 @@ mockIPC(
       case "get_switches":
         return DASHBOARD_SWITCHES;
       case "preview_scope_move":
-        return SCOPE_PREVIEW;
+        return (args as { target?: string } | undefined)?.target?.startsWith("codex/")
+          ? CODEX_SCOPE_PREVIEW
+          : SCOPE_PREVIEW;
       case "get_coach_log":
         return [CODEX_APPLIED];
       case "preview_check":

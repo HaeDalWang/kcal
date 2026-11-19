@@ -543,6 +543,20 @@ export const DASHBOARD_SWITCHES: CoachSwitch[] = [
   }),
   sw("codex/plugin:github@openai-curated", "github@openai-curated", 2410),
   sw("codex/mcp:playwright", "playwright", 960),
+  // Codex MCP "프로젝트에서만 켜기"(0022 Codex 갱신): 코드 모드 호출 기록에서 센 사용 횟수. 크기는 모른다.
+  sw("codex/mcp:code-review-graph", "code-review-graph", null, {
+    usage: usage([
+      ["kcal", 7],
+      ["side-app", 2],
+    ]),
+    scopeMove: {
+      projects: [
+        { name: "kcal", path: "/Users/me/work/kcal" },
+        { name: "side-app", path: "/Users/me/work/side-app" },
+      ],
+      skipped: [],
+    },
+  }),
   sw("codex/plugin:figma@openai-curated", "figma@openai-curated", null, {
     enabled: false,
     isProposed: false,
@@ -572,6 +586,36 @@ export const SCOPE_PREVIEW: ScopeMovePreview = {
   ],
   skipped: [],
   beforeHash: "0011223344556677",
+};
+
+/** Codex MCP "프로젝트에서만 켜기" 미리보기(code-review-graph → kcal, side-app). */
+export const CODEX_SCOPE_PREVIEW: ScopeMovePreview = {
+  target: "codex/mcp:code-review-graph",
+  changes: [
+    {
+      file: "/Users/me/work/kcal/.codex/config.toml",
+      location: "파일 끝에 새 [mcp_servers.code-review-graph] section",
+      before: null,
+      after: "enabled = true",
+      isNewFile: true,
+    },
+    {
+      file: "/Users/me/work/side-app/.codex/config.toml",
+      location: "[mcp_servers.code-review-graph] 안 2번째 줄",
+      before: "enabled = false",
+      after: "enabled = true",
+      isNewFile: false,
+    },
+    {
+      file: "/Users/me/.codex/config.toml",
+      location: "[mcp_servers.code-review-graph] 바로 아래 (새 줄, 12번째 줄)",
+      before: null,
+      after: "enabled = false",
+      isNewFile: false,
+    },
+  ],
+  skipped: [],
+  beforeHash: "8899aabbccddeeff",
 };
 
 /** 진단하기 "최근 바꾼 것" 한 줄(Codex). */

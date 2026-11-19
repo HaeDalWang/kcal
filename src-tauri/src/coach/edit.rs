@@ -144,6 +144,52 @@ pub fn set_toml_enabled(content: &str, section: &str, enabled: bool) -> Result<E
     })
 }
 
+static MCP_ROOT_KEY: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^\s*(?:\[\s*mcp_servers\s*\]|mcp_servers\s*[.=])").unwrap());
+
+/// 프로젝트 `.codex/config.toml`의 `[section]`에 `enabled = true`를 둔다(Codex "프로젝트에서만 켜기", 0022).
+/// section이 있으면 `set_toml_enabled`와 같고, 없으면 파일 끝에 새 section을 덧붙인다. 파일이 `mcp_servers`를 표 헤더 없이
+/// 인라인·점 키로 적었으면(같은 표를 두 번 정의해 Codex가 설정을 못 읽게 될 수 있어) 거부한다.
+pub fn enable_toml_section(content: &str, section: &str) -> Result<Edit, String> {
+    let lines: Vec<&str> = content.split('\n').collect();
+    let has_section = header_indices(&lines)
+        .iter()
+        .any(|&i| SECTION.captures(lines[i]).is_some_and(|c| &c[1] == section));
+    if has_section {
+        return set_toml_enabled(content, section, true);
+    }
+    if lines.iter().any(|l| MCP_ROOT_KEY.is_match(l)) {
+        return Err(pick(
+            "이 파일이 mcp_servers를 [mcp_servers.이름] 꼴이 아닌 방식으로 적고 있어 고치지 않아요.",
+            "This file writes mcp_servers in a form other than [mcp_servers.name], so kcal won't edit it.",
+        )
+        .into());
+    }
+    let ending = if content.contains("\r\n") {
+        "\r\n"
+    } else {
+        "\n"
+    };
+    let mut next = content.to_owned();
+    if !next.is_empty() && !next.ends_with('\n') {
+        next.push_str(ending);
+    }
+    if !next.trim().is_empty() {
+        next.push_str(ending);
+    }
+    next.push_str(&format!("[{section}]{ending}enabled = true{ending}"));
+    Ok(Edit {
+        content: next,
+        changed: true,
+        location: tr!(
+            "파일 끝에 새 [{section}] section",
+            "a new [{section}] section at the end of the file"
+        ),
+        before: None,
+        after: "enabled = true".to_owned(),
+    })
+}
+
 /// JSON 파일을 읽는다. 주석·끝 쉼표(JSONC)·객체가 아닌 최상위는 거부한다.
 fn parse_object(content: &str) -> Result<Map<String, Value>, String> {
     match serde_json::from_str::<Value>(content) {

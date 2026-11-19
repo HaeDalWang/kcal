@@ -25,7 +25,7 @@ function codexShare(item: CoachSwitch, rate: CodexRate | undefined): number | nu
 }
 
 /** "1 use in 227 Claude sessions over 30 days · last used Nov 5 in kcal" 또는 "최근 30일 안 씀". */
-function usageText(usage: SwitchUsage): string {
+function usageText(usage: SwitchUsage, agent: Agent): string {
   if (usage.total === 0) {
     if (usage.sessions < usage.minSessions) return t.coach.fewSessions(usage.days, usage.sessions);
     const unused = t.coach.unused(usage.days, usage.sessions);
@@ -35,7 +35,7 @@ function usageText(usage: SwitchUsage): string {
     usage.lastUsed !== null && usage.lastProject
       ? { at: usage.lastUsed, project: usage.lastProject }
       : null;
-  return t.coach.used(usage.days, usage.sessions, usage.total, last);
+  return t.coach.used(usage.days, usage.sessions, usage.total, last, AGENT_LABEL[agent]);
 }
 
 /** 사용자 범위로 켠 플러그인인데 쓴 횟수가 적어 "프로젝트에서만 켜기"를 권하지 않는 것. */
@@ -305,7 +305,7 @@ function KeepRow({
 } & ReturnProps) {
   const actionRef = useReturnFocus<HTMLButtonElement>(isReturn, onReturned);
   const title = [
-    item.usage ? usageText(item.usage) : null,
+    item.usage ? usageText(item.usage, item.agent) : null,
     hasTooFewUses(item) ? t.coach.tooFewUses : null,
     ...(item.usage?.projects.map((p) => `${p.path} ${integer.format(p.count)}×`) ?? []),
   ]
@@ -386,7 +386,7 @@ function Summary({
   const legendId = `${agent}-diagnose-legend`;
   const legend = hasFeature(agent, "usageEvidence")
     ? t.coach.legendTokens + t.coach.legendClaude + t.coach.evidenceSource
-    : t.coach.legendTokens;
+    : t.coach.legendTokens + (switches.some((s) => s.scopeMove) ? t.coach.legendCodexMove : "");
   return (
     <div className="flex flex-col gap-1 px-5 pt-2.5 pb-2">
       <div className="flex items-start gap-2">

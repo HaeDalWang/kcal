@@ -173,14 +173,11 @@ function MovePanel({
 }) {
   const { target, preview } = step;
   const skipped = preview?.skipped ?? [];
+  const note = target.agent === "codex" ? t.coach.moveNoteCodex : t.coach.moveNote;
   return (
     <ChangePanel
       title={t.coach.moveTitle(target.name)}
-      note={
-        skipped.length > 0
-          ? `${t.coach.moveNote} ${t.coach.skipped(skipped.join(", "))}`
-          : t.coach.moveNote
-      }
+      note={skipped.length > 0 ? `${note} ${t.coach.skipped(skipped.join(", "))}` : note}
       file={null}
       rows={
         preview

@@ -136,6 +136,9 @@ export type ScopeMovePreview = {
 /** Rust `coach::scope::SCOPE_TARGET_PREFIX`. "프로젝트에서만 켜기" 적용 기록의 `target` 앞부분. */
 export const SCOPE_TARGET_PREFIX = "claude/plugin-scope:";
 
+/** Rust `coach::scope::codex::TARGET_PREFIX`. Codex MCP 서버 "프로젝트에서만 켜기" 적용 기록의 `target` 앞부분. */
+export const CODEX_SCOPE_TARGET_PREFIX = "codex/mcp-scope:";
+
 /** Rust `coach::skills::PERSONAL_PREFIX`·`PROJECT_PREFIX`. 스킬 설명 숨기기 적용 기록의 `target` 앞부분. */
 export const SKILL_TARGET_PREFIX = "claude/skill:";
 export const PROJECT_SKILL_TARGET_PREFIX = "claude/project-skill:";
