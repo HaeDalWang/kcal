@@ -278,8 +278,17 @@ pub fn is_inside(path: &Path, root: &Path) -> bool {
 }
 
 fn starts_with_ignoring_case(path: &Path, root: &Path) -> bool {
-    let lower = |p: &Path| PathBuf::from(p.to_string_lossy().to_lowercase());
+    let lower = |p: &Path| PathBuf::from(without_verbatim(&p.to_string_lossy().to_lowercase()));
     lower(path).starts_with(lower(root))
+}
+
+/// 소문자로 바꾼 경로에서 `\\?\c:\x` → `c:\x`, `\\?\unc\srv\x` → `\\srv\x`. 한쪽만 이 앞머리가 붙어도 같은 폴더로 본다.
+fn without_verbatim(path: &str) -> String {
+    if let Some(rest) = path.strip_prefix(r"\\?\unc\") {
+        format!(r"\\{rest}")
+    } else {
+        path.strip_prefix(r"\\?\").unwrap_or(path).to_string()
+    }
 }
 
 #[cfg(test)]
@@ -329,6 +338,16 @@ mod tests {
             Path::new("/work/apple"),
             Path::new("/work/app")
         ));
+    }
+
+    #[test]
+    fn verbatim_prefix_is_dropped_before_comparing() {
+        assert_eq!(super::without_verbatim(r"\\?\c:\work\app"), r"c:\work\app");
+        assert_eq!(
+            super::without_verbatim(r"\\?\unc\srv\share"),
+            r"\\srv\share"
+        );
+        assert_eq!(super::without_verbatim(r"c:\work"), r"c:\work");
     }
 
     use super::*;

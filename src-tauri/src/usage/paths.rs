@@ -29,7 +29,13 @@ pub fn codex_sessions_dir(home: &Path) -> PathBuf {
 pub fn kiro_cli_candidates(home: &Path, path_env: Option<&std::ffi::OsStr>) -> Vec<PathBuf> {
     #[cfg(windows)]
     let (installed, name) = {
-        let local = std::env::var_os("LOCALAPPDATA")
+        // 테스트는 이 PC의 실제 kiro-cli가 끼지 않게 home 기준만 본다(docs/platform/windows-log.md 11-16).
+        let env_local = if cfg!(test) {
+            None
+        } else {
+            std::env::var_os("LOCALAPPDATA")
+        };
+        let local = env_local
             .map(PathBuf::from)
             .unwrap_or_else(|| home.join("AppData").join("Local"));
         (local.join("Kiro-Cli").join("kiro-cli.exe"), "kiro-cli.exe")

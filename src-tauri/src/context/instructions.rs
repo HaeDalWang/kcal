@@ -115,7 +115,19 @@ pub(crate) fn resolve_import(reference: &str, from: &Path, home: &Path) -> PathB
 
 pub fn claude(home: &Path, workspace: Option<&Path>) -> Instructions {
     let directories = workspace.map(lineage).unwrap_or_default();
+    // Windows `%TEMP%`는 실제 홈 아래라 테스트에 실제 `~\.claude\CLAUDE.md`가 낀다(windows-log 11-16).
+    #[cfg(test)]
+    let directories = inside_temp(directories);
     claude_in(home, workspace, &directories)
+}
+
+#[cfg(test)]
+fn inside_temp(directories: Vec<PathBuf>) -> Vec<PathBuf> {
+    let temp = std::fs::canonicalize(std::env::temp_dir()).unwrap_or_else(|_| std::env::temp_dir());
+    directories
+        .into_iter()
+        .filter(|d| d.starts_with(&temp))
+        .collect()
 }
 
 /// `directories`: 루트부터 작업 폴더까지(테스트는 실제 홈이 끼지 않게 임시 폴더 안으로 줄인다).
