@@ -79,6 +79,21 @@ describe("Dashboard", () => {
     expect(calls).toContain("get_coach_log");
   });
 
+  it("splits the checks tab by agent with the same pick as the usage tab", async () => {
+    mock();
+    render(<Dashboard />);
+    await screen.findByRole("tablist", { name: "에이전트 고르기" });
+    fireEvent.click(screen.getByRole("tab", { name: "Kiro" }));
+    fireEvent.click(tab("점검"));
+    expect(await screen.findByRole("region", { name: "Kiro" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Codex" })).toBeNull();
+    expect(screen.getByRole("tab", { name: "Kiro" }).getAttribute("aria-selected")).toBe("true");
+
+    fireEvent.click(screen.getByRole("tab", { name: "전체" }));
+    expect(await screen.findByRole("region", { name: "Codex" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Kiro" })).toBeTruthy();
+  });
+
   it("opens on the tab Rust put in the URL and switches when the event arrives", async () => {
     expect(initialDashboardTab("?tab=checks")).toBe("checks");
     expect(initialDashboardTab("?tab=settings")).toBeNull();

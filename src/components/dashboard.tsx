@@ -323,9 +323,15 @@ export function Dashboard() {
                 />
                 <AgentPanels settings={settings} usage={usage} only={pickedAgent} />
               </TabsContent>
-              <TabsContent value="checks">
+              <TabsContent value="checks" className="flex flex-col gap-3">
+                {/* 사용량 탭과 같은 고르기·같은 값: 탭을 오가도 고른 에이전트가 그대로다. */}
+                <AgentPicker
+                  enabled={settings.enabledAgents}
+                  value={pickedAgent}
+                  onChange={setAgent}
+                />
                 <ChecksTab
-                  agents={settings.enabledAgents}
+                  agents={shownAgents(settings.enabledAgents, pickedAgent)}
                   focusKey={view.focusKey}
                   onShowEffect={showEffect}
                 />

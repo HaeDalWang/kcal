@@ -37,7 +37,7 @@ export const checksSectionId = (agent: Agent) => `checks-${agent}`;
 
 type ChecksTabProps = {
   /** 켠 에이전트(`settings.enabledAgents` 순서). */
-  agents: Agent[];
+  agents: readonly Agent[];
   /** 0보다 크고 바뀔 때마다(팝오버 "점검"으로 열림) 다시 읽고 알림 카드가 있는 첫 칸으로 스크롤한다. */
   focusKey: number;
   /** 진단하기 "효과 보기": 사용량 탭의 처방 효과로 간다. */
