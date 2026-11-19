@@ -219,14 +219,22 @@ pub fn codex(home: &Path, workspace: Option<&Path>, tuning: &Tuning) -> AgentCon
         Loading::Conditional,
     ));
     items.extend(named_skill_items(&codex_skill_places(home, workspace)));
+    let mut plugin_servers = Vec::new();
     for id in codex_enabled_plugins(&config) {
         match plugin_cache_directory(&root, &id) {
-            Some(directory) => items.extend(skill_item(
-                ContextKind::Plugins,
-                &id,
-                &codex_plugin_skills(&directory),
-                PLUGIN_CACHE,
-            )),
+            Some(directory) => {
+                items.extend(skill_item(
+                    ContextKind::Plugins,
+                    &id,
+                    &codex_plugin_skills(&directory),
+                    PLUGIN_CACHE,
+                ));
+                plugin_servers.extend(
+                    crate::coach::contents::codex_plugin_mcp_servers(&directory)
+                        .into_iter()
+                        .map(|server| format!("{server} ({id})")),
+                );
+            }
             None => warnings.push(plugin_missing(&id)),
         }
     }
@@ -234,6 +242,7 @@ pub fn codex(home: &Path, workspace: Option<&Path>, tuning: &Tuning) -> AgentCon
     hook_item(count_hooks(hooks.get("hooks")), &mut items, &mut warnings);
     let servers = codex_enabled_mcp_servers(&config)
         .into_iter()
+        .chain(plugin_servers)
         .map(|name| (name, Loading::Deferred))
         .collect();
     mcp_items(servers, &mut items, &mut warnings);

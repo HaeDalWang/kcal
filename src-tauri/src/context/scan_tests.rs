@@ -502,6 +502,31 @@ fn codex_plugin_skills_follow_the_manifest_path_inside_the_plugin() {
 }
 
 #[test]
+fn codex_plugin_mcp_servers_follow_the_manifest_or_the_portable_file() {
+    use crate::coach::contents::codex_plugin_mcp_servers as servers;
+    let plugin = TempDir::new("codex-plugin-mcp");
+    plugin.write(".mcp.json", r#"{"mcpServers": {"hidden": {}}}"#);
+    assert_eq!(servers(plugin.path()), Vec::<String>::new());
+    plugin.write(
+        "mcp.json",
+        r#"{"mcpServers": {"portable": {"type": "stdio"}}}"#,
+    );
+    assert_eq!(servers(plugin.path()), ["portable"]);
+    plugin.write(
+        ".codex-plugin/plugin.json",
+        r#"{"mcpServers": "./.mcp.json"}"#,
+    );
+    assert_eq!(servers(plugin.path()), ["hidden"]);
+    plugin.write(".codex-plugin/plugin.json", r#"{"mcpServers": {}}"#);
+    assert_eq!(servers(plugin.path()), Vec::<String>::new());
+    plugin.write(
+        ".codex-plugin/plugin.json",
+        r#"{"mcpServers": "../outside.json"}"#,
+    );
+    assert_eq!(servers(plugin.path()), Vec::<String>::new());
+}
+
+#[test]
 fn codex_trusted_projects_lists_only_trusted_paths() {
     let config = "[projects.\"/w/one\"]\ntrust_level = \"trusted\"\n\n[projects.\"/w/two\"]\ntrust_level = \"untrusted\"\n\n[projects.'/w/three']\ntrust_level = 'trusted' # ok\n\n[projects.\"C:\\\\w\\\\four\"]\ntrust_level = \"trusted\"\n\n[projects.\"/w/five\"]\nother = 1\n\n[mcp_servers.x]\ntrust_level = \"trusted\"\n";
     let trusted = codex_trusted_projects(config);

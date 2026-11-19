@@ -189,6 +189,22 @@ fn servers_in(root: &Path, item: &Value) -> Vec<String> {
     }
 }
 
+/// Codex 플러그인 폴더의 MCP 서버 이름. 호환 매니페스트(`.codex-plugin/plugin.json`)에 `mcpServers`가 있으면 그것만
+/// (이 Mac 설치본은 `"./.mcp.json"`), 없으면 이식형 고정 경로 루트 `mcp.json`(`plugins/build`). 매니페스트가 가리키지 않는
+/// `.mcp.json`을 Codex가 읽는지는 문서에 없어 세지 않는다.
+pub(crate) fn codex_plugin_mcp_servers(plugin: &Path) -> Vec<String> {
+    let Ok(dir) = plugin.canonicalize() else {
+        return Vec::new();
+    };
+    let manifest = fsutil::read_json(&dir.join(".codex-plugin").join("plugin.json"));
+    let declared = manifest.as_ref().and_then(Value::as_object);
+    let names = match items(declared, "mcpServers") {
+        Some(list) => list.iter().flat_map(|v| servers_in(&dir, v)).collect(),
+        None => mcp_server_names(&dir.join("mcp.json")),
+    };
+    sorted(names)
+}
+
 /// 마켓플레이스 파일(`<agent_root>/plugins/marketplaces/<mkt>/.claude-plugin/marketplace.json`)의 `plugins[]` 중 이름이 같은 항목.
 /// 실제 경로가 `plugins/marketplaces` 밖이면 읽지 않는다.
 fn marketplace_entry(
