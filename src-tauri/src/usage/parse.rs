@@ -170,14 +170,21 @@ pub fn claude_extras(body: &Value, now: OffsetDateTime) -> Extras {
     }
 }
 
-/// `extra_usage`: 켜져 있고 금액 둘이 다 있을 때만. 응답 금액은 센트다(CodexBar `ClaudeUsageFetcher` 소스).
+/// `extra_usage`: 켜져 있고 금액 둘이 다 있을 때만. 응답 금액은 최소 단위이고 소수 자릿수는
+/// `decimal_places`(없으면 2, 센트 — CodexBar 테스트의 2050 → 20.5와 같다).
 fn claude_credits(body: &Value) -> Option<Credits> {
     let extra = body.get("extra_usage")?;
     if extra.get("is_enabled").and_then(Value::as_bool) != Some(true) {
         return None;
     }
-    let used = lenient_number(extra.get("used_credits"))? / 100.0;
-    let limit = lenient_number(extra.get("monthly_limit"))? / 100.0;
+    let places = extra
+        .get("decimal_places")
+        .and_then(Value::as_u64)
+        .filter(|p| *p <= 6)
+        .unwrap_or(2);
+    let scale = 10f64.powi(places as i32);
+    let used = lenient_number(extra.get("used_credits"))? / scale;
+    let limit = lenient_number(extra.get("monthly_limit"))? / scale;
     let currency = extra
         .get("currency")
         .and_then(Value::as_str)
@@ -505,6 +512,10 @@ mod tests {
             (credits.used, credits.limit, credits.currency.as_str()),
             (12.5, 100.0, "USD")
         );
+        let yen = json!({"extra_usage": {"is_enabled": true, "used_credits": 500,
+            "monthly_limit": 3000, "currency": "JPY", "decimal_places": 0}});
+        let credits = claude_extras(&yen, NOW).credits.unwrap();
+        assert_eq!((credits.used, credits.limit), (500.0, 3000.0));
         assert_eq!(on(json!(null), json!(100)), None);
         assert_eq!(on(json!(5), json!(null)), None);
         let off =
