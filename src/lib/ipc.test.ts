@@ -220,6 +220,9 @@ const PERIOD_STATS = {
   dailyUsed: "required",
   usedUnit: "required",
   compactions: "required",
+  automatedInputShare: "required",
+  modelInputShares: "required",
+  codexRate: "required",
 } satisfies Fields<PeriodStats>;
 const AGENT_COMPARISON = {
   agent: "required",

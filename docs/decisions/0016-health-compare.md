@@ -45,6 +45,10 @@ Event `health-updated`(payload `HealthReport`). Rust `src-tauri/src/health/mod.r
 - `PrescriptionEffect` = `{ id, at, agent, name, enabled, undoneAt: string | null, before, after }`(적용 기록 하나, 최근순).
 - `PeriodStats` = `from`·`to`(끝 미포함)·`elapsedDays`·`coverage: number | null`·`requests: number | null`·`avgInputTokens: number | null`(Claude·Codex)·`avgCredits: number | null`(Kiro, 질문당)·`dailyUsed: number | null`·`usedUnit: BarUnit`(percent = 주간 %p, credits)·`compactions: number | null`(Codex만).
 
+- 0028 추가(주간 요약 전용, 처방은 null): `PeriodStats.automatedInputShare: number | null`(캐시 포함 입력 토큰 비중, 0~100), `modelInputShares: ModelInputShare[] | null`, `codexRate: PeriodRate | null`.
+- `ModelInputShare` = `{ model: string | null, share: number }`. 비중이 큰 세 모델과 남은 합계(`model: null`, 기타), 동률은 이름순. 모델 누락은 `"unknown"`으로 분모에 포함. 입력이 없으면 목록도 null.
+- `PeriodRate` = `{ status: RateStatus, windows: number, perPercent: TokenRate | null, foldRange: TokenRange | null }`. 기존 환율 타입을 재사용한다. Codex만 채우며 구간 내 이벤트로 기존 `rate()` 판정. `estimated`는 점 값과 범위, `range_only`는 범위만, 그 외는 두 숫자 필드 null(상태·창 수 유지). Claude·Kiro는 null.
+
 ## 구현하며 정한 것 (2026-11-06)
 
 - **Kiro 질문당 크레딧은 `avgCredits`** 로 따로 둔다. `avgInputTokens`는 Kiro에서 늘 null. 한 필드에 단위가 바뀌는 값을 넣지 않으려고.

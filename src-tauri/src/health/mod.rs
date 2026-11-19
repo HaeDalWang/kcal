@@ -6,6 +6,7 @@
 //! 오래됐거나 적용 기록·설정이 바뀌었으면 뒤에서 다시 계산해 `health-updated` event로 보낸다.
 //! TS 쪽 짝은 `src/lib/ipc.ts`의 같은 이름 타입.
 
+mod details;
 mod read;
 
 use std::path::{Path, PathBuf};
@@ -50,6 +51,28 @@ pub struct PeriodStats {
     pub used_unit: BarUnit,
     /// 압축 횟수(Codex만).
     pub compactions: Option<u64>,
+    /// 입력 토큰 비중(0~100). 입력이 없으면 None.
+    pub automated_input_share: Option<f64>,
+    pub model_input_shares: Option<Vec<ModelInputShare>>,
+    pub codex_rate: Option<PeriodRate>,
+}
+
+/// 모델별 입력 비중. model=None은 기타, 알 수 없는 모델은 "unknown".
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelInputShare {
+    pub model: Option<String>,
+    pub share: f64,
+}
+
+/// 구간별 기존 환율 판정. 불충분·불신이면 숫자는 None.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PeriodRate {
+    pub status: crate::rate::RateStatus,
+    pub windows: usize,
+    pub per_percent: Option<crate::rate::TokenRate>,
+    pub fold_range: Option<crate::rate::TokenRange>,
 }
 
 /// 에이전트 하나의 전후. 주간 요약 한 줄.
@@ -144,6 +167,9 @@ pub fn period(samples: &AgentSamples, from: f64, to: f64) -> PeriodStats {
         daily_used: None,
         used_unit: unit,
         compactions: None,
+        automated_input_share: None,
+        model_input_shares: None,
+        codex_rate: None,
     };
     if to <= from {
         return empty;
@@ -266,10 +292,10 @@ fn compute(
         .iter()
         .map(|&agent| read::samples(home, history, agent, since, &settings.tuning))
         .collect();
-    HealthReport {
-        basis: basis(log, settings),
-        ..report(&samples, log, now, days)
-    }
+    let mut report = report(&samples, log, now, days);
+    details::enrich(&mut report.weekly, home, &settings.tuning);
+    report.basis = basis(log, settings);
+    report
 }
 
 pub struct HealthState(Cache<HealthReport>);

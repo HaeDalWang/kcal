@@ -83,6 +83,9 @@ export function freshHealth(now: number, enabled: Agent[], days: number): Health
     dailyUsed: null,
     usedUnit: agent === "kiro" ? "credits" : "percent",
     compactions: null,
+    automatedInputShare: null,
+    modelInputShares: null,
+    codexRate: null,
   });
   return {
     computedAt: to,

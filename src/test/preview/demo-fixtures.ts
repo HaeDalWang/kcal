@@ -312,6 +312,9 @@ function period(
     elapsedDays: 7,
     coverage: 1,
     avgCredits: null,
+    automatedInputShare: null,
+    modelInputShares: null,
+    codexRate: null,
     usedUnit: "percent",
     ...stats,
   };

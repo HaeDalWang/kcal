@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 // 대시보드 "처방 효과"(docs/decisions/0016): 위 주간 요약(최근 N일 vs 그 전 N일), 아래 적용 기록마다 전후.
 // 값은 Rust `get_health`와 `health-updated` event로만 바뀐다(타이머 없음). 숫자는 모두 기록에서 잰 값이다.
 import { CARD } from "@/components/daily-activity";
@@ -10,6 +11,8 @@ import {
   type Agent,
   type HealthReport,
   type PeriodStats,
+  type PeriodRate,
+  type Bounds,
   type PrescriptionEffect,
 } from "@/lib/ipc";
 import { createSnapshotStore, useSnapshot } from "@/lib/snapshot-store";
@@ -151,6 +154,108 @@ function Comparison({
   );
 }
 
+function SummaryRow({
+  label,
+  before,
+  after,
+  estimated = false,
+}: {
+  label: string;
+  before: ReactNode;
+  after: ReactNode;
+  estimated?: boolean;
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd
+        className="grid grid-cols-[minmax(0,max-content)_auto_minmax(0,1fr)] items-start gap-2 text-sm tabular-nums"
+        title={estimated ? t.info.estimated : t.info.measured}
+      >
+        <div className="min-w-0 text-muted-foreground">{before}</div>
+        <span aria-hidden>→</span>
+        <div className="min-w-0 font-medium">{after}</div>
+      </dd>
+    </div>
+  );
+}
+
+function modelShares(period: PeriodStats): ReactNode {
+  return (
+    period.modelInputShares?.map(({ model, share }) => (
+      <div key={model ?? "other"} className="break-words">
+        {model === null
+          ? t.health.otherModels
+          : model === "unknown"
+            ? t.health.unknownModel
+            : model}{" "}
+        <span className="whitespace-nowrap">{amount.format(share)}%</span>
+      </div>
+    )) ?? "—"
+  );
+}
+
+function rateText(rate: PeriodRate | null): string {
+  if (!rate) return "—";
+  const tokens = (value: number | null) => (value === null ? "—" : `~${compact.format(value)}`);
+  const bounds = ({ min, max }: Bounds) =>
+    min === null
+      ? "—"
+      : max === null
+        ? `≥~${compact.format(min)}`
+        : `~${compact.format(min)}–${compact.format(max)}`;
+  let text = "—";
+  if (rate.status === "estimated" && rate.perPercent) {
+    const { cachedInput, uncachedInput, output } = rate.perPercent;
+    text = t.rate.detail(tokens(cachedInput), tokens(uncachedInput), tokens(output));
+  } else if (rate.status === "range_only" && rate.foldRange) {
+    const { cachedInput, uncachedInput, output } = rate.foldRange;
+    text = t.rate.detail(bounds(cachedInput), bounds(uncachedInput), bounds(output));
+  }
+  return `${text} · ${t.rate.windows(rate.windows)}`;
+}
+
+/** 주간 요약에만 보인다. 비중 변화는 절약/낭비로 판정하지 않는다. */
+function WeeklyDetails({
+  agent,
+  before,
+  after,
+}: {
+  agent: Agent;
+  before: PeriodStats;
+  after: PeriodStats;
+}) {
+  if (agent === "kiro") return null;
+  const share = (value: number | null) => (value === null ? "—" : `${amount.format(value)}%`);
+  return (
+    <>
+      <dl className="flex min-w-0 flex-col gap-2 border-t pt-2">
+        <SummaryRow
+          label={`${t.health.automated(agent === "claude" ? "claude -p" : "codex exec")} · ${t.health.inputShare}`}
+          before={share(before.automatedInputShare)}
+          after={share(after.automatedInputShare)}
+        />
+        <SummaryRow
+          label={t.health.modelShares}
+          before={modelShares(before)}
+          after={modelShares(after)}
+        />
+        {agent === "codex" && (
+          <SummaryRow
+            label={t.rate.perPercent}
+            before={rateText(before.codexRate)}
+            after={rateText(after.codexRate)}
+            estimated
+          />
+        )}
+      </dl>
+      {agent === "claude" && (
+        <p className="text-xs text-muted-foreground">{t.health.claudeUsage}</p>
+      )}
+    </>
+  );
+}
+
 function PartialNote({ before, after }: { before: PeriodStats; after: PeriodStats }) {
   if (!isPartial(before, after)) return null;
   return (
@@ -237,7 +342,10 @@ export function HealthCompare({ refreshKey, only }: { refreshKey: string; only?:
                       <AgentName agent={c.agent} />
                       <PartialNote before={c.before} after={c.after} />
                     </div>
-                    <Comparison agent={c.agent} before={c.before} after={c.after} />
+                    <div className="flex min-w-0 flex-col gap-2">
+                      <Comparison agent={c.agent} before={c.before} after={c.after} />
+                      <WeeklyDetails agent={c.agent} before={c.before} after={c.after} />
+                    </div>
                   </li>
                 ))}
             </ul>

@@ -12,9 +12,14 @@ import {
 import type { HealthReport, PeriodStats, PrescriptionEffect } from "@/lib/ipc";
 import health from "@/test/fixtures/ipc/health-report.json";
 
+import { setLanguage } from "@/lib/i18n";
+
 const report = health as HealthReport;
 
-afterEach(() => healthStore.reset());
+afterEach(() => {
+  healthStore.reset();
+  setLanguage("ko");
+});
 
 function serve(value: HealthReport) {
   mockIPC((cmd) => (cmd === "get_health" ? value : null), { shouldMockEvents: true });
@@ -68,4 +73,92 @@ describe("health compare", () => {
     expect(screen.queryByText("생각 깊이 옛 설정 정리 끔")).toBeNull();
     expect(screen.getByText("synthetic@m 끔")).toBeTruthy();
   });
+});
+
+it("shows weekly token shares, other models, rate windows and the Claude usage hint only in the weekly summary", async () => {
+  const withDetails: HealthReport = {
+    ...report,
+    weekly: report.weekly.map((c) =>
+      c.agent === "kiro"
+        ? c
+        : {
+            ...c,
+            before: {
+              ...c.before,
+              automatedInputShare: null,
+              modelInputShares: null,
+              codexRate:
+                c.agent === "codex"
+                  ? { status: "insufficient", windows: 2, perPercent: null, foldRange: null }
+                  : null,
+            },
+            after: {
+              ...c.after,
+              automatedInputShare: 37.5,
+              modelInputShares: [
+                { model: "test-model", share: 90 },
+                { model: null, share: 10 },
+              ],
+              codexRate:
+                c.agent === "codex"
+                  ? {
+                      status: "estimated",
+                      windows: 12,
+                      perPercent: { cachedInput: 1000000, uncachedInput: 200000, output: 10000 },
+                      foldRange: null,
+                    }
+                  : null,
+            },
+          },
+    ),
+  };
+  serve(withDetails);
+  render(<HealthCompare refreshKey="7" />);
+  expect(await screen.findByText("자세한 원인은 Claude Code /usage에서 확인하세요.")).toBeTruthy();
+  expect(screen.getAllByText("37.5%")).toHaveLength(2);
+  expect(screen.getAllByText("기타")).toHaveLength(2);
+  expect(screen.getByText(/5시간 구간\s*2개/).textContent).toContain("—");
+  expect(screen.getByText(/5시간 구간\s*12개/).textContent).toContain("~1M");
+  expect(screen.getAllByText(/자동 실행/)).toHaveLength(2);
+});
+
+it("shows English copy and unknown weekly values as dashes", async () => {
+  setLanguage("en");
+  serve({ ...report, prescriptions: [] });
+  render(<HealthCompare refreshKey="7" />);
+  expect(await screen.findByText("For more detail, see Claude Code /usage.")).toBeTruthy();
+  expect(screen.getAllByText(/Automated runs/)).toHaveLength(2);
+  expect(screen.getAllByText("Input-token share by model")).toHaveLength(2);
+  expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+  expect(document.body.textContent).not.toMatch(/[가-힣]/);
+});
+
+it("renders range-only rates as ranges with their own window counts", async () => {
+  const codex = report.weekly[1];
+  serve({
+    ...report,
+    prescriptions: [],
+    weekly: [
+      {
+        ...codex,
+        after: {
+          ...codex.after,
+          codexRate: {
+            status: "range_only",
+            windows: 8,
+            perPercent: null,
+            foldRange: {
+              cachedInput: { min: 1000, max: 2000 },
+              uncachedInput: { min: 500, max: null },
+              output: { min: null, max: null },
+            },
+          },
+        },
+      },
+    ],
+  });
+  render(<HealthCompare refreshKey="7" />);
+  const rate = await screen.findByText(/5시간 구간\s*8개/);
+  expect(rate.textContent).toContain("~1K–2K");
+  expect(rate.textContent).toContain("≥~500");
 });

@@ -233,6 +233,12 @@ export const en: Messages = {
     hourUnit: "",
   },
   health: {
+    automated: (command: string) => `Automated runs (${command})`,
+    modelShares: "Input-token share by model",
+    inputShare: "Share of input tokens",
+    otherModels: "Other",
+    unknownModel: "Unknown model",
+    claudeUsage: "For more detail, see Claude Code /usage.",
     perQuestion: "Credits per question",
     dailyCredits: "Credits per day",
     inputPerRequest: "Input per request",
@@ -250,7 +256,7 @@ export const en: Messages = {
     applied: (time, after) => ` · applied ${time} · ${after}`,
     title: "Change effects",
     description: (days) =>
-      `Compares ${n(days, "day")} before and after each change the same way. All values are measured from your logs.`,
+      `Compares ${n(days, "day")} before and after each change the same way. Values marked ~ are estimated from your logs.`,
     descriptionLoading: "Compares before and after each change the same way.",
     weekly: (days) => `Weekly summary · last ${n(days, "day")} vs the ${n(days, "day")} before`,
     byChange: "By change",

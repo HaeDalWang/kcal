@@ -13,7 +13,10 @@
         "from": "2026-11-04T00:00:00Z",
         "requests": 0,
         "to": "2026-11-05T00:00:00Z",
-        "usedUnit": "percent"
+        "usedUnit": "percent",
+        "automatedInputShare": null,
+        "modelInputShares": null,
+        "codexRate": null
       },
       "agent": "codex",
       "at": "2026-11-04T00:00:00Z",
@@ -27,7 +30,10 @@
         "from": "2026-10-28T00:00:00Z",
         "requests": 2,
         "to": "2026-11-04T00:00:00Z",
-        "usedUnit": "percent"
+        "usedUnit": "percent",
+        "automatedInputShare": null,
+        "modelInputShares": null,
+        "codexRate": null
       },
       "enabled": false,
       "id": "2",
@@ -46,7 +52,10 @@
         "from": "2026-10-30T12:00:00Z",
         "requests": 1,
         "to": "2026-11-06T12:00:00Z",
-        "usedUnit": "percent"
+        "usedUnit": "percent",
+        "automatedInputShare": null,
+        "modelInputShares": null,
+        "codexRate": null
       },
       "agent": "codex",
       "at": "2026-10-30T12:00:00Z",
@@ -60,7 +69,10 @@
         "from": "2026-10-23T12:00:00Z",
         "requests": 1,
         "to": "2026-10-30T12:00:00Z",
-        "usedUnit": "percent"
+        "usedUnit": "percent",
+        "automatedInputShare": null,
+        "modelInputShares": null,
+        "codexRate": null
       },
       "enabled": false,
       "id": "1",
@@ -81,7 +93,10 @@
         "from": "2026-10-30T12:00:00Z",
         "requests": 1,
         "to": "2026-11-06T12:00:00Z",
-        "usedUnit": "percent"
+        "usedUnit": "percent",
+        "automatedInputShare": null,
+        "modelInputShares": null,
+        "codexRate": null
       },
       "agent": "claude",
       "before": {
@@ -94,7 +109,10 @@
         "from": "2026-10-23T12:00:00Z",
         "requests": 1,
         "to": "2026-10-30T12:00:00Z",
-        "usedUnit": "percent"
+        "usedUnit": "percent",
+        "automatedInputShare": null,
+        "modelInputShares": null,
+        "codexRate": null
       }
     },
     {
@@ -108,7 +126,10 @@
         "from": "2026-10-30T12:00:00Z",
         "requests": 1,
         "to": "2026-11-06T12:00:00Z",
-        "usedUnit": "percent"
+        "usedUnit": "percent",
+        "automatedInputShare": null,
+        "modelInputShares": null,
+        "codexRate": null
       },
       "agent": "codex",
       "before": {
@@ -121,7 +142,10 @@
         "from": "2026-10-23T12:00:00Z",
         "requests": 1,
         "to": "2026-10-30T12:00:00Z",
-        "usedUnit": "percent"
+        "usedUnit": "percent",
+        "automatedInputShare": null,
+        "modelInputShares": null,
+        "codexRate": null
       }
     },
     {
@@ -135,7 +159,10 @@
         "from": "2026-10-30T12:00:00Z",
         "requests": null,
         "to": "2026-11-06T12:00:00Z",
-        "usedUnit": "credits"
+        "usedUnit": "credits",
+        "automatedInputShare": null,
+        "modelInputShares": null,
+        "codexRate": null
       },
       "agent": "kiro",
       "before": {
@@ -148,7 +175,10 @@
         "from": "2026-10-23T12:00:00Z",
         "requests": null,
         "to": "2026-10-30T12:00:00Z",
-        "usedUnit": "credits"
+        "usedUnit": "credits",
+        "automatedInputShare": null,
+        "modelInputShares": null,
+        "codexRate": null
       }
     }
   ]

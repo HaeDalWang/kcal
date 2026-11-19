@@ -104,6 +104,9 @@ const unknown = (p: PeriodStats): PeriodStats => ({
   avgCredits: null,
   dailyUsed: null,
   compactions: null,
+  automatedInputShare: null,
+  modelInputShares: null,
+  codexRate: null,
 });
 // 아직 덜 지난 처방 하나를 더해 "N일째"도 보인다.
 const running = {
@@ -123,7 +126,51 @@ const healthReport: HealthReport = isEmpty
       })),
       prescriptions: [],
     }
-  : { ...fixtureHealth, prescriptions: [running, ...fixtureHealth.prescriptions] };
+  : {
+      ...fixtureHealth,
+      weekly: fixtureHealth.weekly.map((c) =>
+        c.agent === "kiro"
+          ? c
+          : {
+              ...c,
+              before: {
+                ...c.before,
+                automatedInputShare: 20,
+                modelInputShares: [
+                  {
+                    model: c.agent === "claude" ? "claude-sonnet-5-5" : "gpt-6.2-astra",
+                    share: 50,
+                  },
+                  { model: c.agent === "claude" ? "claude-opus-5-5" : "gpt-6.2-sol", share: 25 },
+                  { model: c.agent === "claude" ? "claude-haiku-5" : "gpt-6.1-terra", share: 15 },
+                  { model: null, share: 10 },
+                ],
+                codexRate:
+                  c.agent === "codex"
+                    ? { status: "insufficient", windows: 2, perPercent: null, foldRange: null }
+                    : null,
+              },
+              after: {
+                ...c.after,
+                automatedInputShare: 45,
+                modelInputShares: [
+                  { model: c.agent === "claude" ? "claude-opus-5-5" : "gpt-6.2-astra", share: 90 },
+                  { model: "unknown", share: 10 },
+                ],
+                codexRate:
+                  c.agent === "codex"
+                    ? {
+                        status: "estimated",
+                        windows: 12,
+                        perPercent: { cachedInput: 1000000, uncachedInput: 200000, output: 10000 },
+                        foldRange: null,
+                      }
+                    : null,
+              },
+            },
+      ),
+      prescriptions: [running, ...fixtureHealth.prescriptions],
+    };
 const allAgents: Settings = previewSettings(new URLSearchParams(location.search));
 
 // `?handoff=ok|opus&remaining=64`: 점검 탭 맨 앞에 긴 안내문 카드(0018 작업 A)를 두고 Claude 남은 한도를 그 %로 둔다.

@@ -336,6 +336,16 @@ export function onMetricsUpdated(
   return listen<MetricsSnapshot>(METRICS_UPDATED_EVENT, (event) => handler(event.payload));
 }
 
+/** Rust `health::ModelInputShare`. null model = other; unknown = missing model. */
+export type ModelInputShare = { model: string | null; share: number };
+/** Rust `health::PeriodRate`. Same judgement as the existing Codex rate. */
+export type PeriodRate = {
+  status: RateStatus;
+  windows: number;
+  perPercent: TokenRate | null;
+  foldRange: TokenRange | null;
+};
+
 /** Rust `health::PeriodStats`. 구간 하나의 지표(실측). 값을 모르면 null(0으로 채우지 않는다). */
 export type PeriodStats = {
   /** 시작(포함, RFC 3339). */
@@ -357,6 +367,10 @@ export type PeriodStats = {
   usedUnit: BarUnit;
   /** 압축 횟수(Codex만). */
   compactions: number | null;
+  /** Input-token shares (0–100), weekly summary only. */
+  automatedInputShare: number | null;
+  modelInputShares: ModelInputShare[] | null;
+  codexRate: PeriodRate | null;
 };
 
 /** Rust `health::AgentComparison`. 주간 요약 한 줄. */

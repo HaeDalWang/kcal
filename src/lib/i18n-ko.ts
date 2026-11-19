@@ -226,6 +226,12 @@ export const ko = {
     hourUnit: "(시)",
   },
   health: {
+    automated: (command: string) => `자동 실행(${command})`,
+    modelShares: "모델별 입력 토큰 몫",
+    inputShare: "입력 토큰 기준",
+    otherModels: "기타",
+    unknownModel: "모델 모름",
+    claudeUsage: "자세한 원인은 Claude Code /usage에서 확인하세요.",
     perQuestion: "질문당 크레딧",
     dailyCredits: "하루 크레딧",
     inputPerRequest: "요청당 입력",
@@ -244,7 +250,7 @@ export const ko = {
     applied: (time: string, after: string) => ` · ${time} 적용 · ${after}`,
     title: "처방 효과",
     description: (days: number) =>
-      `적용 전 ${days}일과 뒤 ${days}일을 같은 기준으로 비교해요. 모두 기록에서 잰 값이에요.`,
+      `적용 전 ${days}일과 뒤 ${days}일을 같은 기준으로 비교해요. ~가 붙은 값은 기록으로 계산한 예상이에요.`,
     descriptionLoading: "적용 전과 뒤를 같은 기준으로 비교해요.",
     weekly: (days: number) => `주간 요약 · 최근 ${days}일, 그 전 ${days}일과 비교`,
     byChange: "처방별",

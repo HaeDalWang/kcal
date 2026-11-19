@@ -2,7 +2,7 @@
 //! (창 단위, `out_total`)만 옮겼다: 수집 → 중복 제거 → 창 배정 → 창 단위 NNLS(절편 없음) → 검증 R².
 //!
 //! 본문 줄은 JSON 파싱조차 하지 않는다: 앞 400자 안에 `"token_count"`가 있는 줄만 파싱하고,
-//! 그 줄에서도 숫자 필드(`timestamp`, `info.*_token_usage`, `rate_limits.primary`)만 꺼낸다.
+//! 숫자와 함께 첫 session_meta의 originator·turn_context의 최신 model만 캐시한다(주간 요약, 0028).
 //! Codex가 열흘쯤 지나 압축한 `.jsonl.zst`도 풀어 읽는다(0026).
 
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -202,10 +202,55 @@ pub fn read_events(file: &Path) -> Vec<Event> {
 /// rollout 하나의 (이벤트, 작업 폴더).
 pub(super) type Rollout = (Vec<Event>, Option<String>);
 
+struct AttributedRollout {
+    rollout: Arc<Rollout>,
+    attributions: Vec<Attribution>,
+}
+
+/// 숫자 이벤트와 같은 인덱스로 캐시한다. 기존 환율 입력·결과에는 관여하지 않는다.
+#[derive(Clone, Debug)]
+pub struct Attribution {
+    pub model: Option<Arc<str>>,
+    pub automated: bool,
+}
+
+/// 기존 중복 제거를 거친 이벤트와 그 요청 시점의 모델·실행 방식.
+pub fn attributed_events(files: &[PathBuf]) -> Vec<(Event, Attribution)> {
+    warm(files);
+    let mut metadata = HashMap::new();
+    let mut raw = Vec::new();
+    for file in files {
+        let parsed = read_attributed_rollout(file);
+        for (event, attribution) in parsed.rollout.0.iter().zip(&parsed.attributions) {
+            metadata
+                .entry((
+                    event.file.clone(),
+                    event.tsr.clone(),
+                    event.total_key.clone(),
+                ))
+                .or_insert_with(|| attribution.clone());
+            raw.push(event.clone());
+        }
+    }
+    dedup(&raw)
+        .into_iter()
+        .filter_map(|event| {
+            let key = (
+                event.file.clone(),
+                event.tsr.clone(),
+                event.total_key.clone(),
+            );
+            metadata
+                .remove(&key)
+                .map(|attribution| (event, attribution))
+        })
+        .collect()
+}
+
 /// 파일별 결과: (수정 시각, 크기)가 같으면 다시 읽지 않는다. 이 Mac 154개·434MB를 매번 읽으면 release에서 약 5초.
 /// 없어진 파일의 항목은 `rollout_files`가 목록을 훑을 때 지운다.
 #[allow(clippy::type_complexity)]
-static PARSED: LazyLock<Mutex<HashMap<PathBuf, (SystemTime, u64, Arc<Rollout>)>>> =
+static PARSED: LazyLock<Mutex<HashMap<PathBuf, (SystemTime, u64, Arc<AttributedRollout>)>>> =
     LazyLock::new(Default::default);
 
 /// 테스트용: 경로별로 실제로 파일을 읽은 횟수.
@@ -222,6 +267,10 @@ pub(super) fn warm(files: &[PathBuf]) {
 
 /// `parse_rollout`의 결과. 같은 파일은 바뀌기 전까지 한 번만 읽는다.
 pub(super) fn read_rollout(file: &Path) -> Arc<Rollout> {
+    Arc::clone(&read_attributed_rollout(file).rollout)
+}
+
+fn read_attributed_rollout(file: &Path) -> Arc<AttributedRollout> {
     let key = std::fs::metadata(file)
         .ok()
         .and_then(|m| Some((m.modified().ok()?, m.len())));
@@ -246,28 +295,55 @@ pub(super) fn read_rollout(file: &Path) -> Arc<Rollout> {
 }
 
 /// 이벤트와 작업 폴더 경로(첫 줄 `session_meta`의 `cwd`). 같은 읽기 루프에서 첫 줄만 더 본다.
-fn parse_rollout(file: &Path) -> Rollout {
+fn parse_rollout(file: &Path) -> AttributedRollout {
     let name = file
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
     let mut events = Vec::new();
     let mut session = None;
+    let mut automated = false;
+    let mut model: Option<Arc<str>> = None;
+    let mut attributions = Vec::new();
     let mut is_first = true;
     for_each_line(file, |line| {
         if std::mem::take(&mut is_first) {
             session = super::behavior::session_cwd(line);
+            if let Ok(row) = serde_json::from_slice::<Value>(line)
+                && row.get("type").and_then(Value::as_str) == Some("session_meta")
+            {
+                // ponytail: 새 originator·누락은 대화형. 새 자동 실행 방식이 생기면 목록을 검증해 확장한다.
+                automated = row.pointer("/payload/originator").and_then(Value::as_str)
+                    == Some("codex_exec");
+            }
         }
-        if !contains(char_prefix(line, PREFIX_CHARS), TOKEN_COUNT_MARK) {
+        let prefix = char_prefix(line, PREFIX_CHARS);
+        if contains(prefix, br#""turn_context""#)
+            && let Ok(row) = serde_json::from_slice::<Value>(line)
+            && row.get("type").and_then(Value::as_str) == Some("turn_context")
+        {
+            model = row
+                .pointer("/payload/model")
+                .and_then(Value::as_str)
+                .map(Arc::from);
+        }
+        if !contains(prefix, TOKEN_COUNT_MARK) {
             return;
         }
         if let Ok(row) = serde_json::from_slice::<Value>(line)
             && let Some(e) = event(&row, &name)
         {
+            attributions.push(Attribution {
+                model: model.clone(),
+                automated,
+            });
             events.push(e);
         }
     });
-    (events, session)
+    AttributedRollout {
+        rollout: Arc::new((events, session)),
+        attributions,
+    }
 }
 
 /// 시간순(같으면 파일 이름순)으로 정렬하고 `(timestamp, total_token_usage)`가 같은 이벤트를 지운다.

@@ -246,7 +246,7 @@ fn compaction_times_reads_zst_rollouts() {
     assert_eq!(compaction_times(&path).len(), 1);
 }
 
-/// 이 Mac의 실제 기록으로 주간 요약을 낸다(숫자만). 결과를 `/tmp/kcal-health-real.txt`에 쓴다.
+/// 이 Mac의 실제 기록으로 주간 요약을 낸다(숫자만). 결과를 `/tmp/why-limit-burned.real-data.log`에 쓴다.
 /// `cargo test -- --ignored real_health_on_this_mac --nocapture`.
 #[test]
 #[ignore = "실제 ~/.codex·~/.claude·~/.kiro와 한도·적용 기록을 읽는다"]
@@ -280,6 +280,10 @@ fn real_health_on_this_mac() {
             p.compactions
         )
     };
+    out += &format!(
+        "WEEKLY_DETAILS {}\n",
+        serde_json::to_string(&report.weekly).unwrap()
+    );
     for c in &report.weekly {
         out += &format!("WEEKLY {:?}\n", c.agent);
         out += &line("before", &c.before);
@@ -294,5 +298,5 @@ fn real_health_on_this_mac() {
         out += &line("after", &p.after);
     }
     print!("{out}");
-    std::fs::write("/tmp/kcal-health-real.txt", out).unwrap();
+    std::fs::write("/tmp/why-limit-burned.real-data.log", out).unwrap();
 }

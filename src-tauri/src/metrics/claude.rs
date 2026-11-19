@@ -35,6 +35,7 @@ struct Row {
     message: Option<Message>,
     /// 세션 작업 폴더. 최적화 점검(0018 작업 A)이 최근 작업 폴더를 모을 때만 쓴다.
     cwd: Option<String>,
+    entrypoint: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -63,23 +64,24 @@ pub(crate) struct Usage {
 }
 
 impl Usage {
-    fn total_input(&self) -> f64 {
+    pub(crate) fn total_input(&self) -> f64 {
         self.input_tokens + self.cache_creation_input_tokens + self.cache_read_input_tokens
     }
 }
 
-/// assistant 줄 하나에서 쓰는 곳 모두가 필요한 값(시각·id·usage·model·cwd). 본문은 serde가 건너뛴다.
+/// assistant 줄 하나에서 쓰는 곳 모두가 필요한 값(시각·id·usage·model·cwd·entrypoint). 본문은 serde가 건너뛴다.
 #[derive(Clone, Debug)]
 pub(crate) struct Entry {
     pub(crate) ts: f64,
     pub(crate) id: Option<Box<str>>,
     pub(crate) usage: Option<Usage>,
-    /// model·cwd는 거의 모든 줄에서 같은 값이라 하나를 나눠 쓴다(`intern`).
+    /// model·cwd·entrypoint는 거의 모든 줄에서 같은 값이라 하나를 나눠 쓴다(`intern`).
     pub(crate) model: Option<Arc<str>>,
     pub(crate) cwd: Option<Arc<str>>,
+    pub(crate) entrypoint: Option<Arc<str>>,
 }
 
-/// 같은 문자열을 하나로 모은다. 서로 다른 model·cwd 값만큼만 커지고 줄 수에는 안 는다.
+/// 같은 문자열을 하나로 모은다. 서로 다른 model·cwd·entrypoint 값만큼만 커지고 줄 수에는 안 는다.
 fn intern(s: String) -> Arc<str> {
     static POOL: LazyLock<Mutex<HashSet<Arc<str>>>> = LazyLock::new(Default::default);
     let Ok(mut pool) = POOL.lock() else {
@@ -124,6 +126,7 @@ fn entry(line: &[u8]) -> Option<Entry> {
         }),
         model: message.model.map(intern),
         cwd: row.cwd.map(intern),
+        entrypoint: row.entrypoint.map(intern),
     })
 }
 

@@ -80,7 +80,7 @@
 
 - [ ] 6층 정기 검진 2차: 주 1회 검진·알림(notification plugin·capability 결정 기록 필요). 1차(대시보드 처방 효과)는 0016.
 - [x] 2층 환율: 파일별 증분 캐시. 이미 있음(2026-11-19 코드 확인): 파일마다 (수정 시각, 크기) 메모 — Claude `metrics::claude::entries`, Codex `rate::codex::read_rollout`(`130e4cb`), Kiro `rate::kiro::parsed`.
-- [ ] **한도가 왜 빨리 닳았나 보여주기**(사용자 요구 조사, 2026-11-19). 범위 안 정함.
+- [ ] **한도가 왜 빨리 닳았나 보여주기**(사용자 요구 조사, 2026-11-19). 범위: [0028](decisions/0028-why-limit-burned.md)(2026-11-19 확정). 구현 중(`feat/why-limit-burned`). 급변 자동 판정·OS 알림은 6층 정기 검진 2차로.
   - 근거(확인됨, gh api): 이 영역에서 가장 큰 요구다. anthropics/claude-code#16157 "Max인데 즉시 한도 소진"(👍697, 댓글 1499, open), #38335(👍476, open), openai/codex#28879 "토큰당 한도 소모 10~20배"(👍364). headless `claude -p`가 5시간 창을 약 1.8배 더 쓴다는 제보도 있다(#97074, 👍176, 제보자 측정).
   - 있는 것: 1%당 토큰 환율(위 "측정·표시", 아직 "믿을 수 없음" 표시). 없는 것: 환율이 갑자기 바뀌었을 때 알려 주기, 대화형·headless 구분, 에이전트 간 비교.
   - 벤더와 나눌 몫(추정): Claude Code `/usage`의 "What's contributing to your limits usage?"는 이 Mac의 로컬 기록으로 계산한다(조사 보고, 기간은 모름). kcal 몫은 여러 주의 추이와 급변. `/usage`를 열어 보고 확정한다.
