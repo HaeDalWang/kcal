@@ -1,6 +1,7 @@
 # 0016. 6층 정기 검진 1차: 처방 전후 비교와 주간 요약
 
 - 상태: 채택(구현 전, 2026-11-06)
+- 후속: [0028](0028-why-limit-burned.md) 주간 요약에 자동 실행·모델 몫, Codex 환율 비교
 - 날짜: 2026-11-06
 - 앞선 결정: [0003](0003-product-scope.md) "6. 정기 검진", [0014](0014-coaching.md)(적용 기록 `coach-log.jsonl`), [0015](0015-dashboard-daily-activity.md)(대시보드·주간 %p 증가분), [0007](0007-tuning.md). 근거: ctxmeter `develop/execution/15-health-and-compare.md`, `src/health.js`
 
