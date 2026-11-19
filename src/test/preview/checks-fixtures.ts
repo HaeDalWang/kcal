@@ -511,6 +511,17 @@ export const DASHBOARD_SWITCHES: CoachSwitch[] = [
     isProposed: false,
     instruction: "Claude Code에서 /mcp를 열고 이 서버를 끄세요.",
     usage: usage([["kcal", 10]]),
+    scopeMove: { projects: [{ name: "kcal", path: "/Users/me/work/kcal" }], skipped: [] },
+    scopeGuide: {
+      commands: [
+        `cd '/Users/me/work/kcal' && claude mcp add-json -s local 'context7' '{"type":"http","url":"https://example.test/mcp"}'`,
+        "claude mcp remove -s user 'context7'",
+      ],
+      undoCommands: [
+        `claude mcp add-json -s user 'context7' '{"type":"http","url":"https://example.test/mcp"}'`,
+        "cd '/Users/me/work/kcal' && claude mcp remove -s local 'context7'",
+      ],
+    },
   }),
   // 스킬 단위(0022 "스킬 단위"): 안 쓴 개인 스킬(제안), 숨겨 둔 프로젝트 스킬(다시 보이기), 사용자가 직접 정한 값(버튼 없음).
   sw("claude/skill:slides-helper", "slides-helper", null, {

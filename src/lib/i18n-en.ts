@@ -358,6 +358,9 @@ export const en: Messages = {
     namesIn: (kind, names) => `${kind} (${names})`,
     moreNames: (count) => `+${count} more`,
     moveToProjects: "Turn on only where used",
+    mcpCloseFirst: "Close all Claude Code sessions before running these commands",
+    mcpGuideNote:
+      "Run each command in order. Fill in <enter manually> before running. kcal does not edit the settings.",
     moveTitle: (name) => `${name}: on only where used`,
     moveNote:
       "These files change together. Backups are made next to the originals first, and one Undo restores them all.",

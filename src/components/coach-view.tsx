@@ -1,6 +1,7 @@
 // 5층 코칭 "진단하기"(docs/decisions/0014, 자리는 대시보드 점검 탭 — 0017 "화면 자리"): 끄면 아낄 수 있는 스위치 → 바꿀 줄 미리보기 → 확인 → 적용(백업) → 되돌리기.
 // 값은 열 때와 적용·되돌리기 뒤에만 읽는다(타이머 없음). 쓰기는 Rust가 대상 ID로만 한다.
 // Claude는 최근 N일 사용 기록과 지금 범위를 같이 보이고, 쓴 것은 끄기 대신 "그대로"나 "프로젝트에서만 켜기"(0022). 목록 모양은 `coach-list.tsx`.
+import { cn } from "cn";
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ const RECENT_LOG = 3;
 type Step =
   | { kind: "list" }
   | { kind: "preview"; target: CoachSwitch; enabled: boolean; preview: SwitchPreview | null }
+  | { kind: "guide"; target: CoachSwitch }
   | { kind: "manual"; target: CoachSwitch }
   | { kind: "move"; target: CoachSwitch; preview: ScopeMovePreview | null }
   | { kind: "done"; applied: AppliedSwitch };
@@ -217,7 +219,44 @@ function ManualPanel({ target, onCancel }: { target: CoachSwitch; onCancel: () =
   );
 }
 
-export function CopyCommand({ command, label }: { command: string; label?: string }) {
+function McpGuidePanel({ target, onCancel }: { target: CoachSwitch; onCancel: () => void }) {
+  const focus = usePanelFocus(onCancel);
+  const guide = target.scopeGuide;
+  return (
+    <section
+      {...focus}
+      role="group"
+      aria-label={t.coach.moveTitle(target.name)}
+      className="flex min-w-0 flex-col gap-1.5 border-t px-5 py-2.5 outline-none"
+    >
+      <h2 className="text-[13px] font-medium">{t.coach.moveTitle(target.name)}</h2>
+      <p className="text-xs">{t.coach.mcpCloseFirst}</p>
+      <p className="text-[10px] text-muted-foreground">{t.coach.mcpGuideNote}</p>
+      {guide?.commands.map((command) => (
+        <CopyCommand key={command} command={command} wrap />
+      ))}
+      <h3 className="pt-1.5 text-[13px] font-medium">{t.coach.undo}</h3>
+      {guide?.undoCommands.map((command) => (
+        <CopyCommand key={command} command={command} wrap />
+      ))}
+      <div className="flex justify-end">
+        <Button size="xs" variant="ghost" onClick={onCancel}>
+          {t.coach.close}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+export function CopyCommand({
+  command,
+  label,
+  wrap = false,
+}: {
+  command: string;
+  label?: string;
+  wrap?: boolean;
+}) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard.writeText(command).then(
@@ -227,7 +266,13 @@ export function CopyCommand({ command, label }: { command: string; label?: strin
   };
   return (
     <div className="flex items-center gap-1.5">
-      <code className="min-w-0 flex-1 truncate font-mono text-[10px] select-text" title={command}>
+      <code
+        className={cn(
+          "min-w-0 flex-1 font-mono text-[10px] select-text",
+          wrap ? "break-all whitespace-pre-wrap" : "truncate",
+        )}
+        title={command}
+      >
         {command}
       </code>
       <Button size="xs" variant="ghost" onClick={copy}>
@@ -390,6 +435,10 @@ export function CoachPanel({
 
   const pickMove = (item: CoachSwitch) => {
     setError(null);
+    if (item.scopeGuide) {
+      setStep({ kind: "guide", target: item });
+      return;
+    }
     setStep({ kind: "move", target: item, preview: null });
     previewScopeMove(item.target).then(
       (preview) => setStep({ kind: "move", target: item, preview }),
@@ -471,6 +520,7 @@ export function CoachPanel({
       {step.kind === "move" && (
         <MovePanel step={step} isBusy={isBusy} onConfirm={confirmMove} onCancel={toList} />
       )}
+      {step.kind === "guide" && <McpGuidePanel target={step.target} onCancel={toList} />}
       {step.kind === "manual" && <ManualPanel target={step.target} onCancel={toList} />}
       {step.kind === "done" && (
         <DonePanel applied={step.applied} isBusy={isBusy} onUndo={undo} onClose={toList} />

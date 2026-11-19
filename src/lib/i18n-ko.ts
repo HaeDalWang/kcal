@@ -356,6 +356,9 @@ export const ko = {
     namesIn: (kind: string, names: string) => `${kind}(${names})`,
     moreNames: (count: number) => `외 ${count}개`,
     moveToProjects: "프로젝트에서만 켜기",
+    mcpCloseFirst: "Claude Code를 모두 닫고 실행하세요",
+    mcpGuideNote:
+      "위에서부터 한 줄씩 실행하세요. <직접 입력>은 실행 전에 채우세요. kcal은 설정을 고치지 않아요.",
     moveTitle: (name: string) => `${name} 프로젝트에서만 켜기`,
     moveNote:
       "아래 파일을 한 번에 바꿔요. 바꾸기 전에 원본 옆에 백업을 만들고, 되돌리기 한 번으로 모두 되돌려요.",

@@ -2,7 +2,7 @@
 // 타입은 src-tauri/src/coach/와 짝을 이룬다. 계약을 바꾸면 양쪽과 테스트를 같이 고친다.
 import { invoke } from "@tauri-apps/api/core";
 
-import type { Agent, Loading } from "@/lib/ipc";
+import type { Agent, Loading, McpScopeGuide } from "@/lib/ipc";
 
 /** Rust `coach::switches::SwitchKind`. */
 /** skill = Claude 개인 스킬, projectSkill = 작업 폴더의 프로젝트 스킬(설명을 숨기는 스위치이고 끄는 것이 아니다, 0022 "스킬 단위"). */
@@ -30,6 +30,7 @@ export type CoachSwitch = {
   scope: SwitchScope | null;
   /** "프로젝트에서만 켜기" 제안(Claude 플러그인). */
   scopeMove: ScopeMove | null;
+  scopeGuide?: McpScopeGuide;
   /** 끄면 함께 꺼지는 것(플러그인 폴더의 이름들). MCP 스위치·폴더를 못 읽으면 null. */
   contents: PluginContents | null;
   /** 스킬 스위치(개인·프로젝트)의 현재 값과 프로젝트 이름. 스킬이 아니면 null. */

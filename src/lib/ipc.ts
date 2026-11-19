@@ -606,3 +606,6 @@ export function quitApp(): Promise<void> {
 export function getAppVersion(): Promise<string> {
   return getVersion();
 }
+
+/** Rust coach::mcp_guide::McpScopeGuide. Masked commands only; kcal never executes them. */
+export type McpScopeGuide = { commands: string[]; undoCommands: string[] };

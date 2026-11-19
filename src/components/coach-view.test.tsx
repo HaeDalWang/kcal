@@ -724,3 +724,40 @@ describe("CoachPanel", () => {
     expect(screen.queryByRole("group", { name: "최근 바꾼 것" })).toBeNull();
   });
 });
+
+it("renders MCP guide commands and close-first line without invoking preview or apply", async () => {
+  const invoke = vi.fn();
+  mockIPC(invoke);
+  const commands = [
+    "cd '/work/kcal' && claude mcp add-json -s local 'docs' '{}'",
+    "claude mcp remove -s user 'docs'",
+  ];
+  const undoCommands = [
+    "claude mcp add-json -s user 'docs' '{}'",
+    "cd '/work/kcal' && claude mcp remove -s local 'docs'",
+  ];
+  render(
+    <CoachPanel
+      agent="claude"
+      switches={[
+        sw("claude/mcp:docs", {
+          format: "manual",
+          isProposed: false,
+          scopeMove: { projects: [{ name: "kcal", path: "/work/kcal" }], skipped: [] },
+          scopeGuide: { commands, undoCommands },
+        }),
+      ]}
+      log={[]}
+      onChanged={vi.fn()}
+      onShowEffect={vi.fn()}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: `docs ${ko.coach.moveToProjects}` }));
+  const panel = screen.getByRole("group", { name: ko.coach.moveTitle("docs") });
+  expect(within(panel).getByText(ko.coach.mcpCloseFirst)).toBeTruthy();
+  expect(panel.children[1]?.textContent).toBe(ko.coach.mcpCloseFirst);
+  for (const command of [...commands, ...undoCommands])
+    expect(within(panel).getByText(command)).toBeTruthy();
+  expect(within(panel).getAllByRole("button", { name: ko.coach.copyCommand })).toHaveLength(4);
+  expect(invoke.mock.calls.some(([cmd]) => /preview|apply/.test(String(cmd)))).toBe(false);
+});

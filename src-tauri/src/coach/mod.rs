@@ -7,6 +7,7 @@ pub(crate) mod checks;
 pub(crate) mod contents;
 pub(crate) mod edit;
 pub(crate) mod log;
+mod mcp_guide;
 pub(crate) mod scope;
 pub(crate) mod skills;
 pub(crate) mod switches;

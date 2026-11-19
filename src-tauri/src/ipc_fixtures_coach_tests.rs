@@ -16,6 +16,7 @@ fn coach_types_match_fixture() {
         usage: None,
         scope: None,
         scope_move: None,
+        scope_guide: None,
         contents: None,
         skill: None,
         format: SwitchFormat::Toml,
@@ -134,6 +135,7 @@ fn coach_types_match_fixture() {
         file: Some("/synthetic/.claude/settings.json".into()),
         scope: None,
         scope_move: None,
+        scope_guide: None,
         contents: None,
         ..claude_plugin.clone()
     };
@@ -153,6 +155,7 @@ fn coach_types_match_fixture() {
         usage: None,
         scope: None,
         scope_move: None,
+        scope_guide: None,
         contents: None,
         ..skill.clone()
     };

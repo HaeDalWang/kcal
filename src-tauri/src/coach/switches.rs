@@ -11,6 +11,7 @@ use serde_json::Value;
 
 use super::contents::{self, PluginContents};
 use super::edit::{self, Edit};
+use super::mcp_guide::McpScopeGuide;
 use super::scope::{self, ProjectSettings, ScopeMove, SwitchScope};
 use super::skills::{self, SkillInfo};
 use super::usage::{SwitchUsage, UsageIndex, codex_server_key, plugin_name};
@@ -21,12 +22,7 @@ use crate::i18n::pick;
 use crate::tuning::Tuning;
 use crate::usage::Agent;
 
-pub fn claude_mcp_instruction() -> &'static str {
-    pick(
-        "Claude Code에서 /mcp를 열고 이 서버를 끄세요. kcal은 ~/.claude.json을 고치지 않아요(Claude가 실행 중에 다시 씁니다).",
-        "Open /mcp in Claude Code and turn this server off. kcal doesn't edit ~/.claude.json (Claude rewrites it while running).",
-    )
-}
+pub use super::mcp_guide::claude_mcp_instruction;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -85,6 +81,8 @@ pub struct CoachSwitch {
     pub scope: Option<SwitchScope>,
     /// "프로젝트에서만 켜기" 제안(Claude 플러그인, 0022).
     pub scope_move: Option<ScopeMove>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scope_guide: Option<McpScopeGuide>,
     /// 끄면 함께 꺼지는 것(플러그인 폴더의 스킬·에이전트·명령·MCP 서버 이름). MCP 스위치·폴더를 못 읽으면 `None`.
     pub contents: Option<PluginContents>,
     /// 스킬 스위치(개인·프로젝트)의 현재 값과 프로젝트 이름. 스킬이 아니면 `None`.
@@ -188,6 +186,7 @@ pub(super) fn base(agent: Agent, kind: SwitchKind, name: &str, enabled: bool) ->
         usage: None,
         scope: None,
         scope_move: None,
+        scope_guide: None,
         contents: None,
         skill: None,
         format: SwitchFormat::Manual,
@@ -298,7 +297,7 @@ fn with_usage(
         switch.scope_move = scope::proposal(home, switch.enabled, &used);
     }
     switch.usage = Some(used);
-    switch
+    super::mcp_guide::attach(switch, home)
 }
 
 fn claude(
