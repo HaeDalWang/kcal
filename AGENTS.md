@@ -41,6 +41,7 @@ Tauri 2 + React + TypeScript 데스크톱 앱 템플릿 (macOS, Windows).
 - 메인 UI 스레드를 막지 않는다. 무거운 연산은 Rust `async` command(필요하면 `tauri::async_runtime::spawn_blocking`)에서 한다.
 - React 리렌더링을 최소화한다. 상태는 쓰는 곳 가까이 두고, 전역 store 라이브러리를 기본으로 넣지 않는다.
 - 불필요한 라이브러리, 런타임, 백그라운드 프로세스를 추가하지 않는다.
+- 주기·캐시 TTL·타임아웃·탐색 범위처럼 사용자가 조절할 만한 값은 하드코딩하지 않고 settings의 tuning 묶음(기본값 + Rust 쪽 범위 검증)에 둔다. 프로토콜 마커·URL·파일명·이벤트 이름·수치 허용오차는 제외. (설정 패널 계획, 2026-11-04)
 
 ## IPC 규칙
 
