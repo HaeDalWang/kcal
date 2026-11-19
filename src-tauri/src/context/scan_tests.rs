@@ -507,8 +507,10 @@ fn codex_trusted_projects_lists_only_trusted_paths() {
     let trusted = codex_trusted_projects(config);
     let mut paths: Vec<&str> = trusted.iter().map(String::as_str).collect();
     paths.sort_unstable();
-    let four = trust_key("C:\\w\\four");
-    let mut expected = vec!["/w/one", "/w/three", four.as_str()];
+    let mut expected: Vec<String> = ["/w/one", "/w/three", "C:\\w\\four"]
+        .into_iter()
+        .map(trust_key)
+        .collect();
     expected.sort_unstable();
     assert_eq!(paths, expected);
 }
