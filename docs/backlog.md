@@ -68,6 +68,11 @@
   - 바라는 것: ① Fable 5.2 전용 사용량 %(동료 말로는 5시간·주간과 별도로 %가 있다, 추정) ② Claude 크레딧 남은 양(동료 말로는 Max 100 기준 한 달에 100크레딧, 플랜별 정확한 양은 모름) ③ Codex 초기화권(한도 리셋) 남은 횟수.
   - 지금(확인됨): Claude는 `api/oauth/usage`의 `five_hour`·`seven_day`, Codex는 `wham/usage`의 `primary_window`·`secondary_window`만 읽는다(`usage/parse.rs`). 나머지 필드는 버린다.
   - 모름: 세 값이 같은 응답에 이미 있는지, 필드 이름과 모양. 확인 = 두 API 원본 응답을 한 번씩 받아(토큰 값은 기록하지 않음) 필드를 적고, CodexBar가 어떤 필드를 읽는지 소스로 대조한다. 응답에 없으면 다른 엔드포인트가 필요하고 그때 결정 기록을 남긴다.
+  - CodexBar 소스로 본 필드(확인됨: CodexBar 소스 기준, 실제 응답은 모름):
+    - Claude `api/oauth/usage`: 창 `seven_day_opus`·`seven_day_sonnet`·`seven_day_oauth_apps`(창마다 `utilization`·`resets_at`), 새 모양 `limits[]`(항목마다 `scope.model.display_name`, 예 "Fable" → ① Fable 전용 %), `extra_usage`(`is_enabled`·`monthly_limit`·`used_credits`·`utilization`·`currency` → ② 크레딧).
+    - Codex `wham/usage`: `credits`(`has_credits`·`unlimited`·`balance`), `additional_rate_limits[]`(`limit_name`·`metered_feature`·`rate_limit` = 기본 창과 같은 모양 → 모델별 한도).
+    - Codex 초기화권 ③: 다른 엔드포인트 `/wham/rate-limit-reset-credits`(`available_count`, `credits[]`의 `reset_type`·`status`·`expires_at`). 새 요청이라 결정 기록 필요.
+  - 0027 ③(`LimitWindow.group`)이 ①과 Codex `additional_rate_limits`를 담는다. ②·③(크레딧·초기화권)은 창이 아니라 별도 칸.
   - 표시 자리: 팝오버 막대 줄 추가 vs 대시보드만. `docs/design.md`·0011 크기 규칙 안에서 정한다.
 
 - [ ] 6층 정기 검진 2차: 주 1회 검진·알림(notification plugin·capability 결정 기록 필요). 1차(대시보드 처방 효과)는 0016.
@@ -107,7 +112,8 @@
     6. **작업 폴더 하나만 봄.** 다른 프로젝트의 local MCP 같은 것은 안 보인다(최근 세션 cwd 하나 기준, 0017 "알려진 한계"와 같은 원인).
   - 2026-11-19 사용자 결정: 5부터. 공식 문서(skills "Override skill visibility from settings", 2026-11-19 확인): 값은 `on`·`name-only`·`user-invocable-only`·`off`, **플러그인 스킬은 영향 없음** → 개인·프로젝트 스킬만 대상. 제안 값은 잃는 것 없는 `user-invocable-only`(`/` 메뉴로 계속 부름).
   - 추천 순서(초안): 4(커넥터, 사용자 결정 2026-11-17로 보류) → 5. 기준 일수는 tuning에 넣는다(0007). 틀은 0017 E에 붙인다.
-- [ ] **에이전트 선택에 따라 바뀌는 화면 + 에이전트 N개 대비 구조.** 범위는 아직 안 정함.
+- [ ] **에이전트 선택에 따라 바뀌는 화면 + 에이전트 N개 대비 구조.** 범위는 [0027](decisions/0027-agent-descriptor-and-picker.md).
+  - 진행(2026-11-19): ① 설명표 완료 f3618d8·1b19f04, ② 대시보드 고르기 완료 5f1c7a7. 남음: ③ 창 `group`(+ 모델별 한도), ④ Antigravity(별도 결정).
   - 요청: 지금 지원하는 에이전트 3개(Claude·Codex·Kiro) 중 무엇을 고르느냐에 따라 화면·대시보드가 그 에이전트에 맞게 바뀌어야 한다. 나중에 유명한 에이전트를 더 붙이므로 3개 고정이 아니라 N개를 전제로 디자인·데이터 화면을 짠다.
   - 지금 상태(코드로 확인):
     - 대시보드 사용량 탭은 고르는 칸이 없다. 켠 에이전트(`enabledAgents`)를 전부 한 페이지에 쌓는다: 링(`DailyActivity`, 동심원) → 처방 효과(`HealthCompare`) → 에이전트별 상세 카드(`AgentPanels`, `dashboard.tsx:36`). 팝오버만 에이전트 탭이 있다.
