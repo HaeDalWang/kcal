@@ -156,10 +156,10 @@ pub(crate) fn codex_trusted_projects(config: &str) -> std::collections::HashSet<
     trusted
 }
 
-/// 신뢰 목록과 비교하는 경로 문자열(Windows는 대소문자 무시).
+/// 신뢰 목록과 비교하는 경로 문자열(Windows는 대소문자를 무시하고 `/`를 `\`로 맞춘다).
 pub(crate) fn trust_key(path: &str) -> String {
     if cfg!(windows) {
-        path.to_ascii_lowercase()
+        path.replace('/', "\\").to_ascii_lowercase()
     } else {
         path.to_owned()
     }

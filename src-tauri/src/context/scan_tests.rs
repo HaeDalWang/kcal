@@ -512,3 +512,9 @@ fn codex_trusted_projects_lists_only_trusted_paths() {
     expected.sort_unstable();
     assert_eq!(paths, expected);
 }
+
+#[cfg(windows)]
+#[test]
+fn trust_key_matches_mixed_separators_and_case_on_windows() {
+    assert_eq!(trust_key("C:/W/a\\b"), trust_key("c:\\w\\A\\B"));
+}

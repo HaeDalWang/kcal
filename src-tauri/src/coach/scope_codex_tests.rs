@@ -32,7 +32,8 @@ fn user_config(home: &Path, trusted: &[&Path]) -> String {
     for dir in trusted {
         text.push_str(&format!(
             "\n[projects.\"{}\"]\ntrust_level = \"trusted\"\n",
-            dir.display()
+            // Codex가 쓰는 것처럼 TOML 기본 문자열로 이스케이프한다(Windows 경로의 `\`).
+            dir.display().to_string().replace('\\', "\\\\")
         ));
     }
     let _ = home;
