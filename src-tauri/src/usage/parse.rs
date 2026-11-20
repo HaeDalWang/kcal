@@ -255,19 +255,59 @@ pub fn claude_api(body: &Value, now: OffsetDateTime) -> Result<Vec<LimitWindow>,
 }
 
 /// `GET chatgpt.com/backend-api/wham/usage`: `rate_limit.{primary,secondary}_window`의 `used_percent`, `reset_at`(epoch).
+/// 창 하나만 오기도 한다(`secondary_window: null`). 둘 다 없을 때만 실패.
 pub fn codex_api(body: &Value, now: OffsetDateTime) -> Result<Vec<LimitWindow>, Fail> {
     let limit = object(body, "rate_limit", "rate_limit")?;
-    [
-        ("primary_window", WindowId::FiveHour),
-        ("secondary_window", WindowId::SevenDay),
-    ]
-    .into_iter()
-    .map(|(key, id)| {
-        let entry = object(limit, key, &format!("rate_limit.{key}"))?;
-        let at = epoch_at(entry.get("reset_at"));
-        limit_window(id, number(entry, "used_percent"), at, now, key)
-    })
-    .collect()
+    codex_windows(
+        limit,
+        [
+            ("primary_window", WindowId::FiveHour),
+            ("secondary_window", WindowId::SevenDay),
+        ],
+        "rate_limit",
+        |entry| {
+            let seconds = number(entry, "limit_window_seconds");
+            (seconds, epoch_at(entry.get("reset_at")))
+        },
+        now,
+    )
+}
+
+/// 주간으로 보는 창 길이 하한(초). 5시간 창과 7일 창 사이.
+const CODEX_WEEKLY_MIN_SECS: f64 = 86_400.0;
+
+/// Codex `primary`·`secondary` 창. 없거나 null인 창은 건너뛴다. 창 길이(초)가 있으면 자리 대신 길이로 5시간·주간을 정한다.
+fn codex_windows(
+    limits: &Value,
+    keys: [(&str, WindowId); 2],
+    field: &str,
+    read: impl Fn(&Value) -> (Option<f64>, At),
+    now: OffsetDateTime,
+) -> Result<Vec<LimitWindow>, Fail> {
+    let windows = keys
+        .into_iter()
+        .filter_map(|(key, by_slot)| {
+            let entry = limits.get(key).filter(|v| v.is_object())?;
+            let (seconds, at) = read(entry);
+            let id = match seconds {
+                Some(s) if s >= CODEX_WEEKLY_MIN_SECS => WindowId::SevenDay,
+                Some(_) => WindowId::FiveHour,
+                None => by_slot,
+            };
+            let name = format!("{field}.{key}");
+            Some(limit_window(
+                id,
+                number(entry, "used_percent"),
+                at,
+                now,
+                &name,
+            ))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if windows.is_empty() {
+        return fail(tr!("{field}: 한도 창 없음", "{field}: no limit window"));
+    }
+    Ok(windows)
 }
 
 /// 기록 시각과 창들.
@@ -293,7 +333,8 @@ pub fn claude_log_line(row: &Value, now: OffsetDateTime) -> Option<Result<Logged
 /// Codex rollout 한 줄의 `payload.rate_limits`와 `timestamp`. 해당 없는 줄은 `None`.
 pub fn codex_rollout_line(row: &Value) -> Option<(OffsetDateTime, &Value)> {
     let limits = row.pointer("/payload/rate_limits")?;
-    if !limits.get("primary")?.is_object() || !limits.get("secondary")?.is_object() {
+    let has = |key| limits.get(key).is_some_and(Value::is_object);
+    if !has("primary") && !has("secondary") {
         return None;
     }
     let timestamp = iso_at(row.get("timestamp")).ok().flatten()?;
@@ -304,23 +345,19 @@ pub fn codex_rollout_windows(
     limits: &Value,
     now: OffsetDateTime,
 ) -> Result<Vec<LimitWindow>, Fail> {
-    [
-        ("primary", WindowId::FiveHour),
-        ("secondary", WindowId::SevenDay),
-    ]
-    .into_iter()
-    .map(|(key, id)| {
-        let entry = object(limits, key, &format!("rollout {key}"))?;
-        let at = epoch_at(entry.get("resets_at"));
-        limit_window(
-            id,
-            number(entry, "used_percent"),
-            at,
-            now,
-            &format!("rollout {key}"),
-        )
-    })
-    .collect()
+    codex_windows(
+        limits,
+        [
+            ("primary", WindowId::FiveHour),
+            ("secondary", WindowId::SevenDay),
+        ],
+        "rollout",
+        |entry| {
+            let seconds = number(entry, "window_minutes").map(|m| m * 60.0);
+            (seconds, epoch_at(entry.get("resets_at")))
+        },
+        now,
+    )
 }
 
 /// CSI·OSC 시퀀스. kiro-cli는 TTY가 아니어도 색을 넣는다.
@@ -445,11 +482,31 @@ mod tests {
             codex_api(&json!({"plan_type": "plus"}), NOW),
             fail("rate_limit 없음")
         );
-        let no_secondary = json!({"rate_limit": {"primary_window": {"used_percent": 1}}});
+        let no_window = json!({"rate_limit": {"primary_window": null, "secondary_window": null}});
+        assert_eq!(codex_api(&no_window, NOW), fail("rate_limit: 한도 창 없음"));
+    }
+
+    #[test]
+    fn codex_reads_a_single_window_and_names_it_by_length() {
+        let five_only = json!({"rate_limit": {
+            "primary_window": {"used_percent": 89, "limit_window_seconds": 18_000, "reset_at": 1_793_890_800},
+            "secondary_window": null,
+        }});
+        let w = codex_api(&five_only, NOW).unwrap();
+        assert_eq!((w.len(), w[0].id), (1, WindowId::FiveHour));
+        let weekly_in_primary = json!({"rate_limit": {
+            "primary_window": {"used_percent": 3, "limit_window_seconds": 604_800, "reset_at": 1_794_300_000},
+        }});
         assert_eq!(
-            codex_api(&no_secondary, NOW),
-            fail("rate_limit.secondary_window 없음")
+            codex_api(&weekly_in_primary, NOW).unwrap()[0].id,
+            WindowId::SevenDay
         );
+        let rollout = json!({"primary": {"used_percent": 35.0, "window_minutes": 300, "resets_at": 1_794_820_920}, "secondary": null});
+        let w = codex_rollout_windows(&rollout, NOW).unwrap();
+        assert_eq!((w.len(), w[0].id), (1, WindowId::FiveHour));
+        let line =
+            json!({"timestamp": "2026-11-05T00:00:00Z", "payload": {"rate_limits": rollout}});
+        assert!(codex_rollout_line(&line).is_some());
     }
 
     #[test]
@@ -643,7 +700,7 @@ mod tests {
 
     #[test]
     fn reset_epoch_fails_with_field_name_instead_of_panicking_on_unusable_values() {
-        let unreadable = fail("primary_window: 리셋 시각을 읽을 수 없음");
+        let unreadable = fail("rate_limit.primary_window: 리셋 시각을 읽을 수 없음");
         for bad in [
             json!("soon"),
             json!(""),
