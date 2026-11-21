@@ -8,7 +8,7 @@
 
 ## 진행 중
 
-- [ ] **v0.1.4 초안 → Windows 동료 확인 → 게시**(사용자 결정 2026-11-21). main에 Windows 설치본([0029](decisions/0029-windows-release.md)), 로그인 시 자동 시작([0024](decisions/0024-login-autostart.md)), Codex MCP 끄기 제안([0022](decisions/0022-diagnose-usage-and-scope.md))이 들어갔다. Release 수동 실행으로 공개 안 된 초안 → exe를 Windows 동료에게 전달 → 확인 뒤 게시(아래 "Windows 확인 남음"). 남은 사람 확인: 미서명 설치본에서 자동 시작 켠 뒤 재로그인(macOS·Windows). Codex `McpToolCall`이 옛 CLI 버전 rollout에도 있는지는 모름(없으면 그 파일은 기존 코드 호출 집계로 센다).
+- [ ] **v0.1.4 게시됨(2026-11-21, 태그 `bc4d895`) — Windows 동료 확인 전에 게시(사용자 결정).** 남은 사람 확인: Windows 설치본 첫 실행(아래 "Windows 확인 남음"), 미서명 설치본에서 자동 시작 켠 뒤 재로그인(macOS·Windows). Codex `McpToolCall`이 옛 CLI 버전 rollout에도 있는지는 모름. main의 `55a08da`(Claude 환율 최근 창만)·`7d005e6`(모르는 에이전트 id 건너뛰기)는 다음 릴리스에 들어간다.
 
 ## 사람이 확인할 것 (실기·실계정)
 
