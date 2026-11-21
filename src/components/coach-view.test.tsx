@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { SwitchLists } from "@/components/coach-list";
 import { CoachPanel } from "@/components/coach-view";
 import { ko } from "@/lib/i18n-ko";
+import { en } from "@/lib/i18n-en";
 import type {
   Agent,
   AppliedSwitch,
@@ -565,6 +566,30 @@ describe("CoachPanel", () => {
     renderPanel("claude", { switches: [few(0)] });
     expect(screen.getByText("알 수 없음 · 기록 적음(세션 0개)").getAttribute("title")).toBe(
       "최근 30일에 Claude 세션이 없어서 쓰는지 알 수 없어요",
+    );
+  });
+
+  it("shows Codex session evidence and keeps plugins unmeasured", () => {
+    mock();
+    renderPanel("codex", {
+      switches: [
+        sw("codex/mcp:few", { isProposed: false, usage: { ...usage([]), sessions: 3 } }),
+        sw("codex/mcp:idle", { usage: usage([]) }),
+        sw("codex/plugin:unknown", { isProposed: false }),
+      ],
+    });
+    expect(screen.getByText("알 수 없음 · 기록 적음(세션 3개)").getAttribute("title")).toBe(
+      "Codex 기록이 적어서 쓰는지 알 수 없어요 (30일 동안 세션 3개)",
+    );
+    expect(within(proposals()).getByText("idle")).toBeTruthy();
+    expect(en.coach.fewSessions(30, 3, "Codex")).toBe(
+      "Not enough Codex history to tell if you use this (3 sessions in 30 days)",
+    );
+    expect(en.coach.fewSessions(30, 0, "Codex")).toContain("No Codex sessions found");
+    expect(en.coach.unused(30, 24, "Codex")).toContain("24 Codex sessions");
+    const unknown = screen.getByText("unknown").closest("li")!;
+    expect(within(unknown).getByText("알 수 없음 · 쓴 횟수 모름").getAttribute("title")).toBe(
+      ko.coach.noUsageLog("Codex"),
     );
   });
 

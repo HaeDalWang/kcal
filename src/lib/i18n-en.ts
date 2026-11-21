@@ -306,12 +306,12 @@ export const en: Messages = {
     groupHide: "Suggested to hide the description",
     scopeAll: "Scope: all projects",
     scopeProjects: (names) => `Scope: ${names} only`,
-    unused: (days, sessions) =>
-      `Not used in ${n(sessions, "Claude session")} in the last ${n(days, "day")}`,
-    fewSessions: (days, sessions) =>
+    unused: (days, sessions, agent = "Claude") =>
+      `Not used in ${n(sessions, `${agent} session`)} in the last ${n(days, "day")}`,
+    fewSessions: (days, sessions, agent = "Claude") =>
       sessions === 0
-        ? `No Claude sessions found in the last ${n(days, "day")}, so kcal can’t tell if you use this`
-        : `Not enough Claude history to tell if you use this (${n(sessions, "session")} in ${n(days, "day")})`,
+        ? `No ${agent} sessions found in the last ${n(days, "day")}, so kcal can’t tell if you use this`
+        : `Not enough ${agent} history to tell if you use this (${n(sessions, "session")} in ${n(days, "day")})`,
     noUsageLog: (agent) =>
       `kcal can’t see how often you use this in ${agent}, so it doesn’t suggest turning it off`,
     used: (days, sessions, total, last, agent = "Claude") =>
@@ -372,7 +372,8 @@ export const en: Messages = {
       "These files change together. Backups are made next to the originals first, and one Undo restores them all.",
     moveNoteCodex:
       "These files change together. The project’s .codex/config.toml may be committed to that repository (Codex has no project config file that stays out of version control). Codex only reads this file for projects you trust. Backups are made next to the originals first, and one Undo restores them all.",
-    legendCodexMove: " Suggested = an MCP server used in only some projects, turned on only there.",
+    legendCodexMove:
+      " Suggested = an MCP server with no use in your Codex logs, or used in only some projects.",
     skipped: (names) => `Skipped (folder is gone): ${names}`,
     newFile: "new file",
     confirmMove: "Confirm and move",

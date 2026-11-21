@@ -185,7 +185,7 @@ fn proposes_only_when_every_used_project_is_trusted() {
         ["a", "b"]
     );
     assert_eq!(switch.usage.as_ref().map(|u| u.total), Some(3));
-    // 끄기 제안은 하지 않는다(0회를 근거로 보지 않는다, 0022).
+    // 실제 사용한 서버는 끄기를 제안하지 않는다.
     assert!(!switch.is_proposed);
     let g = fixture("untrusted", false);
     assert_eq!(server(&g).scope_move, None);
@@ -378,4 +378,100 @@ fn proposal_gate_uses_the_same_use_and_session_thresholds_as_claude() {
     };
     assert_eq!(scope::codex::proposal(home, true, &few, &trusted), None);
     assert_eq!(scope::codex::proposal(home, false, &used, &trusted), None);
+}
+
+fn completed_call(id: &str, server: &str) -> serde_json::Value {
+    json!({"timestamp": now(), "type": "event_msg", "payload": {
+        "type": "item_completed", "item": {"type": "McpToolCall", "id": id,
+        "server": server, "tool": "read"}}})
+}
+
+#[test]
+fn counts_completed_mcp_calls_once_and_prefers_them_over_outer_code_ids() {
+    let f = fixture("completed", true);
+    rollout(
+        &f.home,
+        "a",
+        &f.a,
+        &[
+            code_call("same", "await tools.mcp__code_review_graph__read({})"),
+            completed_call("same", "code-review-graph"),
+            completed_call("same", "code-review-graph"),
+            code_call("outer", "await tools.mcp__code_review_graph__read({})"),
+            completed_call("inner", "code-review-graph"),
+            completed_call("other", "other"),
+        ],
+    );
+    let codex = index(&f).codex.unwrap();
+    // A 완료 2회 + B 기존 function_call 1회. 바깥 ID가 달라도 중복 집계하지 않는다.
+    assert_eq!(codex.for_server("code_review_graph").total, 3);
+    assert_eq!(codex.for_server("other").total, 1);
+}
+
+#[test]
+fn old_or_invalid_completed_events_do_not_replace_recent_code_calls() {
+    let f = fixture("invalid-completed", true);
+    let mut old = completed_call("old", "code-review-graph");
+    old["timestamp"] = json!("2020-01-01T00:00:00Z");
+    let mut wrong = completed_call("wrong", "code-review-graph");
+    wrong["payload"]["type"] = json!("item_started");
+    rollout(
+        &f.home,
+        "a",
+        &f.a,
+        &[
+            old,
+            wrong,
+            code_call("recent", "await tools.mcp__code_review_graph__read({})"),
+        ],
+    );
+    assert_eq!(
+        index(&f)
+            .codex
+            .unwrap()
+            .for_server("code_review_graph")
+            .total,
+        2
+    );
+}
+
+#[test]
+fn recently_modified_old_sessions_are_not_evidence_and_broken_records_are_partial() {
+    let f = fixture("old-session", true);
+    let old = json!({"timestamp": "2020-01-01T00:00:00Z", "type": "session_meta",
+        "payload": {"cwd": f.a}});
+    f.home.write(
+        ".codex/sessions/rollout-old.jsonl",
+        &(old.to_string() + "\n"),
+    );
+    assert_eq!(index(&f).codex.unwrap().sessions, 2);
+    f.home
+        .write(".codex/sessions/rollout-broken.jsonl", "{broken\n");
+    assert!(index(&f).codex.unwrap().is_partial);
+}
+
+#[test]
+fn ignores_unrelated_completed_items_without_marking_history_partial() {
+    let f = fixture("other-item", true);
+    rollout(
+        &f.home,
+        "a",
+        &f.a,
+        &[
+            json!({"timestamp": now(), "type": "event_msg", "payload": {
+            "type": "item_completed", "item": {"type": "AgentMessage", "text": "done"}}}),
+            code_call("recent", "await tools.mcp__code_review_graph__read({})"),
+        ],
+    );
+    let codex = index(&f).codex.unwrap();
+    assert!(!codex.is_partial);
+    assert_eq!(codex.for_server("code_review_graph").total, 2);
+}
+
+#[test]
+fn unreadable_compressed_rollout_marks_history_partial() {
+    let f = fixture("bad-compression", true);
+    f.home
+        .write(".codex/sessions/rollout-bad.jsonl.zst", "not zstd");
+    assert!(index(&f).codex.unwrap().is_partial);
 }

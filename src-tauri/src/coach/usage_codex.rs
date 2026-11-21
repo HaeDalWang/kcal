@@ -6,8 +6,11 @@
 //! 아닐 때, 추정). 서버 이름은 설정의 `code-review-graph`와 도구 이름의 `code_review_graph`가 달라 `-` 같은 기호를 `_`로
 //! 맞춰 비교한다(`server_key`, 추정). 프로젝트 = 시작 `cwd`에서 올라가며 처음 만나는 `.git` 폴더(없으면 `cwd` 그대로).
 //! Codex가 `.codex/config.toml`을 읽는 기준이 프로젝트 루트이기 때문이다.
+//! 2026-11-21: 파일에 `event_msg/item_completed/McpToolCall`이 있으면 그 서버·ID로 센다.
+//! 바깥 exec ID와 내부 MCP ID는 대응할 수 없어 그 파일의 기존 집계보다 우선한다(0022).
 
 use std::collections::{HashMap, HashSet};
+use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
@@ -28,6 +31,8 @@ static CODE_CALL: LazyLock<Regex> = LazyLock::new(|| {
 });
 /// 줄을 JSON으로 읽을지 가르는 표식.
 const MARK: &[u8] = b"mcp__";
+// rollout 줄 상한(rate::codex와 같은 형식 경계).
+const MAX_LINE_BYTES: u64 = 16 << 20;
 
 /// 설정의 서버 이름과 도구 이름의 서버 부분을 같은 꼴로 맞춘다: 영숫자·`_` 밖은 `_`.
 pub(in crate::coach) fn server_key(name: &str) -> String {
@@ -53,6 +58,18 @@ struct Payload {
     input: Option<Value>,
     call_id: Option<String>,
     cwd: Option<String>,
+    item: Option<McpItem>,
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "type")]
+enum McpItem {
+    McpToolCall {
+        id: String,
+        server: String,
+    },
+    #[serde(other)]
+    Other,
 }
 
 /// 서버 이름의 `mcp__<서버>__<도구>` 꼴 도구 이름.
@@ -64,7 +81,7 @@ fn direct_server(name: &str) -> Option<&str> {
 
 /// 한 줄의 호출: (서버 키, 중복 확인용 ID, 줄 시각). 호출 줄이 아니거나 `since`보다 오래되면 빈 목록.
 fn line_uses(line: &[u8], since: f64) -> Vec<(String, Option<String>, f64)> {
-    if !rollout::contains(line, MARK) {
+    if !rollout::contains(line, MARK) && !rollout::contains(line, b"McpToolCall") {
         return Vec::new();
     }
     let Ok(row) = serde_json::from_slice::<Row>(line) else {
@@ -76,10 +93,25 @@ fn line_uses(line: &[u8], since: f64) -> Vec<(String, Option<String>, f64)> {
         .and_then(|t| OffsetDateTime::parse(t, &Rfc3339).ok())
         .map(unix_secs)
         .filter(|&at| at >= since);
-    let (Some("response_item"), Some(payload), Some(at)) = (row.kind.as_deref(), row.payload, at)
-    else {
+    let (Some(payload), Some(at)) = (row.payload, at) else {
         return Vec::new();
     };
+    if row.kind.as_deref() == Some("event_msg") && payload.kind.as_deref() == Some("item_completed")
+    {
+        return match payload.item {
+            Some(McpItem::McpToolCall { id, server }) if !server.is_empty() && !id.is_empty() => {
+                vec![(server_key(&server), Some(format!("{id}#0")), at)]
+            }
+            _ => Vec::new(),
+        };
+    }
+    if row.kind.as_deref() != Some("response_item") {
+        return Vec::new();
+    }
+    response_uses(payload, at)
+}
+
+fn response_uses(payload: Payload, at: f64) -> Vec<(String, Option<String>, f64)> {
     let id = |i: usize| payload.call_id.as_ref().map(|c| format!("{c}#{i}"));
     match payload.kind.as_deref() {
         Some("custom_tool_call") => {
@@ -117,6 +149,65 @@ fn project_root(cwd: &Path, roots: &mut HashMap<PathBuf, PathBuf>) -> PathBuf {
     root
 }
 
+/// 공용 rollout reader는 중간 읽기 오류를 숨기므로, 끄기 근거에는 EOF까지 읽었는지도 확인한다.
+fn read_lines(file: &Path, mut visit: impl FnMut(&[u8])) -> std::io::Result<()> {
+    let handle = std::fs::File::open(file)?;
+    let source: Box<dyn Read> = if file.extension().is_some_and(|ext| ext == "zst") {
+        Box::new(
+            ruzstd::decoding::StreamingDecoder::new(handle)
+                .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?,
+        )
+    } else {
+        Box::new(handle)
+    };
+    let mut reader = BufReader::new(source);
+    let mut line = Vec::new();
+    loop {
+        line.clear();
+        let count = reader
+            .by_ref()
+            .take(MAX_LINE_BYTES + 1)
+            .read_until(b'\n', &mut line)?;
+        if count == 0 {
+            return Ok(());
+        }
+        if count as u64 > MAX_LINE_BYTES {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "rollout line too long",
+            ));
+        }
+        visit(&line);
+    }
+}
+
+/// mtime은 탐색 필터일 뿐이다. 실제 timestamp로 기간 안 세션인지 확인한다.
+fn metadata(
+    line: &[u8],
+    since: f64,
+    first_cwd: &mut Option<String>,
+    in_window: &mut bool,
+) -> Result<bool, serde_json::Error> {
+    if line.iter().all(u8::is_ascii_whitespace) {
+        return Ok(false);
+    }
+    let row: Row = serde_json::from_slice(line)?;
+    *in_window |= row
+        .timestamp
+        .as_deref()
+        .and_then(|t| OffsetDateTime::parse(t, &Rfc3339).ok())
+        .is_some_and(|at| unix_secs(at) >= since);
+    let is_completed = row.kind.as_deref() == Some("event_msg")
+        && row
+            .payload
+            .as_ref()
+            .is_some_and(|p| p.kind.as_deref() == Some("item_completed"));
+    if first_cwd.is_none() {
+        *first_cwd = row.payload.and_then(|p| p.cwd).filter(|c| !c.is_empty());
+    }
+    Ok(is_completed)
+}
+
 /// 파일 하나: 시작 `cwd`(session_meta·turn_context의 첫 값)와 기간 안 호출.
 fn read_file(
     file: &Path,
@@ -127,15 +218,31 @@ fn read_file(
 ) -> Option<PathBuf> {
     let mut first_cwd: Option<String> = None;
     let mut uses = Vec::new();
-    rollout::for_each_line(file, |line| {
-        if first_cwd.is_none() && rollout::contains(line, b"\"cwd\"") {
-            first_cwd = serde_json::from_slice::<Row>(line)
-                .ok()
-                .and_then(|r| r.payload?.cwd)
-                .filter(|c| !c.is_empty());
+    let mut completed = Vec::new();
+    let mut in_window = false;
+    let result = read_lines(file, |line| {
+        let is_completed =
+            metadata(line, since, &mut first_cwd, &mut in_window).unwrap_or_else(|_| {
+                index.is_partial = true;
+                false
+            });
+        let calls = line_uses(line, since);
+        if is_completed {
+            completed.extend(calls);
+        } else {
+            uses.extend(calls);
         }
-        uses.extend(line_uses(line, since));
     });
+    if result.is_err() || first_cwd.is_none() {
+        index.is_partial = true;
+    }
+    if !in_window {
+        return None;
+    }
+    // exec의 ID는 바깥 코드 블록의 ID라 내부 MCP ID와 대응할 수 없다(0022, 2026-11-21).
+    if !completed.is_empty() {
+        uses = completed;
+    }
     let project = project_root(Path::new(&first_cwd?), roots);
     for (server, id, at) in uses {
         if id.is_some_and(|id| !seen.insert(id)) {
@@ -190,8 +297,8 @@ pub(super) fn read(home: &Path, tuning: &Tuning, now: f64) -> UsageIndex {
         }
         read_bytes += size;
         let project = read_file(file, since, &mut seen, &mut roots, &mut index);
-        index.sessions += 1;
         if let Some(project) = project {
+            index.sessions += 1;
             *index.project_sessions.entry(project).or_default() += 1;
         }
     }

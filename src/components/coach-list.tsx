@@ -27,8 +27,9 @@ function codexShare(item: CoachSwitch, rate: CodexRate | undefined): number | nu
 /** "1 use in 227 Claude sessions over 30 days · last used Nov 5 in kcal" 또는 "최근 30일 안 씀". */
 function usageText(usage: SwitchUsage, agent: Agent): string {
   if (usage.total === 0) {
-    if (usage.sessions < usage.minSessions) return t.coach.fewSessions(usage.days, usage.sessions);
-    const unused = t.coach.unused(usage.days, usage.sessions);
+    if (usage.sessions < usage.minSessions)
+      return t.coach.fewSessions(usage.days, usage.sessions, AGENT_LABEL[agent]);
+    const unused = t.coach.unused(usage.days, usage.sessions, AGENT_LABEL[agent]);
     return usage.isPartial ? `${unused} (${t.coach.partial})` : unused;
   }
   const last =
@@ -305,7 +306,11 @@ function KeepRow({
 } & ReturnProps) {
   const actionRef = useReturnFocus<HTMLButtonElement>(isReturn, onReturned);
   const title = [
-    item.usage ? usageText(item.usage, item.agent) : null,
+    item.usage
+      ? usageText(item.usage, item.agent)
+      : !hasFeature(item.agent, "usageEvidence")
+        ? t.coach.noUsageLog(AGENT_LABEL[item.agent])
+        : null,
     hasTooFewUses(item) ? t.coach.tooFewUses : null,
     ...(item.usage?.projects.map((p) => `${p.path} ${integer.format(p.count)}×`) ?? []),
   ]
@@ -386,7 +391,7 @@ function Summary({
   const legendId = `${agent}-diagnose-legend`;
   const legend = hasFeature(agent, "usageEvidence")
     ? t.coach.legendTokens + t.coach.legendClaude + t.coach.evidenceSource
-    : t.coach.legendTokens + (switches.some((s) => s.scopeMove) ? t.coach.legendCodexMove : "");
+    : t.coach.legendTokens + (basis ? t.coach.legendCodexMove : "");
   return (
     <div className="flex flex-col gap-1 px-5 pt-2.5 pb-2">
       <div className="flex items-start gap-2">
@@ -553,7 +558,7 @@ export function SwitchLists({
               className="size-[12px] shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none"
             />
           </summary>
-          {!hasFeature(agent, "usageEvidence") && (
+          {!hasFeature(agent, "usageEvidence") && !keep.some((s) => s.usage) && (
             <p className="pt-1 text-[10px] text-muted-foreground">
               {t.coach.noUsageLog(AGENT_LABEL[agent])}
             </p>
