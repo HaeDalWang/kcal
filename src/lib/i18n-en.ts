@@ -421,6 +421,7 @@ export const en: Messages = {
     metaPartly: "Works on some models",
     metaOverlap: "Overlaps built-in",
     metaLimit: "Uses limit",
+    metaFast: (multiplier) => (multiplier ? `${multiplier}x limit` : "Uses more limit"),
     usesLimit: "Uses your limit",
     sources: "File locations and sources",
     moreLines: (count) => `${ns(count, "more line")}`,
@@ -434,6 +435,8 @@ export const en: Messages = {
       different: "Different content",
       lines: (lines, limit) => `${lines} lines · suggested under ${limit}`,
       ruleCount: (count, chars) => `${ns(count, "rule")} · ${chars} chars`,
+      fastModel: (model) => `Model ${model}`,
+      fastMultiplier: (multiplier) => `${multiplier}x included usage (docs)`,
     },
   },
   checks: {
@@ -552,6 +555,25 @@ export const en: Messages = {
       who: "Claude (Opus 5.5) suggests a change per rule; if you pick one, kcal keeps a backup and applies it. You can undo it here.",
       better: "Less loads every session, which saves your limit.",
     },
+    codexFast: {
+      title: (multiplier) =>
+        multiplier
+          ? `Fast mode uses your limit ${multiplier}x as fast`
+          : "Fast mode uses your limit faster",
+      short: (multiplier) =>
+        multiplier ? `Codex Fast mode, ${multiplier}x limit` : "Codex Fast mode, uses more limit",
+      headline: (multiplier) =>
+        multiplier
+          ? `Codex is saved in Fast mode, so the same work uses ${multiplier}x your limit.`
+          : "Codex is saved in Fast mode, so the same work uses more of your limit.",
+      what: "Enter `/fast` once in Codex.",
+      mine: "Responses go back to Standard speed. Codex saves the choice in its settings file, and kcal changes nothing.",
+      who: "You do it in Codex. kcal doesn’t edit any file.",
+      better: "The same work uses less of your limit.",
+      action: "Go back to Standard",
+      loses: "Generation speed.",
+      losesAstra: "Generation speed. GPT-6.2 Astra is about 1.5x faster than Standard (docs).",
+    },
     problem: {
       missing: "Claude didn’t answer for this rule",
       duplicate: "There are two answers for the same rule",
@@ -625,18 +647,20 @@ export const en: Messages = {
     ignored: "Ignored",
     applies: "Applies",
     verified: "Last verified against Claude Code 2.1.319",
+    verifiedCodex: "Verified against the Codex docs on 2026-11-21",
     keepLabel: "Keep as is",
     keepNote:
       "Hides this card. Your settings stay the same, and kcal tells you again if things change.",
     empty: "Nothing to fix right now.",
-    notChecked: (name) =>
-      `Nothing was checked: kcal didn’t find ${name} on this computer. Run claude once and sign in, then press Refresh. Not installed yet? https://code.claude.com/docs/en/setup`,
+    notChecked: (name, cli) =>
+      `Nothing was checked: kcal didn’t find ${name} on this computer. Run ${cli} once and sign in, then press Refresh.`,
+    claudeSetup: "Not installed yet? https://code.claude.com/docs/en/setup",
     showHidden: "Show",
     hideHidden: "Hide",
     hiddenNote: "You chose to keep these as they are. Your settings are unchanged.",
     restore: "Bring back",
     noChecks: (label) =>
-      `No optimization checks for ${label} yet. Only Claude Code is checked so far.`,
+      `No optimization checks for ${label} yet. Only Claude Code and Codex are checked so far.`,
     alert: (count) => `${count} to check`,
     hidden: (count) => ns(count, "hidden card"),
   },

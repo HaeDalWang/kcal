@@ -354,5 +354,41 @@
       }
     ],
     "tokens": null
+  },
+  {
+    "agent": "codex",
+    "docs": ["https://code.claude.com/docs/en/settings-reference#effortlevel"],
+    "facts": {
+      "model": "gpt-6.2-astra",
+      "multiplier": 2.0,
+      "type": "codexFastMode"
+    },
+    "file": "/synthetic/.codex/config.toml",
+    "id": "D-codex-fast-mode",
+    "isDismissed": false,
+    "kind": "D",
+    "options": [
+      {
+        "changes": [
+          {
+            "after": null,
+            "before": "\"high\"",
+            "location": "effortLevel"
+          }
+        ],
+        "id": "remove",
+        "instruction": null,
+        "isRecommended": true,
+        "isWritable": true
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
   }
 ]

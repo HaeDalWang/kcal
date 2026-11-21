@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ChecksTab } from "@/components/checks-tab";
 import {
   CODEX_APPLIED,
+  CODEX_FAST_CHECK,
   DASHBOARD_CHECKS,
   DASHBOARD_SWITCHES,
   EFFORT_APPLIED,
@@ -52,14 +53,10 @@ describe("ChecksTab", () => {
     expect(
       within(column("Claude", "최적화")).getByRole("group", { name: /커밋 안내가 두 벌/ }),
     ).toBeTruthy();
-    expect(
-      within(column("Codex", "최적화")).getByText(
-        "Codex는 아직 최적화 점검이 없어요. 지금은 Claude Code만 점검해요.",
-      ),
-    ).toBeTruthy();
+    expect(within(column("Codex", "최적화")).getByText("지금 고칠 것이 없어요.")).toBeTruthy();
     expect(
       within(column("Kiro", "최적화")).getByText(
-        "Kiro는 아직 최적화 점검이 없어요. 지금은 Claude Code만 점검해요.",
+        "Kiro는 아직 최적화 점검이 없어요. 지금은 Claude Code와 Codex만 점검해요.",
       ),
     ).toBeTruthy();
     expect(within(section("Codex")).queryByRole("group", { name: EFFORT_TITLE })).toBeNull();
@@ -71,6 +68,19 @@ describe("ChecksTab", () => {
     expect(within(column("Kiro", "진단하기")).getByText("aws-docs")).toBeTruthy();
     // 숨긴 카드 줄은 탭 맨 아래 한 번.
     expect(screen.getAllByText("숨긴 카드 1개")).toHaveLength(1);
+  });
+
+  it("shows the Codex fast-mode card in the Codex section with the /fast guide and no write button", async () => {
+    mock({ get_checks: () => [...DASHBOARD_CHECKS, CODEX_FAST_CHECK] });
+    render(<ChecksTab agents={ALL} focusKey={0} onShowEffect={() => {}} />);
+    const row = await within(column("Codex", "최적화")).findByRole("group", {
+      name: "빠른 모드라 한도가 2배로 닳아요",
+    });
+    expect(within(column("Claude", "최적화")).queryByText(/빠른 모드/)).toBeNull();
+    open(row);
+    expect(within(row).getByText("/fast").tagName).toBe("CODE");
+    expect(within(row).getByText(/잃는 것: 응답 생성 속도예요/)).toBeTruthy();
+    expect(within(row).queryByRole("button", { name: /Standard로 돌아가기|고치기/ })).toBeNull();
   });
 
   it("shows the Claude empty text when every Claude card is hidden", async () => {
@@ -92,7 +102,9 @@ describe("ChecksTab", () => {
       "점검하지 못했어요. 이 컴퓨터에서 Claude Code를 찾지 못했어요. claude를 한 번 실행해 로그인한 뒤 새로고침하세요. 아직 설치 전이면: https://code.claude.com/docs/en/setup";
     await within(column("Claude", "최적화")).findByText(message);
     expect(await within(column("Claude", "진단하기")).findByText(message)).toBeTruthy();
-    expect(screen.queryByText("지금 고칠 것이 없어요.")).toBeNull();
+    expect(within(column("Claude", "최적화")).queryByText("지금 고칠 것이 없어요.")).toBeNull();
+    // 찾은 Codex(이제 점검한다): 고칠 것이 없다는 말은 맞다.
+    expect(within(column("Codex", "최적화")).getByText("지금 고칠 것이 없어요.")).toBeTruthy();
     // 찾은 Claude: 점검할 것이 없다는 말은 맞다.
   });
 

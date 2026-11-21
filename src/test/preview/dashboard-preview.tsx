@@ -3,6 +3,7 @@
 // `?empty`면 시간 버킷·처방 기록을 비워 빈 상태를 본다. `?tab=checks`면 점검 탭으로 연다(이 Mac D·C + Codex·Kiro 스위치, 숨김 1개).
 // `&handoff=ok|opus&remaining=N`이면 긴 안내문 카드(Claude에게 맡기기)를 더한다.
 // `&rules=ok|opus&remaining=N`이면 늘 실리는 규칙 카드(0018 작업 B)를 더한다.
+// `&fast=1`이면 Codex 빠른 모드 카드(0017 "첫 점검 (Codex)")를 더한다.
 // `?blank`면 갓 설치한 Mac(기록 없음)을 그린다: 지표·컨텍스트·처방 효과·사용량·환율이 null이 아니라 Rust처럼 빈 스냅샷이다.
 // `&agents=claude,codex`(쉼표 목록)면 켠 에이전트를 그것만으로 덮고(기본 3개), `&lang=en|ko`면 화면 언어를 고른다(기본은 브라우저 언어를 따르는 auto라, ko 브라우저면 한국어로 나온다).
 // 앱 번들에는 들어가지 않는다(index.html이 참조하지 않음).
@@ -31,6 +32,7 @@ import usage from "@/test/fixtures/ipc/usage-snapshot.json";
 import {
   CODEX_APPLIED,
   CODEX_SCOPE_PREVIEW,
+  CODEX_FAST_CHECK,
   DASHBOARD_CHECKS,
   DASHBOARD_SWITCHES,
   EFFORT_APPLIED,
@@ -206,6 +208,7 @@ const usageSnapshot: UsageSnapshot =
 const checks = [
   ...(rules ? [RULES_CHECK] : []),
   ...(handoff ? [LONG_CHECK] : []),
+  ...(query.has("fast") ? [CODEX_FAST_CHECK] : []),
   ...DASHBOARD_CHECKS,
 ];
 const OPUS_UNAVAILABLE: HandoffError = { kind: "opusUnavailable" };

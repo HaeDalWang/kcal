@@ -316,6 +316,9 @@ pub(super) const GIT_RULE: &str =
 #[path = "cards_tests.rs"]
 mod cards;
 
+#[path = "codex_fast_tests.rs"]
+mod codex_fast;
+
 // ---------- 적용 경계 ----------
 
 #[test]

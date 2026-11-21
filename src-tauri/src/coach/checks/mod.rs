@@ -5,6 +5,7 @@
 //! command는 점검 ID·옵션 ID·해시만 받는다. Rust가 판정을 다시 돌려 그 목록 안의 옵션만 적용한다.
 //! TS 짝은 `src/lib/ipc.ts`의 같은 이름 타입.
 
+mod codex_fast;
 pub(crate) mod diff;
 pub(crate) mod dismissed;
 mod duplicates;
@@ -162,6 +163,11 @@ pub enum CheckFacts {
         /// 이름순.
         rules: Vec<rules_paths::RuleFact>,
     },
+    /// Codex 빠른 모드가 저장돼 있다(안내만). `multiplier`: 포함 사용량 배수(문서 표의 모델만, 모르면 `None`).
+    CodexFastMode {
+        model: Option<String>,
+        multiplier: Option<f64>,
+    },
 }
 
 /// 고를 것 하나. `keep`과 `is_writable == false`는 적용할 수 없다.
@@ -314,6 +320,7 @@ pub fn list(home: &Path, records: &RecentRecords, tuning: &Tuning) -> Vec<CoachC
     .chain(duplicates::same_skills(&input))
     .chain(long_instructions::long_instructions(&input))
     .chain(rules_paths::rules_paths(&input))
+    .chain(codex_fast::fast_mode(&input))
     .collect();
     let text = std::fs::read_to_string(&file).unwrap_or_default();
     for option in checks.iter_mut().flat_map(|c| c.options.iter_mut()) {

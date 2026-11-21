@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AGENT_COLOR, AGENT_LABEL, hasFeature } from "@/lib/agents";
 import { shareOf } from "@/lib/breakdown";
-import { CLAUDE_CODE, isSuggested, trimSummary } from "@/lib/check-copy";
+import { isSuggested, notCheckedText, trimSummary } from "@/lib/check-copy";
 import { numberFormat, t } from "@/lib/i18n";
 import { switchRowKey, useOpenRow, type OpenRow } from "@/lib/open-row";
 import type { Agent, CoachSwitch, CodexRate, NameList, SwitchUsage } from "@/lib/ipc";
@@ -421,7 +421,7 @@ function Summary({
           ) : (
             <p className="text-xs text-muted-foreground wrap-break-word select-text">
               {isMissing
-                ? t.checks.notChecked(CLAUDE_CODE)
+                ? notCheckedText(agent)
                 : switches.length === 0
                   ? t.coach.noneOn
                   : t.coach.noSwitches}

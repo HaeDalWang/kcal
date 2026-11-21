@@ -10,7 +10,11 @@ const OLD_BRANCHES: Record<Agent, { label: string; unit: string; features: Agent
     unit: "request",
     features: ["checks", "usageEvidence", "measuredStartup", "handoff"],
   },
-  codex: { label: "Codex", unit: "request", features: ["behaviorDetails", "switchShare"] },
+  codex: {
+    label: "Codex",
+    unit: "request",
+    features: ["behaviorDetails", "switchShare", "checks"],
+  },
   kiro: { label: "Kiro", unit: "question", features: ["creditLimit"] },
 };
 const ALL_FEATURES: AgentFeature[] = [

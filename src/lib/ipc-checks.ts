@@ -121,6 +121,12 @@ export type CheckFacts =
       /** 필요할 때만 싣게 바꿀 때 파일당 글자 한도. */
       limit: number;
       rules: RuleFact[];
+    }
+  | {
+      /** Codex 빠른 모드가 저장돼 있다(안내만). `multiplier`: 포함 사용량 배수(문서 표의 모델만, 모르면 null). 파일 경로는 카드 `file`. */
+      type: "codexFastMode";
+      model: string | null;
+      multiplier: number | null;
     };
 
 /** Rust `coach::edit::JsonChange`. 새 키면 `before`가, 지우면 `after`가 null(값은 한 줄 JSON). */

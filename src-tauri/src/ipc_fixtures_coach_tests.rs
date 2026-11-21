@@ -405,6 +405,19 @@ fn coach_checks_match_fixture() {
             },
             None,
         ),
+        CoachCheck {
+            agent: Agent::Codex,
+            file: "/synthetic/.codex/config.toml".into(),
+            ..card(
+                "D-codex-fast-mode",
+                CheckKind::D,
+                CheckFacts::CodexFastMode {
+                    model: Some("gpt-6.2-astra".into()),
+                    multiplier: Some(2.0),
+                },
+                None,
+            )
+        },
     ];
     check("coach-checks", &checks);
     check(

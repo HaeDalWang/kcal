@@ -141,6 +141,29 @@ function WritableAction({
   );
 }
 
+/** kcal이 쓰지 않는 옵션: hook은 명령 복사, Codex 빠른 모드는 사용자가 할 일 안내(잃는 것은 그 아래 줄). */
+function GuideAction({ facts, action }: { facts: CoachCheck["facts"]; action: CheckAction }) {
+  if (facts.type === "agentsMdHook") {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <p className={`${MUTED} break-all`}>{facts.settingsFile}</p>
+        <CopyCommand command={facts.command} label={t.checksView.copy} />
+      </div>
+    );
+  }
+  if (facts.type === "codexFastMode" && action.instruction) {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <p className="text-xs">
+          <Inline text={action.instruction} />
+        </p>
+        {action.note && <p className={MUTED}>{action.note}</p>}
+      </div>
+    );
+  }
+  return null;
+}
+
 function Actions({
   check,
   copy,
@@ -177,12 +200,7 @@ function Actions({
             onPick={() => onPick(check, action)}
           />
         ) : (
-          facts.type === "agentsMdHook" && (
-            <div key={action.option} className="flex flex-col gap-0.5">
-              <p className={`${MUTED} break-all`}>{facts.settingsFile}</p>
-              <CopyCommand command={facts.command} label={t.checksView.copy} />
-            </div>
-          )
+          <GuideAction key={action.option} facts={facts} action={action} />
         ),
       )}
     </div>
@@ -337,7 +355,7 @@ function Details({ check, copy }: { check: CoachCheck; copy: CheckCopy }) {
             </li>
           ))}
         </ul>
-        <p>{t.checks.verified}</p>
+        <p>{check.agent === "codex" ? t.checks.verifiedCodex : t.checks.verified}</p>
       </div>
     </details>
   );

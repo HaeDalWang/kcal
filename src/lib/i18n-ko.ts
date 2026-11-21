@@ -420,6 +420,7 @@ export const ko = {
     metaPartly: "일부 모델에만 적용",
     metaOverlap: "기본 안내와 겹침",
     metaLimit: "한도 씀",
+    metaFast: (multiplier: string | null) => (multiplier ? `한도 ${multiplier}배` : "한도 더 씀"),
     usesLimit: "한도를 써요",
     sources: "파일 위치와 출처",
     moreLines: (count: string) => `외 ${count}줄`,
@@ -433,6 +434,8 @@ export const ko = {
       different: "내용 다름",
       lines: (lines: string, limit: number) => `${lines}줄 · 권장 ${limit}줄 아래`,
       ruleCount: (count: string, chars: string) => `규칙 ${count}개 · ${chars}자`,
+      fastModel: (model: string) => `모델 ${model}`,
+      fastMultiplier: (multiplier: string) => `포함 사용량 ${multiplier}배(문서)`,
     },
   },
   checks: {
@@ -549,6 +552,25 @@ export const ko = {
       who: "Claude(Opus 5.5)가 규칙마다 제안하고, 고르면 kcal이 백업을 남기고 바꿔요. 여기서 되돌릴 수 있어요.",
       better: "세션마다 싣는 양이 줄어 한도를 아껴요.",
     },
+    codexFast: {
+      title: (multiplier: string | null) =>
+        multiplier
+          ? `빠른 모드라 한도가 ${multiplier}배로 닳아요`
+          : "빠른 모드라 한도가 더 빨리 닳아요",
+      short: (multiplier: string | null) =>
+        multiplier ? `Codex 빠른 모드, 한도 ${multiplier}배` : "Codex 빠른 모드, 한도 더 씀",
+      headline: (multiplier: string | null) =>
+        multiplier
+          ? `Codex가 빠른 모드로 저장돼 있어서, 같은 일에 한도를 ${multiplier}배 써요.`
+          : "Codex가 빠른 모드로 저장돼 있어서, 같은 일에 한도를 더 써요.",
+      what: "Codex에서 `/fast`를 한 번 입력해요.",
+      mine: "응답 속도가 Standard로 돌아가요. 설정 파일은 Codex가 저장하고, kcal은 아무것도 고치지 않아요.",
+      who: "당신이 Codex에서 직접 해요. kcal은 파일을 고치지 않아요.",
+      better: "같은 일에 쓰는 한도가 줄어요.",
+      action: "Standard로 돌아가기",
+      loses: "응답 생성 속도예요.",
+      losesAstra: "응답 생성 속도예요. GPT-6.2 Astra는 Standard보다 약 1.5배 빨라요(문서).",
+    },
     problem: {
       missing: "Claude가 이 규칙에 답하지 않았어요",
       duplicate: "같은 규칙에 답이 둘이에요",
@@ -621,17 +643,19 @@ export const ko = {
     ignored: "무시",
     applies: "적용",
     verified: "2026-11-07 Claude Code 2.1.319에서 확인",
+    verifiedCodex: "2026-11-21 Codex 공식 문서에서 확인",
     keepLabel: "그대로 두기",
     keepNote: "누르면 이 카드를 숨겨요. 설정은 그대로이고, 상황이 바뀌면 다시 알려 드려요.",
     empty: "지금 고칠 것이 없어요.",
-    notChecked: (name: string) =>
-      `점검하지 못했어요. 이 컴퓨터에서 ${name}를 찾지 못했어요. claude를 한 번 실행해 로그인한 뒤 새로고침하세요. 아직 설치 전이면: https://code.claude.com/docs/en/setup`,
+    notChecked: (name: string, cli: string) =>
+      `점검하지 못했어요. 이 컴퓨터에서 ${name}를 찾지 못했어요. ${cli}를 한 번 실행해 로그인한 뒤 새로고침하세요.`,
+    claudeSetup: "아직 설치 전이면: https://code.claude.com/docs/en/setup",
     showHidden: "보기",
     hideHidden: "접기",
     hiddenNote: "그대로 두기로 정한 카드예요. 설정은 그대로예요.",
     restore: "다시 알리기",
     noChecks: (label: string) =>
-      `${label}는 아직 최적화 점검이 없어요. 지금은 Claude Code만 점검해요.`,
+      `${label}는 아직 최적화 점검이 없어요. 지금은 Claude Code와 Codex만 점검해요.`,
     alert: (count: string) => `점검할 것 ${count}개`,
     hidden: (count: string) => `숨긴 카드 ${count}개`,
   },

@@ -374,6 +374,32 @@ export const RULES_APPLIED: AppliedSwitch = {
   undoOf: null,
 };
 
+/** Codex 빠른 모드 카드(합성, 2026-11-21). 모델이 문서 표에 있어 배수를 말한다. */
+export const CODEX_FAST_CHECK: CoachCheck = {
+  id: "D-codex-fast-mode",
+  kind: "D",
+  agent: "codex",
+  facts: { type: "codexFastMode", model: "gpt-6.2-astra", multiplier: 2 },
+  options: [
+    {
+      id: "standard",
+      isRecommended: true,
+      isWritable: false,
+      instruction:
+        "Codex에서 `/fast`를 한 번 더 입력하세요. Standard로 돌아가고, 그 선택은 Codex가 저장해요.",
+      changes: [],
+    },
+    { id: "keep", isRecommended: false, isWritable: false, instruction: null, changes: [] },
+  ],
+  file: "/Users/me/.codex/config.toml",
+  docs: [
+    "https://learn.chatgpt.com/docs/agent-configuration/speed#fast-mode",
+    "https://learn.chatgpt.com/docs/pricing#speed-multipliers",
+  ],
+  tokens: null,
+  isDismissed: false,
+};
+
 export const THIS_MAC_CHECKS = [EFFORT_CHECK, GIT_CHECK];
 export const ALL_CHECKS = [EFFORT_CHECK, GIT_CHECK, HOOK_CHECK, SKILL_CHECK];
 

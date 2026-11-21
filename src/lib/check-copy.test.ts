@@ -4,6 +4,7 @@ import {
   alertCount,
   alertLabel,
   appliedName,
+  checkChips,
   checkCopy,
   handoffErrorText,
   handoffGate,
@@ -12,6 +13,7 @@ import {
   modelRows,
   noChecksText,
   remainingText,
+  rowMeta,
   ruleProblemText,
   ruleRowCopy,
   unknownKeysText,
@@ -19,6 +21,7 @@ import {
 import { setLanguage } from "@/lib/i18n";
 import type { CoachCheck } from "@/lib/ipc";
 import {
+  CODEX_FAST_CHECK,
   EFFORT_CHECK,
   GIT_CHECK,
   HOOK_CHECK,
@@ -200,17 +203,84 @@ describe("alertCount", () => {
   it("counts only agents that are turned on", () => {
     expect(alertCount([EFFORT_CHECK], ["codex", "kiro"])).toBe(0);
   });
+
+  it("counts the Codex fast-mode card in the Codex tab only", () => {
+    expect(alertCount([EFFORT_CHECK, CODEX_FAST_CHECK], ["codex"])).toBe(1);
+    expect(alertCount([EFFORT_CHECK, CODEX_FAST_CHECK], ["claude", "codex"])).toBe(2);
+    expect(alertCount([CODEX_FAST_CHECK], ["claude", "kiro"])).toBe(0);
+  });
 });
 
 describe("noChecksText", () => {
   it("says nothing to fix for Claude and that no checks exist yet for Codex and Kiro", () => {
     expect(noChecksText("claude", "Claude")).toBe("지금 고칠 것이 없어요.");
-    expect(noChecksText("codex", "Codex")).toBe(
-      "Codex는 아직 최적화 점검이 없어요. 지금은 Claude Code만 점검해요.",
-    );
+    expect(noChecksText("codex", "Codex")).toBe("지금 고칠 것이 없어요.");
     expect(noChecksText("kiro", "Kiro")).toBe(
-      "Kiro는 아직 최적화 점검이 없어요. 지금은 Claude Code만 점검해요.",
+      "Kiro는 아직 최적화 점검이 없어요. 지금은 Claude Code와 Codex만 점검해요.",
     );
+  });
+
+  it("says Codex was not found by its own name and command, without the Claude setup link", () => {
+    expect(noChecksText("codex", "Codex", true)).toBe(
+      "점검하지 못했어요. 이 컴퓨터에서 Codex를 찾지 못했어요. codex를 한 번 실행해 로그인한 뒤 새로고침하세요.",
+    );
+  });
+});
+
+describe("Codex fast-mode card", () => {
+  const withFacts = (model: string | null, multiplier: number | null): CoachCheck => ({
+    ...CODEX_FAST_CHECK,
+    facts: { type: "codexFastMode", model, multiplier },
+  });
+
+  it("names the multiplier, answers the three questions and the loss with the Astra speed", () => {
+    const copy = checkCopy(CODEX_FAST_CHECK);
+    expect(copy.title).toBe("빠른 모드라 한도가 2배로 닳아요");
+    expect(copy.headline).toBe("Codex가 빠른 모드로 저장돼 있어서, 같은 일에 한도를 2배 써요.");
+    expect(copy.what).toBe("Codex에서 `/fast`를 한 번 입력해요.");
+    expect(copy.mine).toContain("Standard로 돌아가요");
+    expect(copy.who).toBe("당신이 Codex에서 직접 해요. kcal은 파일을 고치지 않아요.");
+    expect(copy.actions).toEqual([
+      expect.objectContaining({
+        option: "standard",
+        isRecommended: true,
+        isWritable: false,
+        note: "잃는 것: 응답 생성 속도예요. GPT-6.2 Astra는 Standard보다 약 1.5배 빨라요(문서).",
+      }),
+    ]);
+    expect(rowMeta(CODEX_FAST_CHECK)?.text).toBe("한도 2배");
+    expect(checkChips(CODEX_FAST_CHECK)).toEqual(["모델 gpt-6.2-astra", "포함 사용량 2배(문서)"]);
+  });
+
+  it("keeps 2.5 and drops the speed number for other models", () => {
+    const copy = checkCopy(withFacts("gpt-6.1-sol", 2.5));
+    expect(copy.title).toBe("빠른 모드라 한도가 2.5배로 닳아요");
+    expect(copy.actions[0].note).toBe("잃는 것: 응답 생성 속도예요.");
+  });
+
+  it("says only 'more' without a number when the model is not in the table", () => {
+    const copy = checkCopy(withFacts(null, null));
+    expect(copy.title).toBe("빠른 모드라 한도가 더 빨리 닳아요");
+    expect(copy.headline).toBe("Codex가 빠른 모드로 저장돼 있어서, 같은 일에 한도를 더 써요.");
+    expect(copy.actions[0].note).toBe("잃는 것: 응답 생성 속도예요.");
+    expect(rowMeta(withFacts("gpt-9", null))?.text).toBe("한도 더 씀");
+    expect(checkChips(withFacts(null, null))).toEqual([]);
+  });
+
+  it("reads the same in English", () => {
+    setLanguage("en");
+    try {
+      expect(checkCopy(CODEX_FAST_CHECK).title).toBe("Fast mode uses your limit 2x as fast");
+      expect(checkCopy(withFacts(null, null)).title).toBe("Fast mode uses your limit faster");
+      expect(checkCopy(CODEX_FAST_CHECK).actions[0].note).toBe(
+        "You lose: Generation speed. GPT-6.2 Astra is about 1.5x faster than Standard (docs).",
+      );
+      expect(noChecksText("kiro", "Kiro")).toBe(
+        "No optimization checks for Kiro yet. Only Claude Code and Codex are checked so far.",
+      );
+    } finally {
+      setLanguage("ko");
+    }
   });
 });
 

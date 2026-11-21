@@ -19,7 +19,7 @@ import {
   type RuleProblem,
   type RuleProposal,
 } from "@/lib/ipc";
-import { hasFeature } from "@/lib/agents";
+import { AGENT_DESCRIPTORS, hasFeature } from "@/lib/agents";
 
 /** 버튼 하나. `isWritable`이 거짓이면 kcal이 쓰지 않고 `instruction`만 보인다. */
 export type CheckAction = {
@@ -272,6 +272,34 @@ function rulesCopy(check: CoachCheck, f: Facts<"rulesPaths">): CheckCopy {
   };
 }
 
+/** 배수 글자(2 → "2", 2.5 → "2.5"). 문서 표에 없는 모델이면 null. */
+const multiplierText = (multiplier: number | null) =>
+  multiplier === null ? null : String(multiplier);
+
+function codexFastCopy(check: CoachCheck, f: Facts<"codexFastMode">): CheckCopy {
+  const copy = t.checks.codexFast;
+  const times = multiplierText(f.multiplier);
+  return {
+    title: copy.title(times),
+    shortTitle: copy.short(times),
+    headline: copy.headline(times),
+    note: null,
+    what: copy.what,
+    mine: copy.mine,
+    mineList: [],
+    who: copy.who,
+    better: copy.better,
+    // 이 카드는 안내만 한다: 잃는 것은 버튼 자리의 안내 줄 아래에 보인다.
+    actions: actionsOf(check, {
+      standard: {
+        label: copy.action,
+        note: t.checksView.loses(f.model === "gpt-6.2-astra" ? copy.losesAstra : copy.loses),
+      },
+    }),
+    keepReason: null,
+  };
+}
+
 /** 검사에 떨어진 이유(괄호 안). */
 export function ruleProblemText(problem: RuleProblem): string {
   return t.checks.problem[problem];
@@ -404,6 +432,8 @@ export function checkCopy(check: CoachCheck): CheckCopy {
       return longCopy(check, f);
     case "rulesPaths":
       return rulesCopy(check, f);
+    case "codexFastMode":
+      return codexFastCopy(check, f);
   }
 }
 
@@ -430,8 +460,11 @@ export function modelRows(f: CheckFacts): ModelRow[] {
   });
 }
 
-/** 점검 못 함 문구에 쓰는 이름(화면 용어: Claude Code). */
-export const CLAUDE_CODE = "Claude Code";
+/** 이 컴퓨터에서 에이전트를 못 찾아 점검하지 못했을 때 문구(앱 이름·실행 명령은 에이전트 표에서). */
+export function notCheckedText(agent: Agent): string {
+  const text = t.checks.notChecked(AGENT_DESCRIPTORS[agent].appName, agent);
+  return agent === "claude" ? `${text} ${t.checks.claudeSetup}` : text;
+}
 
 /** 대시보드 점검 탭에서 그 에이전트의 보이는 카드가 없을 때. `label`은 화면의 에이전트 이름. */
 /** 점검이 실제로 돈 에이전트인가(못 찾은 경우 제외). 그때의 빈 목록은 "고칠 것 없음"(보상)이다. */
@@ -440,7 +473,7 @@ export const isCheckedAgent = (agent: Agent, isMissing = false) =>
 
 export function noChecksText(agent: Agent, label: string, isMissing = false): string {
   if (!hasFeature(agent, "checks")) return t.checks.noChecks(label);
-  return isMissing ? t.checks.notChecked(CLAUDE_CODE) : t.checks.empty;
+  return isMissing ? notCheckedText(agent) : t.checks.empty;
 }
 
 /** 알림에 세는 카드: 숨기지 않았고 추천이 `keep`이 아니다(적용을 추천한다). 진단하기(E)는 세지 않는다(0017 "화면 자리"). */
@@ -521,6 +554,8 @@ export function rowMeta(check: CoachCheck): { text: string; isEstimate: boolean 
       };
     case "gitInstructions":
       return { text: copy.metaOverlap, isEstimate: false };
+    case "codexFastMode":
+      return { text: copy.metaFast(multiplierText(f.multiplier)), isEstimate: false };
     default:
       return null;
   }
@@ -553,6 +588,11 @@ export function checkChips(check: CoachCheck): string[] {
         return [chip.lines(integer.format(f.lines), f.limit)];
       case "rulesPaths":
         return [chip.ruleCount(integer.format(f.rules.length), integer.format(f.chars))];
+      case "codexFastMode":
+        return [
+          ...(f.model ? [chip.fastModel(f.model)] : []),
+          ...(f.multiplier !== null ? [chip.fastMultiplier(String(f.multiplier))] : []),
+        ];
     }
   })();
   const canUndo = check.options.some((o) => o.isWritable) || isHandoffCard(check);
