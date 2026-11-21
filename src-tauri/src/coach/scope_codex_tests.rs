@@ -267,6 +267,34 @@ fn apply_refuses_when_any_file_changed_after_preview() {
     assert!(log::read(&f.log).is_empty());
 }
 
+#[cfg(unix)]
+#[test]
+fn apply_rolls_back_created_file_and_dir_when_a_later_project_write_fails() {
+    use std::os::unix::fs::PermissionsExt;
+    let f = fixture("rollback-created", true);
+    let a_config = f.a.join(".codex/config.toml");
+    let b_config = f.b.join(".codex/config.toml");
+    let before_b = std::fs::read(&b_config).unwrap();
+    let before_user = std::fs::read(&f.user).unwrap();
+    let p = preview(&server(&f)).unwrap();
+    assert!(p.changes[0].is_new_file);
+    assert_eq!(Path::new(&p.changes[0].file), a_config);
+    assert!(!f.a.join(".codex").exists());
+    // A를 새로 쓴 다음 B의 백업 만들기에서 실패한다.
+    let b_dir = b_config.parent().unwrap();
+    let permissions = std::fs::metadata(b_dir).unwrap().permissions();
+    std::fs::set_permissions(b_dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+    let result = apply_now(&f, &p.before_hash);
+    std::fs::set_permissions(b_dir, permissions).unwrap();
+    assert!(message(result.unwrap_err()).contains("백업 만들기"));
+    assert!(!a_config.exists());
+    assert!(!f.a.join(".codex").exists());
+    assert_eq!(std::fs::read(&b_config).unwrap(), before_b);
+    assert_eq!(std::fs::read(&f.user).unwrap(), before_user);
+    assert!(log::read(&f.log).is_empty());
+    assert!(!f.log.exists());
+}
+
 #[test]
 fn apply_refuses_a_project_file_that_defines_mcp_servers_another_way() {
     let f = fixture("inline", true);

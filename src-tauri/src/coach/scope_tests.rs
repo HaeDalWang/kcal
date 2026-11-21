@@ -377,6 +377,54 @@ fn apply_and_undo_still_follow_a_linked_user_settings_file() {
 
 #[cfg(unix)]
 #[test]
+fn apply_rolls_back_created_file_and_dir_when_a_later_project_write_fails() {
+    use std::os::unix::fs::PermissionsExt;
+    let f = fixture("rollback-created");
+    let a_local = f.a.join(".claude/settings.local.json");
+    let before_b = std::fs::read(&f.b_local).unwrap();
+    let before_user = std::fs::read(&f.user).unwrap();
+    let p = preview(&kit(&f)).unwrap();
+    assert!(p.changes[0].is_new_file);
+    assert_eq!(Path::new(&p.changes[0].file), a_local);
+    assert!(!f.a.join(".claude").exists());
+    // A를 새로 쓴 다음 B의 백업 만들기에서 실패한다.
+    let b_dir = f.b_local.parent().unwrap();
+    let permissions = std::fs::metadata(b_dir).unwrap().permissions();
+    std::fs::set_permissions(b_dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+    let result = apply_now(&f, &p.before_hash);
+    std::fs::set_permissions(b_dir, permissions).unwrap();
+    assert!(message(result.unwrap_err()).contains("백업 만들기"));
+    assert!(!a_local.exists());
+    assert!(!f.a.join(".claude").exists());
+    assert_eq!(std::fs::read(&f.b_local).unwrap(), before_b);
+    assert_eq!(std::fs::read(&f.user).unwrap(), before_user);
+    assert!(log::read(&f.log).is_empty());
+    assert!(!f.log.exists());
+}
+
+#[cfg(not(windows))]
+#[test]
+fn undo_command_removes_created_file_and_only_a_created_dir() {
+    let path = PathBuf::from("/work/it's a/.claude/settings.local.json");
+    for (created_dir, expected) in [
+        (false, "rm '/work/it'\\''s a/.claude/settings.local.json'"),
+        (
+            true,
+            "rm '/work/it'\\''s a/.claude/settings.local.json' && rmdir '/work/it'\\''s a/.claude'",
+        ),
+    ] {
+        assert_eq!(
+            undo_command(&[Done::Created {
+                path: path.clone(),
+                created_dir,
+            }]),
+            expected
+        );
+    }
+}
+
+#[cfg(unix)]
+#[test]
 fn apply_rolls_back_files_already_written_when_a_later_project_file_cannot_be_replaced() {
     use std::os::unix::fs::PermissionsExt;
     let f = fixture("rollback");
