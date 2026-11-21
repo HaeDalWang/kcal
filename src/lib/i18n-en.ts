@@ -765,6 +765,7 @@ export const en: Messages = {
       "advanced.resetTolSecs": { label: "Allowed reset-time difference" },
       "advanced.holdoutTrain": { label: "Share of data used to fit" },
       "advanced.minSamplesPerVar": { label: "Min 5-hour windows of data per factor" },
+      "advanced.claudeRateDays": { label: "Recent days used for the rate" },
       "advanced.cacheMissRatio": { label: "Cache miss threshold" },
     },
     defaultValue: (value) => `default ${value}`,

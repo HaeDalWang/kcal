@@ -90,6 +90,7 @@ const FIELDS: Record<TuningKey, FieldInfo> = {
   "advanced.resetTolSecs": { unit: "seconds", section: "advanced" },
   "advanced.holdoutTrain": { unit: "ratio", section: "advanced" },
   "advanced.minSamplesPerVar": { unit: "count", section: "advanced" },
+  "advanced.claudeRateDays": { unit: "days", section: "advanced" },
   "advanced.cacheMissRatio": { unit: "ratio", section: "advanced" },
 };
 

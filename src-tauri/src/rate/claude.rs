@@ -163,13 +163,20 @@ fn window_row(requests: &[Request], w: &LimitWindow) -> Option<Vec<f64>> {
     has_request.then(|| sums.to_vec())
 }
 
-/// Codex `rate`와 같은 판정. 기록된 요청이 있는 창이 하나도 없으면 `NoData`.
-pub fn rate(requests: &[Request], windows: &[LimitWindow], tuning: &AdvancedTuning) -> CodexRate {
-    let (rows, y): (Vec<Vec<f64>>, Vec<f64>) = windows
-        .iter()
+/// 최근 `claude_rate_days`일 창만 Codex `rate`와 같은 판정. 기록된 요청이 없으면 `NoData`.
+pub fn rate(
+    requests: &[Request],
+    windows: &[LimitWindow],
+    now: f64,
+    tuning: &AdvancedTuning,
+) -> CodexRate {
+    let cut = now - tuning.claude_rate_days as f64 * DAY_SECS;
+    let recent = windows.iter().filter(|w| w.reset >= cut);
+    let window_count = recent.clone().count();
+    let (rows, y): (Vec<Vec<f64>>, Vec<f64>) = recent
         .filter_map(|w| Some((window_row(requests, w)?, w.used_percent)))
         .unzip();
-    let excluded_windows = windows.len() - rows.len();
+    let excluded_windows = window_count - rows.len();
     if rows.is_empty() {
         return CodexRate::status(RateStatus::NoData, 0, excluded_windows);
     }

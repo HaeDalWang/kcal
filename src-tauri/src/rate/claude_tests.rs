@@ -126,7 +126,7 @@ fn recovers_a_known_rate_and_excludes_windows_without_logged_requests() {
     requests.push(req(3.0 * HOUR, 0.0, 9e9, 0.0, 9e9));
     requests.sort_by(|a, b| a.ts.total_cmp(&b.ts));
 
-    let got = rate(&requests, &wins, &AdvancedTuning::default());
+    let got = rate(&requests, &wins, 65.0 * HOUR, &AdvancedTuning::default());
     assert_eq!(got.status, RateStatus::Estimated);
     assert_eq!((got.windows, got.excluded_windows), (12, 1));
     assert!(got.r2.unwrap() > 0.999);
@@ -143,13 +143,48 @@ fn recovers_a_known_rate_and_excludes_windows_without_logged_requests() {
     }
 
     // 창 9개 미만(변수 3 × 3)이면 회귀하지 않는다. 요청이 하나도 없으면 기록 없음.
-    let few = rate(&requests, &wins[..8], &AdvancedTuning::default());
+    let few = rate(
+        &requests,
+        &wins[..8],
+        65.0 * HOUR,
+        &AdvancedTuning::default(),
+    );
     assert_eq!((few.status, few.windows), (RateStatus::Insufficient, 8));
-    let none = rate(&[], &wins, &AdvancedTuning::default());
+    let none = rate(&[], &wins, 65.0 * HOUR, &AdvancedTuning::default());
     assert_eq!(
         (none.status, none.excluded_windows),
         (RateStatus::NoData, 13)
     );
+}
+
+#[test]
+fn rate_uses_only_recent_windows_including_the_cutoff_and_excludes_only_missing_requests() {
+    let now = 30.0 * DAY_SECS;
+    let tuning = AdvancedTuning {
+        claude_rate_days: 3,
+        ..AdvancedTuning::default()
+    };
+    let cut = now - 3.0 * DAY_SECS;
+    let wins = [
+        window(cut - 3.0 * HOUR, cut - 2.0 * HOUR, cut - 2.0 * HOUR, 99.0),
+        window(cut - 2.0 * HOUR, cut - 1.0, cut - HOUR, 99.0),
+        window(cut - HOUR, cut, cut - 1.0, 10.0),
+        window(now - HOUR, now, now - 1.0, 20.0),
+        window(now, now + HOUR, now + 1.0, 30.0),
+    ];
+    let requests = [
+        req(cut - 2.5 * HOUR, 100.0, 0.0, 0.0, 10.0),
+        req(cut - 1.0, 100.0, 0.0, 0.0, 10.0),
+        req(now - 1.0, 200.0, 0.0, 0.0, 20.0),
+    ];
+    let got = rate(&requests, &wins, now, &tuning);
+    assert_eq!(got.status, RateStatus::Insufficient);
+    assert_eq!((got.windows, got.excluded_windows), (2, 1));
+    let older = rate(&requests, &wins, now, &AdvancedTuning::default());
+    assert_eq!((older.windows, older.excluded_windows), (3, 2));
+    let empty = rate(&requests, &wins[..2], now, &tuning);
+    assert_eq!(empty.status, RateStatus::NoData);
+    assert_eq!((empty.windows, empty.excluded_windows), (0, 0));
 }
 
 #[test]
@@ -196,7 +231,10 @@ fn claude_parity_on_real_logs() {
     let tuning = AdvancedTuning::default();
     let requests = requests(&files(&home));
     let wins = windows(&history, tuning.reset_tol_secs as f64);
-    let shown = rate(&requests, &wins, &tuning);
+    let now = std::env::var("KCAL_PARITY_NOW")
+        .map(|v| v.parse().unwrap())
+        .unwrap_or_else(|_| unix_secs(OffsetDateTime::now_utc()));
+    let shown = rate(&requests, &wins, now, &tuning);
     println!(
         "PARITY requests={} windows={} used={} excluded={}",
         requests.len(),
@@ -206,6 +244,7 @@ fn claude_parity_on_real_logs() {
     );
     let (rows, y): (Vec<Vec<f64>>, Vec<f64>) = wins
         .iter()
+        .filter(|w| w.reset >= now - tuning.claude_rate_days as f64 * DAY_SECS)
         .filter_map(|w| Some((window_row(&requests, w)?, w.used_percent)))
         .unzip();
     let groups: Vec<usize> = (0..rows.len()).collect();

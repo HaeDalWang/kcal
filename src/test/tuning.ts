@@ -47,6 +47,7 @@ export const DEFAULT_TUNING: Tuning = {
     resetTolSecs: 600,
     holdoutTrain: 0.7,
     minSamplesPerVar: 3,
+    claudeRateDays: 7,
     cacheMissRatio: 0.5,
   },
 };

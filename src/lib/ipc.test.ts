@@ -253,6 +253,7 @@ const ADVANCED_TUNING = {
   resetTolSecs: "required",
   holdoutTrain: "required",
   minSamplesPerVar: "required",
+  claudeRateDays: "required",
   cacheMissRatio: "required",
 } satisfies Fields<AdvancedTuning>;
 const TUNING = {

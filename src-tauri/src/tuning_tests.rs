@@ -57,6 +57,7 @@ fn defaults_equal_the_former_constants() {
             reset_tol_secs: 600,
             holdout_train: 0.7,
             min_samples_per_var: 3,
+            claude_rate_days: 7,
             cache_miss_ratio: 0.5
         }
     );
@@ -365,4 +366,32 @@ fn claude_handoff_timeout_and_min_remaining_are_integers_in_range() {
         error.contains("claudeHandoffTimeoutSecs") && error.contains("claudeHandoffMinRemaining"),
         "{error}"
     );
+}
+
+#[test]
+fn claude_rate_days_accepts_3_to_90_and_rejects_out_of_range_values() {
+    for bad in [2, 91] {
+        let tuning = Tuning {
+            advanced: AdvancedTuning {
+                claude_rate_days: bad,
+                ..AdvancedTuning::default()
+            },
+            ..Tuning::default()
+        };
+        assert!(
+            tuning
+                .validate()
+                .unwrap_err()
+                .contains("advanced.claudeRateDays")
+        );
+        assert_eq!(
+            Tuning::from_json(&json!({"advanced": {"claudeRateDays": bad}})),
+            Tuning::default()
+        );
+    }
+    for good in [3, 90] {
+        let tuning = Tuning::from_json(&json!({"advanced": {"claudeRateDays": good}}));
+        assert_eq!(tuning.advanced.claude_rate_days, good);
+        assert_eq!(tuning.validate(), Ok(()));
+    }
 }

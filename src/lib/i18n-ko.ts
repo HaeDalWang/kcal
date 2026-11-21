@@ -754,6 +754,7 @@ export const ko = {
       "advanced.resetTolSecs": { label: "초기화 시각 허용 오차" },
       "advanced.holdoutTrain": { label: "holdout 학습 비율" },
       "advanced.minSamplesPerVar": { label: "변수당 최소 5시간 구간" },
+      "advanced.claudeRateDays": { label: "환율 계산에 쓰는 최근 기간" },
       "advanced.cacheMissRatio": { label: "캐시 미스 기준" },
     } satisfies Record<TuningKey, { label: string; hint?: string }> as Record<
       TuningKey,

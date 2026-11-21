@@ -247,7 +247,7 @@ fn compute(home: &Path, history_file: &Path, tuning: &Tuning) -> RateSnapshot {
                 tuning.breakdown_days,
                 advanced,
             ),
-            ..claude::rate(&claude_requests, &claude_windows, advanced)
+            ..claude::rate(&claude_requests, &claude_windows, now_secs, advanced)
         },
     }
 }

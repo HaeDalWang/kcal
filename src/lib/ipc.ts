@@ -473,6 +473,7 @@ export type AdvancedTuning = {
   resetTolSecs: number;
   holdoutTrain: number;
   minSamplesPerVar: number;
+  claudeRateDays: number;
   /** 3층 분해: `cached / input`이 이 값 미만인 요청을 캐시 미스로 센다. */
   cacheMissRatio: number;
 };

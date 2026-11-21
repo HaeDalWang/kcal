@@ -29,6 +29,7 @@ const R2_RANGE: RangeInclusive<f64> = 0.0..=1.0;
 const RESET_TOL_SECS_RANGE: RangeInclusive<u64> = 1..=3600;
 /// 1.0이면 시험 구간이 비고, 0이면 학습 구간이 빈다.
 const HOLDOUT_TRAIN_RANGE: RangeInclusive<f64> = 0.1..=0.9;
+const CLAUDE_RATE_DAYS_RANGE: RangeInclusive<u64> = 3..=90;
 const MIN_SAMPLES_PER_VAR_RANGE: RangeInclusive<usize> = 1..=20;
 const BREAKDOWN_DAYS_RANGE: RangeInclusive<u64> = 1..=90;
 const CACHE_MISS_RATIO_RANGE: RangeInclusive<f64> = 0.05..=0.95;
@@ -150,6 +151,8 @@ pub struct AdvancedTuning {
     pub holdout_train: f64,
     /// 창 수 < 변수 수 × 이 값이면 회귀하지 않는다(`insufficient`).
     pub min_samples_per_var: usize,
+    /// Claude 환율 회귀에 쓰는 최근 기간(일).
+    pub claude_rate_days: u64,
     /// 3층 분해: 요청의 `cached / input`이 이 값 미만이면 캐시 미스로 센다.
     pub cache_miss_ratio: f64,
 }
@@ -162,6 +165,7 @@ impl Default for AdvancedTuning {
             reset_tol_secs: 600,
             holdout_train: 0.7,
             min_samples_per_var: 3,
+            claude_rate_days: 7,
             cache_miss_ratio: 0.5,
         }
     }
@@ -328,7 +332,7 @@ impl Tuning {
 
     /// 필드마다 (spec, 범위 안인가). `spec.default`에는 `self`의 값이 들어간다(`spec()`은 기본값으로 부른다).
     /// 검증과 화면용 spec이 이 표 하나를 쓴다. `good_r2 < range_r2`이면 두 필드 모두 범위 밖이다.
-    fn fields(&self) -> [(TuningFieldSpec, bool); 42] {
+    fn fields(&self) -> [(TuningFieldSpec, bool); 43] {
         let a = &self.advanced;
         let r2_order = a.good_r2 >= a.range_r2;
         let (good_r2, good_ok) = field("advanced.goodR2", a.good_r2, &R2_RANGE);
@@ -498,6 +502,11 @@ impl Tuning {
                 "advanced.minSamplesPerVar",
                 a.min_samples_per_var,
                 &MIN_SAMPLES_PER_VAR_RANGE,
+            ),
+            field(
+                "advanced.claudeRateDays",
+                a.claude_rate_days,
+                &CLAUDE_RATE_DAYS_RANGE,
             ),
             field(
                 "advanced.cacheMissRatio",

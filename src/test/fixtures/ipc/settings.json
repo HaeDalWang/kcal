@@ -9,6 +9,7 @@
       "goodR2": 0.7,
       "holdoutTrain": 0.7,
       "minSamplesPerVar": 3,
+      "claudeRateDays": 7,
       "rangeR2": 0.3,
       "resetTolSecs": 600
     },
@@ -336,6 +337,13 @@
       "key": "advanced.minSamplesPerVar",
       "max": 20.0,
       "min": 1.0
+    },
+    {
+      "default": 7.0,
+      "isInteger": true,
+      "key": "advanced.claudeRateDays",
+      "max": 90.0,
+      "min": 3.0
     },
     {
       "default": 0.5,
