@@ -92,6 +92,7 @@ The full table of what kcal reads, sends and writes, with the source file and fu
 - macOS. Built as a universal binary (arm64 and x86_64). The app's declared minimum is macOS 10.13 (Tauri's default).
 - [Claude Code](https://code.claude.com) signed in with a Claude Pro or Max account (limits exist only for subscription plans). With an API key, Bedrock or Vertex you still get startup context, but no limit.
 - Codex CLI and Kiro CLI are optional. kcal shows only the agents you enable in Settings, and enables the ones it finds on first run.
+- A custom `CLAUDE_CONFIG_DIR` or `CODEX_HOME` is not read yet: kcal reads the default folders (`~/.claude`, `~/.codex`).
 - Windows x64: unsigned NSIS installer; see [Windows](#windows-x64) for installation and limitations.
 
 ### Not yet tested
