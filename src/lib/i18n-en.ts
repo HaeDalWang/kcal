@@ -667,6 +667,8 @@ export const en: Messages = {
     hidden: (count) => ns(count, "hidden card"),
   },
   settings: {
+    autostart: "Start at login",
+    autostartPathHint: "Path saved; moving the app breaks autostart.",
     title: "Settings",
     agents: "Agents to show",
     minOne: "Keep at least one on.",

@@ -48,8 +48,8 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 - **읽는 것:** Claude 로그인은 `%USERPROFILE%\.claude\.credentials.json`에서(Keychain 없음), Codex 로그인은 `%USERPROFILE%\.codex\auth.json`에서 읽습니다. 세션 로그와 설정은 `%USERPROFILE%\.claude`, `%USERPROFILE%\.codex`, `%USERPROFILE%\.kiro`, 그리고 `%USERPROFILE%\.claude.json`과 `%USERPROFILE%\.agents\skills`에서 읽습니다. 프로젝트 지침·설정 파일도 읽습니다([개인정보 표](docs/privacy.md)). Kiro 한도는 설치된 `kiro-cli`로 조회합니다. 선택적인 대체 로그 `%USERPROFILE%\.local\share\agent-usage-audit\data\claude-ratelimits.jsonl`도 있으면 읽습니다.
 - **설정:** `%APPDATA%\io.github.haedalwang.kcal\settings.json`. kcal의 다른 저장 데이터도 같은 폴더에 있습니다. `%USERPROFILE%`은 홈 폴더, `%APPDATA%`는 Windows의 로밍 앱 데이터 폴더입니다. 파일 탐색기 주소창에 경로를 붙여 넣으세요.
 - **트레이:** 작업 표시줄의 숨겨진 아이콘(**^**)을 열고 kcal 아이콘을 보이는 트레이로 끌어 고정하세요. 아이콘을 누르면 팝오버가 열립니다.
-- **로그인 시 시작:** kcal이 자동 등록하지 않습니다. **Win+R**에서 `shell:startup`을 열고 설치된 kcal 앱의 바로가기를 넣으세요. 자동 시작을 끄려면 바로가기를 지우세요.
-- **삭제:** kcal을 종료하고 **설정 → 앱 → 설치된 앱 → kcal → 제거**를 누르세요. 저장 데이터까지 지우려면 위 설정 폴더를 삭제하고, 시작 바로가기도 제거하세요. 확인 후 적용한 에이전트 수정과 백업은 원본 파일 옆에 남습니다. 원하면 삭제 전에 되돌리기를 누르세요.
+- **로그인 시 시작:** **설정 → 로그인 시 시작** 스위치를 켜세요(기본 꺼짐). 끄면 등록을 해제합니다. 대체 방법: **Win+R**에서 `shell:startup`을 열고 설치된 앱의 바로가기를 넣으세요. 중지하려면 그 바로가기를 지우세요.
+- **삭제:** **설정 → 로그인 시 시작**을 끈 뒤 kcal을 종료하고 **설정 → 앱 → 설치된 앱 → kcal → 제거**를 누르세요. 저장 데이터까지 지우려면 위 설정 폴더를 삭제하고, 시작 바로가기도 제거하세요. 확인 후 적용한 에이전트 수정과 백업은 원본 파일 옆에 남습니다. 원하면 삭제 전에 되돌리기를 누르세요.
 
 Windows 11 PC 한 대에서 개발 빌드의 트레이·툴팁·팝오버를 실행해 봤습니다. 배포용 NSIS 설치·제거 과정, 라이트 모드, 배율이 다른 다중 모니터의 위치는 **시험하지 않았습니다**.
 
@@ -137,7 +137,8 @@ kcal은 세션, 프롬프트, 설정 내용을 올리지 않습니다. 네트워
 됩니다. Claude Code만 있어도 충분합니다. 다른 탭은 켠 에이전트에만 나타납니다.
 
 **로그인할 때 자동으로 켜지나요?**
-Windows는 [로그인 시 시작](#windows-x64)을 보세요. macOS는 **시스템 설정 → 일반 → 로그인 항목**(macOS 버전마다 이름이 조금 다릅니다)의 "로그인 시 열기"에서 +를 눌러 kcal.app을 넣으세요.
+**설정 → 로그인 시 시작** 스위치를 켜세요. 기본은 꺼짐이며, OS 등록 상태를 읽고 끄면 등록을 해제합니다. macOS에서는 현재 앱 경로를 저장하므로 앱을 옮기거나 삭제하기 전에 끄고, 옮긴 뒤 다시 켜세요.
+대체 방법: macOS는 **시스템 설정 → 일반 → 로그인 항목 → 로그인 시 열기 → +**에서 kcal.app을 고르세요. Windows는 [시작 프로그램 폴더](#windows-x64)를 쓰세요. 중복 실행을 피하려면 수동으로 추가한 항목은 따로 지우세요.
 
 **얼마나 무거운가요?**
 Electron이 아니라 Tauri 앱입니다(Rust + 시스템 WebView: macOS는 WebKit, Windows는 WebView2). Apple M5 Mac에서 릴리스 빌드를 에이전트 설정 없이 5분 그대로 두었을 때(한 번 측정) 메인 프로세스의 CPU 시간은 0.02초였고, 메모리 footprint는 24MB에 팝오버를 그리는 WebKit 프로세스 약 40MB를 더한 값이었습니다(그 프로세스들의 CPU 시간은 0.02초에 들어 있지 않습니다). 활동 상태 보기의 RSS는 공유 페이지까지 세서 메인 프로세스만 약 91MB로 보였습니다. 에이전트가 설정되어 있으면 타이머로 한도도 조회하는데, 그 경우는 아직 재지 않았습니다.

@@ -575,6 +575,21 @@ export function getSettings(): Promise<Settings> {
   return invoke<Settings>("get_settings");
 }
 
+/** OS의 로그인 시 시작 등록 상태. settings.json에는 저장하지 않는다(0024). */
+export function getAutostart(): Promise<boolean> {
+  return invoke<boolean>("get_autostart");
+}
+
+/** 등록/해제 후 OS에서 다시 읽은 상태를 반환한다. */
+export function setAutostart(enabled: boolean): Promise<boolean> {
+  return invoke<boolean>("set_autostart", { enabled });
+}
+
+/** macOS에서 현재 실행 경로가 /Applications 밖이면 이동 주의 문구를 보인다. */
+export function getAutostartPathWarning(): Promise<boolean> {
+  return invoke<boolean>("get_autostart_path_warning");
+}
+
 /**
  * 켤 에이전트를 저장한다. 빈 목록·알 수 없는 에이전트는 Rust가 `invalid_input`으로 거부한다.
  * `tuning`을 주면 통째로 바꾸고(범위 밖이면 `invalid_input`), 생략하면 지금 값을 유지한다.

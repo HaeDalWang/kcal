@@ -51,6 +51,86 @@ const saveButton = () => {
 };
 
 describe("SettingsView", () => {
+  it("reads OFF from the OS without enabling autostart", async () => {
+    const calls: string[] = [];
+    mockIPC((cmd) => {
+      calls.push(cmd);
+      if (cmd === "get_autostart") return false;
+      if (cmd === "get_autostart_path_warning") return false;
+    });
+    render(<SettingsView settings={settingsWith()} onSaved={() => {}} onBack={() => {}} />);
+    const control = screen.getByRole("switch", { name: "로그인 시 시작" });
+    expect(control.getAttribute("aria-checked")).toBe("false");
+    await waitFor(() => expect(control.hasAttribute("data-disabled")).toBe(false));
+    expect(calls).toContain("get_autostart");
+    expect(calls).not.toContain("set_autostart");
+  });
+
+  it("sets autostart and displays the OS readback rather than the requested state", async () => {
+    const calls: unknown[] = [];
+    let readback = false;
+    mockIPC((cmd, args) => {
+      if (cmd === "get_autostart") return false;
+      if (cmd === "set_autostart") {
+        calls.push(args);
+        return readback;
+      }
+    });
+    render(<SettingsView settings={settingsWith()} onSaved={() => {}} onBack={() => {}} />);
+    const control = screen.getByRole("switch", { name: "로그인 시 시작" });
+    await waitFor(() => expect(control.hasAttribute("data-disabled")).toBe(false));
+    fireEvent.click(control);
+    await waitFor(() => expect(calls).toEqual([{ enabled: true }]));
+    await waitFor(() => expect(control.hasAttribute("data-disabled")).toBe(false));
+    expect(control.getAttribute("aria-checked")).toBe("false");
+    readback = true;
+    fireEvent.click(control);
+    await waitFor(() => expect(control.getAttribute("aria-checked")).toBe("true"));
+    readback = false;
+    fireEvent.click(control);
+    await waitFor(() => expect(control.getAttribute("aria-checked")).toBe("false"));
+    expect(calls).toEqual([{ enabled: true }, { enabled: true }, { enabled: false }]);
+  });
+
+  it("shows autostart errors and keeps the last OS state", async () => {
+    mockIPC((cmd) => {
+      if (cmd === "get_autostart") return true;
+      if (cmd === "set_autostart")
+        return Promise.reject({ kind: "internal", message: "자동 시작을 변경하지 못했어요." });
+    });
+    render(<SettingsView settings={settingsWith()} onSaved={() => {}} onBack={() => {}} />);
+    const control = screen.getByRole("switch", { name: "로그인 시 시작" });
+    await waitFor(() => expect(control.getAttribute("aria-checked")).toBe("true"));
+    fireEvent.click(control);
+    expect(await screen.findByRole("alert")).toHaveProperty(
+      "textContent",
+      "자동 시작을 변경하지 못했어요.",
+    );
+    expect(control.getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("keeps autostart disabled and shows an initial OS read error", async () => {
+    mockIPC((cmd) =>
+      cmd === "get_autostart"
+        ? Promise.reject({ kind: "internal", message: "자동 시작 상태를 읽지 못했어요." })
+        : false,
+    );
+    render(<SettingsView settings={settingsWith()} onSaved={() => {}} onBack={() => {}} />);
+    expect(await screen.findByRole("alert")).toHaveProperty(
+      "textContent",
+      "자동 시작 상태를 읽지 못했어요.",
+    );
+    expect(
+      screen.getByRole("switch", { name: "로그인 시 시작" }).hasAttribute("data-disabled"),
+    ).toBe(true);
+  });
+
+  it("shows the saved-path hint only when Rust reports a non-Applications macOS path", async () => {
+    mockIPC((cmd) => cmd === "get_autostart_path_warning");
+    render(<SettingsView settings={settingsWith()} onSaved={() => {}} onBack={() => {}} />);
+    expect(await screen.findByText(/경로가 저장돼요/)).toBeTruthy();
+  });
+
   it("shows the app version at the bottom", async () => {
     mockIPC((cmd) => (cmd === "plugin:app|version" ? "0.1.0" : undefined));
     render(<SettingsView settings={settingsWith()} onSaved={() => {}} onBack={() => {}} />);

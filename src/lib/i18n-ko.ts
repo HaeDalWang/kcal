@@ -662,6 +662,8 @@ export const ko = {
     hidden: (count: string) => `숨긴 카드 ${count}개`,
   },
   settings: {
+    autostart: "로그인 시 시작",
+    autostartPathHint: "경로가 저장돼요. 옮기면 자동 시작이 끊겨요.",
     title: "설정",
     agents: "표시할 에이전트",
     minOne: "최소 1개는 켜 두세요.",

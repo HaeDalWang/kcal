@@ -1,3 +1,4 @@
+mod autostart;
 mod cache;
 mod coach;
 mod context;
@@ -32,7 +33,10 @@ fn refresh_all(app: AppHandle) -> Result<(), AppError> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder = tauri::Builder::default();
+    let autostart = tauri_plugin_autostart::Builder::new();
+    #[cfg(target_os = "macos")]
+    let autostart = autostart.macos_launcher(tauri_plugin_autostart::MacosLauncher::LaunchAgent);
+    let builder = tauri::Builder::default().plugin(autostart.build());
 
     // 개발 전용 MCP bridge. debug 빌드 + `mcp` feature일 때만 컴파일된다.
     // 기본 bind는 0.0.0.0이라 반드시 loopback으로 고정한다(docs/decisions/0001).
@@ -77,6 +81,9 @@ pub fn run() {
             metrics::get_metrics,
             health::get_health,
             refresh_all,
+            autostart::get_autostart,
+            autostart::set_autostart,
+            autostart::get_autostart_path_warning,
             settings::get_settings,
             settings::set_settings,
             settings::set_ui_language,

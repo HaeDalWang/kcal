@@ -1,3 +1,4 @@
+import { Switch } from "@base-ui/react/switch";
 import { ChevronLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -9,6 +10,9 @@ import {
   AGENTS,
   errorMessage,
   getAppVersion,
+  getAutostart,
+  getAutostartPathWarning,
+  setAutostart,
   setSettings,
   type Agent,
   type Settings,
@@ -27,6 +31,10 @@ export function SettingsView({ settings, onSaved, onBack }: SettingsViewProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState<string | null>(null);
+  const [autostart, setAutostartState] = useState<boolean | null>(null);
+  const [isAutostartSaving, setIsAutostartSaving] = useState(false);
+  const [autostartError, setAutostartError] = useState<string | null>(null);
+  const [hasPathWarning, setHasPathWarning] = useState(false);
   const enabled = settings.enabledAgents;
   const isLastOne = enabled.length === 1;
 
@@ -37,6 +45,44 @@ export function SettingsView({ settings, onSaved, onBack }: SettingsViewProps) {
       () => setVersion(null),
     );
   }, []);
+
+  useEffect(() => {
+    let isActive = true;
+    getAutostart().then(
+      (state) => {
+        if (isActive) setAutostartState(state);
+      },
+      (reason: unknown) => {
+        if (isActive) setAutostartError(errorMessage(reason));
+      },
+    );
+    getAutostartPathWarning().then(
+      (warning) => {
+        if (isActive) setHasPathWarning(warning);
+      },
+      (reason: unknown) => {
+        if (isActive) setAutostartError(errorMessage(reason));
+      },
+    );
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const toggleAutostart = (checked: boolean) => {
+    setIsAutostartSaving(true);
+    setAutostartError(null);
+    setAutostart(checked).then(
+      (state) => {
+        setAutostartState(state);
+        setIsAutostartSaving(false);
+      },
+      (reason: unknown) => {
+        setAutostartError(errorMessage(reason));
+        setIsAutostartSaving(false);
+      },
+    );
+  };
 
   // 저장은 한 번에 하나만(토글과 tuning 저장이 서로의 값을 덮어쓰지 않게).
   const save = (agents: Agent[], tuning?: Tuning, language?: LanguageChoice) => {
@@ -142,6 +188,32 @@ export function SettingsView({ settings, onSaved, onBack }: SettingsViewProps) {
             </div>
             {settings.reason && (
               <p className="mt-1 px-1.5 text-xs text-muted-foreground">{settings.reason}</p>
+            )}
+          </div>
+          <div className="flex flex-col">
+            <div className={GROUP_CLASS}>
+              <label className={`${ROW_CLASS} text-sm`}>
+                <span className="flex-1">{t.settings.autostart}</span>
+                <Switch.Root
+                  checked={autostart === true}
+                  disabled={autostart === null || isAutostartSaving}
+                  onCheckedChange={toggleAutostart}
+                  aria-describedby={hasPathWarning ? "autostart-path-hint" : undefined}
+                  className="inline-flex h-5 w-8 shrink-0 items-center rounded-full bg-input p-0.5 outline-none focus-visible:ring-3 focus-visible:ring-ring data-checked:bg-primary data-disabled:cursor-not-allowed data-disabled:opacity-50"
+                >
+                  <Switch.Thumb className="size-4 rounded-full bg-background transition-transform data-checked:translate-x-3 motion-reduce:transition-none" />
+                </Switch.Root>
+              </label>
+            </div>
+            {hasPathWarning && (
+              <p id="autostart-path-hint" className="mt-1 px-1.5 text-xs text-muted-foreground">
+                {t.settings.autostartPathHint}
+              </p>
+            )}
+            {autostartError && (
+              <p role="alert" className="mt-1 px-1.5 text-xs text-destructive">
+                {autostartError}
+              </p>
             )}
           </div>
           {error && (

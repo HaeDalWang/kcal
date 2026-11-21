@@ -48,8 +48,8 @@ Download [kcal-windows-x64-setup.exe](https://github.com/HaeDalWang/kcal/release
 - **What it reads:** Claude login from `%USERPROFILE%\.claude\.credentials.json` (no Keychain); Codex login from `%USERPROFILE%\.codex\auth.json`; session logs and config under `%USERPROFILE%\.claude`, `%USERPROFILE%\.codex`, `%USERPROFILE%\.kiro`, plus `%USERPROFILE%\.claude.json` and `%USERPROFILE%\.agents\skills`. It also reads project instruction/config files; see [the privacy table](docs/privacy.md). Kiro limits use your installed `kiro-cli`. If present, the optional fallback log is `%USERPROFILE%\.local\share\agent-usage-audit\data\claude-ratelimits.jsonl`.
 - **Settings:** `%APPDATA%\io.github.haedalwang.kcal\settings.json`. kcal's other saved data is in the same folder. `%USERPROFILE%` is your home folder; `%APPDATA%` is Windows' roaming application-data folder. Paste either path in File Explorer's address bar.
 - **Tray:** open the hidden-icons overflow (**^**) on the taskbar, then drag kcal's icon onto the visible tray to pin it. Click it to open the popover.
-- **Start at login:** kcal does not add itself. Press **Win+R**, enter `shell:startup`, and put a shortcut to the installed kcal app there. Remove the shortcut to stop starting at login.
-- **Remove:** quit kcal, then **Settings → Apps → Installed apps → kcal → Uninstall**. To remove saved data too, delete the settings folder above; remove any startup shortcut. Confirmed agent edits and their backups stay beside the original files; use Undo before uninstalling if wanted.
+- **Start at login:** Open **Settings → Start at login** and turn the switch on (OFF by default). Turn it off to remove the registration. Fallback: press **Win+R**, enter `shell:startup`, and add a shortcut to the installed app; remove that shortcut to stop it.
+- **Remove:** turn off **Settings → Start at login**, quit kcal, then **Settings → Apps → Installed apps → kcal → Uninstall**. To remove saved data too, delete the settings folder above; remove any startup shortcut. Confirmed agent edits and their backups stay beside the original files; use Undo before uninstalling if wanted.
 
 A development build ran on one Windows 11 PC (tray, tooltip, popover). The released NSIS install/uninstall flow, light mode and positioning across monitors with different scaling have **not been tested**.
 
@@ -121,7 +121,8 @@ Yes. Claude Code alone is enough. The other tabs only appear for agents you enab
 It's a Tauri app (Rust + the system WebView: WebKit on macOS, WebView2 on Windows), not Electron. One run, release build, no agents set up, idle for 5 minutes on an Apple M5 Mac: the main process used 0.02 s of CPU time; its memory footprint was 24 MB, plus about 40 MB for the WebKit processes that draw the popover (their CPU time is not in the 0.02 s). Activity Monitor's RSS counts shared pages and showed about 91 MB for the main process alone. With agents set up it also checks your limits on a timer; that case is not measured yet.
 
 **Does it start at login?**
-For Windows, see [Start at login](#windows-x64). On macOS, add it in **System Settings → General → Login Items** (the name varies a little by macOS version): under "Open at Login", press + and pick kcal.app.
+Open **Settings → Start at login** and turn it on. It is OFF by default; the switch reads the OS registration and turning it off removes it. On macOS the current app path is saved, so turn it off before moving or deleting the app, then turn it on again after moving.
+Fallback: on macOS use **System Settings → General → Login Items → Open at Login → +** and pick kcal.app; on Windows use [the Startup folder](#windows-x64). Remove manual entries separately to avoid duplicate starts.
 
 **What about Windows and Linux?**
 Windows x64: see [installation and limitations](#windows-x64). Linux: not supported.
