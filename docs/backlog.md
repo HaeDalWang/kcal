@@ -8,9 +8,7 @@
 
 ## 진행 중
 
-- [ ] **Windows 설치본 공개**(사용자 결정 2026-11-21). release workflow Windows 잡(NSIS x64, macOS 잡이 만든 초안 하나에 올림), README 영어·한국어 Windows 절, `claude.cmd`(npm 설치) 찾기, 설정의 Keychain 칸 Windows에서 숨김, 경로 툴팁 `\\?\` 떼기, 결정 0029. 브랜치 `feat/windows-release`. 다음(사용자 결정 2026-11-21): main push → Release 수동 실행으로 공개 안 된 초안 → exe를 Windows 동료에게 전달 → 확인 뒤 게시(아래 "Windows 확인 남음").
-- [ ] Codex MCP 30일 안 쓴 서버 끄기 제안(브랜치 `feat/codex-mcp-off`). 서버별 사용 횟수는 0022 "갱신 2026-11-19"부터 이미 센다(코드 안 `tools.mcp__<서버>__` 호출). 끄기 제안만 "근거 없음"으로 막혀 있었다. 조사(2026-11-21): rollout `event_msg` → `payload.type == "item_completed"`, `item.type == "McpToolCall"`에 `server`·`tool`이 남는다(확인됨: 이 Mac 최근 rollout에서 88건). 0022의 Claude 기준(30일·세션 10개 이상, 한 번도 안 쓴 것만)을 그대로 쓴다. 스킬은 전용 이벤트가 없고 `SKILL.md` 읽기 명령으로만 간접으로 셀 수 있어 하지 않는다. 플러그인은 끈 목록(`turn_context.disabled_plugin_ids`)만 있어 제안할 수 없다. `McpToolCall`이 옛 CLI 버전 rollout에도 있는지는 모름(확인: 오래된 rollout에서 grep).
-- [ ] 로그인 시 자동 시작(사용자 결정 2026-11-21: [0024](decisions/0024-login-autostart.md) B `tauri-plugin-autostart`, 기본 꺼짐, 설정 패널 스위치). Windows 작업이 main에 들어간 뒤 시작한다(README·설정 패널이 겹침). 미서명 설치본에서 재로그인 확인은 사람 몫.
+- [ ] **v0.1.4 초안 → Windows 동료 확인 → 게시**(사용자 결정 2026-11-21). main에 Windows 설치본([0029](decisions/0029-windows-release.md)), 로그인 시 자동 시작([0024](decisions/0024-login-autostart.md)), Codex MCP 끄기 제안([0022](decisions/0022-diagnose-usage-and-scope.md))이 들어갔다. Release 수동 실행으로 공개 안 된 초안 → exe를 Windows 동료에게 전달 → 확인 뒤 게시(아래 "Windows 확인 남음"). 남은 사람 확인: 미서명 설치본에서 자동 시작 켠 뒤 재로그인(macOS·Windows). Codex `McpToolCall`이 옛 CLI 버전 rollout에도 있는지는 모름(없으면 그 파일은 기존 코드 호출 집계로 센다).
 
 ## 사람이 확인할 것 (실기·실계정)
 
