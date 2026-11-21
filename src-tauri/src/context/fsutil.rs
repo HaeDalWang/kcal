@@ -282,9 +282,12 @@ fn starts_with_ignoring_case(path: &Path, root: &Path) -> bool {
     lower(path).starts_with(lower(root))
 }
 
-/// 소문자로 바꾼 경로에서 `\\?\c:\x` → `c:\x`, `\\?\unc\srv\x` → `\\srv\x`. 한쪽만 이 앞머리가 붙어도 같은 폴더로 본다.
-fn without_verbatim(path: &str) -> String {
-    if let Some(rest) = path.strip_prefix(r"\\?\unc\") {
+/// 표시·비교 경로에서 `\\?\c:\x` → `c:\x`, `\\?\unc\srv\x` → `\\srv\x`. 한쪽만 이 앞머리가 붙어도 같은 폴더로 본다.
+pub(super) fn without_verbatim(path: &str) -> String {
+    if let Some(rest) = path
+        .strip_prefix(r"\\?\UNC\")
+        .or_else(|| path.strip_prefix(r"\\?\unc\"))
+    {
         format!(r"\\{rest}")
     } else {
         path.strip_prefix(r"\\?\").unwrap_or(path).to_string()

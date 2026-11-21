@@ -49,16 +49,32 @@ pub fn kiro_cli_candidates(home: &Path, path_env: Option<&std::ffi::OsStr>) -> V
 }
 
 /// Claude Code CLI 후보(docs/decisions/0018 "실측 사실"). 설치 위치를 먼저, `PATH`를 다음에 본다.
-/// Windows 설치 위치 `%USERPROFILE%\.local\bin\claude.exe`는 추정이다.
 pub fn claude_cli_candidates(home: &Path, path_env: Option<&std::ffi::OsStr>) -> Vec<PathBuf> {
     #[cfg(windows)]
-    let name = "claude.exe";
+    {
+        let roaming = std::env::var_os("APPDATA")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| home.join("AppData").join("Roaming"));
+        claude_candidates(
+            home,
+            path_env,
+            &["claude.exe", "claude.cmd"],
+            Some(&roaming),
+        )
+    }
     #[cfg(not(windows))]
-    let name = "claude";
+    claude_candidates(home, path_env, &["claude"], None)
+}
 
-    let installed = home.join(".local").join("bin").join(name);
-    std::iter::once(installed)
-        .chain(on_path(path_env, name))
+fn claude_candidates(
+    home: &Path,
+    path_env: Option<&std::ffi::OsStr>,
+    names: &[&str],
+    npm_root: Option<&Path>,
+) -> Vec<PathBuf> {
+    std::iter::once(home.join(".local").join("bin").join(names[0]))
+        .chain(npm_root.map(|root| root.join("npm").join("claude.cmd")))
+        .chain(names.iter().flat_map(|name| on_path(path_env, name)))
         .collect()
 }
 
@@ -74,11 +90,34 @@ fn on_path(path_env: Option<&std::ffi::OsStr>, name: &str) -> Vec<PathBuf> {
         .unwrap_or_default()
 }
 
-#[cfg(all(test, not(windows)))]
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
+    fn windows_claude_candidates_include_npm_before_path() {
+        let home = std::env::temp_dir().join("kcal-home");
+        let roaming = home.join("AppData").join("Roaming");
+        let bin = home.join("bin");
+        let path = std::env::join_paths([Path::new("."), &bin]).unwrap();
+        assert_eq!(
+            claude_candidates(
+                &home,
+                Some(&path),
+                &["claude.exe", "claude.cmd"],
+                Some(&roaming)
+            ),
+            vec![
+                home.join(".local/bin/claude.exe"),
+                roaming.join("npm/claude.cmd"),
+                bin.join("claude.exe"),
+                bin.join("claude.cmd"),
+            ]
+        );
+    }
+
+    #[test]
+    #[cfg(not(windows))]
     fn cli_candidates_skip_relative_path_entries() {
         let home = Path::new("/home/me");
         let path = std::ffi::OsString::from(":.:bin:/usr/bin");

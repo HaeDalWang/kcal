@@ -90,7 +90,7 @@ impl ContextItem {
         Self {
             kind,
             name,
-            path: path.map(|p| p.to_string_lossy().into_owned()),
+            path: path.map(|p| fsutil::without_verbatim(&p.to_string_lossy())),
             bytes: Some(bytes),
             tokens: None,
             source: ContextSource::Estimated,
@@ -329,6 +329,29 @@ mod tests {
     use super::*;
     use fsutil::testing::TempDir;
     use std::path::MAIN_SEPARATOR as SEP;
+
+    #[test]
+    fn context_paths_hide_verbatim_prefix_and_preserve_case() {
+        for (raw, display) in [
+            (r"\\?\C:\Work\CLAUDE.md", r"C:\Work\CLAUDE.md"),
+            (
+                r"\\?\UNC\Server\Share\CLAUDE.md",
+                r"\\Server\Share\CLAUDE.md",
+            ),
+            ("/home/me/CLAUDE.md", "/home/me/CLAUDE.md"),
+        ] {
+            let path = Path::new(raw);
+            let item = ContextItem::estimated(
+                ContextKind::Rules,
+                "rule".into(),
+                Some(path),
+                4,
+                Loading::Startup,
+            );
+            assert_eq!(item.path.as_deref(), Some(display));
+            assert_eq!(path.to_string_lossy(), raw);
+        }
+    }
 
     #[test]
     fn workspace_must_be_an_existing_absolute_directory() {

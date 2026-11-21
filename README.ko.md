@@ -4,7 +4,7 @@
 
 <h1 align="center">kcal</h1>
 
-<p align="center"><b>Claude Code, Codex, Kiro용 macOS 메뉴 막대 앱: 입력하기 전에 에이전트가 무엇을 싣는지, 사용 한도가 얼마나 남았는지 보여 줍니다.</b><br/>로컬에서만 동작합니다. 에이전트 설정은 확인을 받은 뒤에만, 백업과 되돌리기를 두고 고칩니다.</p>
+<p align="center"><b>Claude Code, Codex, Kiro용 macOS 메뉴 막대·Windows 트레이 앱: 입력하기 전에 에이전트가 무엇을 싣는지, 사용 한도가 얼마나 남았는지 보여 줍니다.</b><br/>로컬에서만 동작합니다. 에이전트 설정은 확인을 받은 뒤에만, 백업과 되돌리기를 두고 고칩니다.</p>
 
 <p align="center">
   <img src="docs/assets/demo.gif" alt="demo 데이터로 만든 kcal 시연: 메뉴 막대 팝오버에서 남은 한도와 시작 컨텍스트, Claude 탭에서 최근 5시간 구간 막대(막대에 커서를 올리면 시작 시각과 사용량)와 시작 컨텍스트 한 줄 요약, 이어서 점검 → 진단에서 플러그인을 끄며 바뀌는 줄을 보여 주고 되돌리기로 원래대로" width="720">
@@ -17,7 +17,7 @@
 
 ## 설치
 
-macOS와 Claude Code가 필요합니다. Claude Pro 또는 Max로 로그인하면 남은 한도와 시작 컨텍스트가 보이고, API 키·Bedrock·Vertex면 시작 컨텍스트만 보입니다. Codex와 Kiro는 선택입니다. 자세한 내용과 제가 시험하지 못한 것은 [요구 사항](#요구-사항)에 있습니다. 한 줄입니다.
+macOS 또는 Windows x64와 Claude Code가 필요합니다. Windows 설치는 [아래](#windows-x64)를 보세요. Claude Pro 또는 Max로 로그인하면 남은 한도와 시작 컨텍스트가 보이고, API 키·Bedrock·Vertex면 시작 컨텍스트만 보입니다. Codex와 Kiro는 선택입니다. 자세한 내용과 제가 시험하지 못한 것은 [요구 사항](#요구-사항)에 있습니다. macOS에서는 한 줄입니다.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | sh
@@ -40,6 +40,18 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 - 이 모두의 해결책은 유료 Apple Developer ID와 공증이고, kcal에는 그것이 없습니다.
 
 </details>
+
+### Windows (x64)
+
+최신 릴리스에서 [kcal-windows-x64-setup.exe](https://github.com/HaeDalWang/kcal/releases/latest/download/kcal-windows-x64-setup.exe)를 받아 실행하세요(다음 태그 릴리스부터 제공). 설치 파일은 **서명되지 않았습니다**. SmartScreen에 **Windows protected your PC(Windows의 PC 보호)**가 나오면 **More info(추가 정보) → Run anyway(실행)**를 누르세요. 조직 정책이 이 선택을 막을 수 있습니다.
+
+- **읽는 것:** Claude 로그인은 `%USERPROFILE%\.claude\.credentials.json`에서(Keychain 없음), Codex 로그인은 `%USERPROFILE%\.codex\auth.json`에서 읽습니다. 세션 로그와 설정은 `%USERPROFILE%\.claude`, `%USERPROFILE%\.codex`, `%USERPROFILE%\.kiro`, 그리고 `%USERPROFILE%\.claude.json`과 `%USERPROFILE%\.agents\skills`에서 읽습니다. 프로젝트 지침·설정 파일도 읽습니다([개인정보 표](docs/privacy.md)). Kiro 한도는 설치된 `kiro-cli`로 조회합니다. 선택적인 대체 로그 `%USERPROFILE%\.local\share\agent-usage-audit\data\claude-ratelimits.jsonl`도 있으면 읽습니다.
+- **설정:** `%APPDATA%\io.github.haedalwang.kcal\settings.json`. kcal의 다른 저장 데이터도 같은 폴더에 있습니다. `%USERPROFILE%`은 홈 폴더, `%APPDATA%`는 Windows의 로밍 앱 데이터 폴더입니다. 파일 탐색기 주소창에 경로를 붙여 넣으세요.
+- **트레이:** 작업 표시줄의 숨겨진 아이콘(**^**)을 열고 kcal 아이콘을 보이는 트레이로 끌어 고정하세요. 아이콘을 누르면 팝오버가 열립니다.
+- **로그인 시 시작:** kcal이 자동 등록하지 않습니다. **Win+R**에서 `shell:startup`을 열고 설치된 kcal 앱의 바로가기를 넣으세요. 자동 시작을 끄려면 바로가기를 지우세요.
+- **삭제:** kcal을 종료하고 **설정 → 앱 → 설치된 앱 → kcal → 제거**를 누르세요. 저장 데이터까지 지우려면 위 설정 폴더를 삭제하고, 시작 바로가기도 제거하세요. 확인 후 적용한 에이전트 수정과 백업은 원본 파일 옆에 남습니다. 원하면 삭제 전에 되돌리기를 누르세요.
+
+Windows 11 PC 한 대에서 개발 빌드의 트레이·툴팁·팝오버를 실행해 봤습니다. 배포용 NSIS 설치·제거 과정, 라이트 모드, 배율이 다른 다중 모니터의 위치는 **시험하지 않았습니다**.
 
 ## 무엇을 측정하나
 
@@ -99,7 +111,7 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 - macOS. 범용 바이너리(arm64와 x86_64)로 빌드합니다. 앱이 선언한 최소 버전은 macOS 10.13(Tauri 기본값)입니다.
 - [Claude Code](https://code.claude.com)를 Claude Pro 또는 Max 계정으로 로그인해야 합니다(한도는 구독 요금제에만 있습니다). API 키, Bedrock, Vertex를 쓰면 시작 컨텍스트는 보이지만 한도는 보이지 않습니다.
 - Codex CLI와 Kiro CLI는 선택입니다. kcal은 설정에서 켠 에이전트만 보여 주고, 처음 실행할 때 찾은 에이전트를 켭니다.
-- Windows: 아직 없습니다. CI에서 빌드와 테스트는 통과하고 Windows 11 PC 한 대에서 실행해 봤지만(트레이·툴팁·팝오버), 배포한 설치 파일이 없고 설치 과정과 라이트 모드는 확인하지 않았습니다.
+- Windows x64: 서명 없는 NSIS 설치 파일입니다. 설치 방법과 한계는 [Windows](#windows-x64)를 보세요.
 
 ### 아직 시험하지 못한 것
 
@@ -116,7 +128,7 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 kcal은 세션, 프롬프트, 설정 내용을 올리지 않습니다. 네트워크 호출은 위의 사용량 endpoint와, 누른 경우의 Claude 넘기기 버튼뿐입니다. [개인정보 표](docs/privacy.md)를 보세요.
 
 **왜 토큰이 필요한가요?**
-남은 한도는 Claude Code가 쓰는 것과 같은 사용량 endpoint 뒤에 있고, 그 endpoint는 당신의 로그인을 요구합니다. kcal은 Keychain에서 토큰을 읽어 그 요청 한 번에만 쓰고, 갱신하지도 저장하지도 않습니다. Keychain을 읽지 못하거나 사용량 요청이 실패하면(예: Keychain 창에서 거부) kcal은 Claude 한도를 보여 주지 않습니다.
+남은 한도는 Claude Code가 쓰는 것과 같은 사용량 endpoint 뒤에 있고, 그 endpoint는 당신의 로그인을 요구합니다. kcal은 macOS Keychain 또는 Windows credentials 파일에서 토큰을 읽어 그 요청 한 번에만 쓰고, 갱신하지도 저장하지도 않습니다. 로그인을 읽지 못하거나 사용량 요청이 실패하면(예: Keychain 창에서 거부) kcal은 Claude 한도를 보여 주지 않습니다.
 
 **시작 숫자는 정확한가요?**
 항상은 아닙니다. 시스템 프롬프트, 내장 도구, MCP 도구 정의는 Claude Code가 보낸 요청에서 측정합니다(Claude Code 2.1.300 이상). 지침 파일, 규칙, 스킬, 에이전트 정의는 파일 크기라서 합계에는 추정이 섞입니다. 토큰은 바이트 ÷ 4이고 실제 토크나이저가 아닙니다. 시작 항목 중 하나라도 추정이면 합계 앞에 `~`를 붙이고, 툴팁이 어떤 종류인지 알려 줍니다.
@@ -125,15 +137,17 @@ kcal은 세션, 프롬프트, 설정 내용을 올리지 않습니다. 네트워
 됩니다. Claude Code만 있어도 충분합니다. 다른 탭은 켠 에이전트에만 나타납니다.
 
 **로그인할 때 자동으로 켜지나요?**
-스스로는 안 켜집니다. **시스템 설정 → 일반 → 로그인 항목**(macOS 버전마다 이름이 조금 다릅니다)의 "로그인 시 열기"에서 +를 눌러 kcal.app을 넣으세요.
+Windows는 [로그인 시 시작](#windows-x64)을 보세요. macOS는 **시스템 설정 → 일반 → 로그인 항목**(macOS 버전마다 이름이 조금 다릅니다)의 "로그인 시 열기"에서 +를 눌러 kcal.app을 넣으세요.
 
 **얼마나 무거운가요?**
-Electron이 아니라 Tauri 앱입니다(Rust + 시스템 WebKit). Apple M5 Mac에서 릴리스 빌드를 에이전트 설정 없이 5분 그대로 두었을 때(한 번 측정) 메인 프로세스의 CPU 시간은 0.02초였고, 메모리 footprint는 24MB에 팝오버를 그리는 WebKit 프로세스 약 40MB를 더한 값이었습니다(그 프로세스들의 CPU 시간은 0.02초에 들어 있지 않습니다). 활동 상태 보기의 RSS는 공유 페이지까지 세서 메인 프로세스만 약 91MB로 보였습니다. 에이전트가 설정되어 있으면 타이머로 한도도 조회하는데, 그 경우는 아직 재지 않았습니다.
+Electron이 아니라 Tauri 앱입니다(Rust + 시스템 WebView: macOS는 WebKit, Windows는 WebView2). Apple M5 Mac에서 릴리스 빌드를 에이전트 설정 없이 5분 그대로 두었을 때(한 번 측정) 메인 프로세스의 CPU 시간은 0.02초였고, 메모리 footprint는 24MB에 팝오버를 그리는 WebKit 프로세스 약 40MB를 더한 값이었습니다(그 프로세스들의 CPU 시간은 0.02초에 들어 있지 않습니다). 활동 상태 보기의 RSS는 공유 페이지까지 세서 메인 프로세스만 약 91MB로 보였습니다. 에이전트가 설정되어 있으면 타이머로 한도도 조회하는데, 그 경우는 아직 재지 않았습니다.
 
 **Windows와 Linux는요?**
-Windows: 아직 없습니다. 위를 보세요. Linux: 지원하지 않습니다.
+Windows x64: [설치 방법과 한계](#windows-x64)를 보세요. Linux: 지원하지 않습니다.
 
 **어떻게 삭제하나요?**
+
+Windows는 [삭제 안내](#windows-x64)를 보세요. macOS는:
 
 ```sh
 rm -rf /Applications/kcal.app "$HOME/Applications/kcal.app" \
