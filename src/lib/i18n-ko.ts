@@ -557,17 +557,18 @@ export const ko = {
         multiplier
           ? `빠른 모드라 한도가 ${multiplier}배로 닳아요`
           : "빠른 모드라 한도가 더 빨리 닳아요",
-      short: (multiplier: string | null) =>
-        multiplier ? `Codex 빠른 모드, 한도 ${multiplier}배` : "Codex 빠른 모드, 한도 더 씀",
+      short: "Codex 빠른 모드가 켜져 있음",
       headline: (multiplier: string | null) =>
         multiplier
           ? `Codex가 빠른 모드로 저장돼 있어서, 같은 일에 한도를 ${multiplier}배 써요.`
           : "Codex가 빠른 모드로 저장돼 있어서, 같은 일에 한도를 더 써요.",
-      what: "Codex에서 `/fast`를 한 번 입력해요.",
+      what: "Codex에서 /fast를 한 번 입력해요.",
       mine: "응답 속도가 Standard로 돌아가요. 설정 파일은 Codex가 저장하고, kcal은 아무것도 고치지 않아요.",
       who: "당신이 Codex에서 직접 해요. kcal은 파일을 고치지 않아요.",
       better: "같은 일에 쓰는 한도가 줄어요.",
       action: "Standard로 돌아가기",
+      guide:
+        "Codex에서 `/fast`를 한 번 더 입력하세요. Standard로 돌아가고, 그 선택은 Codex가 저장해요.",
       loses: "응답 생성 속도예요.",
       losesAstra: "응답 생성 속도예요. GPT-6.2 Astra는 Standard보다 약 1.5배 빨라요(문서).",
     },

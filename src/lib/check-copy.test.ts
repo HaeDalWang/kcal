@@ -237,7 +237,7 @@ describe("Codex fast-mode card", () => {
     const copy = checkCopy(CODEX_FAST_CHECK);
     expect(copy.title).toBe("빠른 모드라 한도가 2배로 닳아요");
     expect(copy.headline).toBe("Codex가 빠른 모드로 저장돼 있어서, 같은 일에 한도를 2배 써요.");
-    expect(copy.what).toBe("Codex에서 `/fast`를 한 번 입력해요.");
+    expect(copy.what).toBe("Codex에서 /fast를 한 번 입력해요.");
     expect(copy.mine).toContain("Standard로 돌아가요");
     expect(copy.who).toBe("당신이 Codex에서 직접 해요. kcal은 파일을 고치지 않아요.");
     expect(copy.actions).toEqual([
@@ -245,6 +245,8 @@ describe("Codex fast-mode card", () => {
         option: "standard",
         isRecommended: true,
         isWritable: false,
+        instruction:
+          "Codex에서 `/fast`를 한 번 더 입력하세요. Standard로 돌아가고, 그 선택은 Codex가 저장해요.",
         note: "잃는 것: 응답 생성 속도예요. GPT-6.2 Astra는 Standard보다 약 1.5배 빨라요(문서).",
       }),
     ]);
@@ -272,6 +274,9 @@ describe("Codex fast-mode card", () => {
     try {
       expect(checkCopy(CODEX_FAST_CHECK).title).toBe("Fast mode uses your limit 2x as fast");
       expect(checkCopy(withFacts(null, null)).title).toBe("Fast mode uses your limit faster");
+      expect(checkCopy(CODEX_FAST_CHECK).actions[0].instruction).toBe(
+        "Enter `/fast` once more in Codex. It returns to Standard, and Codex saves that choice.",
+      );
       expect(checkCopy(CODEX_FAST_CHECK).actions[0].note).toBe(
         "You lose: Generation speed. GPT-6.2 Astra is about 1.5x faster than Standard (docs).",
       );

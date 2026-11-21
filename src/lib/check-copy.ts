@@ -78,7 +78,7 @@ const tokensText = (tokens: number | null) => `~${tokens === null ? "?" : intege
 /** 옵션 id → 버튼. 문구가 없는 옵션(`keep`)은 뺀다. 추천 먼저. */
 function actionsOf(
   check: CoachCheck,
-  labels: Record<string, { label: string; note?: string | null }>,
+  labels: Record<string, { label: string; note?: string | null; instruction?: string }>,
 ): CheckAction[] {
   return check.options
     .filter((o) => o.id in labels)
@@ -88,7 +88,7 @@ function actionsOf(
       isRecommended: o.isRecommended,
       isWritable: o.isWritable,
       note: labels[o.id].note ?? null,
-      instruction: o.instruction,
+      instruction: labels[o.id].instruction ?? o.instruction,
     }))
     .sort((a, b) => Number(b.isRecommended) - Number(a.isRecommended));
 }
@@ -281,7 +281,7 @@ function codexFastCopy(check: CoachCheck, f: Facts<"codexFastMode">): CheckCopy 
   const times = multiplierText(f.multiplier);
   return {
     title: copy.title(times),
-    shortTitle: copy.short(times),
+    shortTitle: copy.short,
     headline: copy.headline(times),
     note: null,
     what: copy.what,
@@ -293,6 +293,8 @@ function codexFastCopy(check: CoachCheck, f: Facts<"codexFastMode">): CheckCopy 
     actions: actionsOf(check, {
       standard: {
         label: copy.action,
+        // 안내 글은 화면 언어로 여기서 만든다(Rust `instruction`은 적용 거부 문구용).
+        instruction: copy.guide,
         note: t.checksView.loses(f.model === "gpt-6.2-astra" ? copy.losesAstra : copy.loses),
       },
     }),

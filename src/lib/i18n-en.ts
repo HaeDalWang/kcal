@@ -560,17 +560,18 @@ export const en: Messages = {
         multiplier
           ? `Fast mode uses your limit ${multiplier}x as fast`
           : "Fast mode uses your limit faster",
-      short: (multiplier) =>
-        multiplier ? `Codex Fast mode, ${multiplier}x limit` : "Codex Fast mode, uses more limit",
+      short: "Codex Fast mode is on",
       headline: (multiplier) =>
         multiplier
           ? `Codex is saved in Fast mode, so the same work uses ${multiplier}x your limit.`
           : "Codex is saved in Fast mode, so the same work uses more of your limit.",
-      what: "Enter `/fast` once in Codex.",
+      what: "Enter /fast once in Codex.",
       mine: "Responses go back to Standard speed. Codex saves the choice in its settings file, and kcal changes nothing.",
       who: "You do it in Codex. kcal doesn’t edit any file.",
       better: "The same work uses less of your limit.",
       action: "Go back to Standard",
+      guide:
+        "Enter `/fast` once more in Codex. It returns to Standard, and Codex saves that choice.",
       loses: "Generation speed.",
       losesAstra: "Generation speed. GPT-6.2 Astra is about 1.5x faster than Standard (docs).",
     },
