@@ -283,7 +283,7 @@ fn starts_with_ignoring_case(path: &Path, root: &Path) -> bool {
 }
 
 /// 표시·비교 경로에서 `\\?\c:\x` → `c:\x`, `\\?\unc\srv\x` → `\\srv\x`. 한쪽만 이 앞머리가 붙어도 같은 폴더로 본다.
-pub(super) fn without_verbatim(path: &str) -> String {
+fn without_verbatim(path: &str) -> String {
     if let Some(rest) = path
         .strip_prefix(r"\\?\UNC\")
         .or_else(|| path.strip_prefix(r"\\?\unc\"))

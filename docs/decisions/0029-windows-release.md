@@ -26,7 +26,7 @@ Windows 빌드는 있지만 공개 설치 파일은 없다. Windows 사용자가
 - **서명 없는 NSIS x64만** 배포한다. 새 의존성·action·서명 비밀값을 추가하지 않는다. SmartScreen 경고와 실행 방법을 README 두 언어에 적는다. ARM64·MSI·자동 업데이트는 이번 범위 밖이다.
 - **초안은 하나**: `windows-latest` job은 `needs: macos`로 기다린 뒤 macOS job output의 tag를 받아 `gh release upload`한다. macOS만 `gh release create --draft`한다. Windows 실패 시 macOS 파일만 든 초안이 남으므로 두 플랫폼 파일을 확인한 뒤 사람이 게시한다.
 - **고정 이름·체크섬**: `kcal-windows-x64-setup.exe`와 `.exe.sha256`을 올린다. 체크섬은 SHA-256 소문자 hex + 공백 두 개 + 파일 이름이다. 기존 macOS 이름은 바꾸지 않는다. 기존 pinned SHA의 action만 재사용하고 `GH_TOKEN`은 Windows 업로드 step에만 둔다. Windows runner 비용은 Linux의 2배(macOS는 10배)다.
-- **Windows 경로 보완**: Claude CLI는 native 설치 위치, `%APPDATA%\npm\claude.cmd`, PATH 순으로 찾는다. 기존 인자 배열을 받는 Command 실행기를 그대로 쓴다. `cmd /c` 문자열을 만들지 않는다. Keychain timeout은 macOS에서만 표시한다. 시작 컨텍스트의 `\\?\`·`\\?\UNC\`는 표시 문자열에서만 제거하고 실제 경로·비교는 유지한다.
+- **Windows 경로 보완**: Claude CLI는 native 설치 위치, `%APPDATA%\npm\claude.cmd`, PATH 순으로 찾는다. 기존 인자 배열을 받는 Command 실행기를 그대로 쓴다. `cmd /c` 문자열을 만들지 않는다. Keychain timeout은 macOS에서만 표시한다. 시작 컨텍스트 경로 툴팁의 `\\?\` 접두사는 그대로 둔다: 표시 경로가 점검 ID에도 쓰여 떼면 Windows 테스트(handoff·rules)가 깨졌다(2026-11-21 CI). 표시 전용 필드를 따로 둘 때 다시 본다.
 - **설정 위치 근거**: `settings.rs::from_app`는 `app_config_dir()/settings.json`을 쓴다. Tauri의 `app_config_dir`는 `dirs::config_dir()/identifier`, `app_data_dir`는 `dirs::data_dir()/identifier`다. Windows의 두 dirs 함수는 roaming app data를 사용한다(로컬 캐시의 Tauri 2.12.5 `src/path/desktop.rs`, dirs 7.0.0 `src/win.rs` 확인). identifier는 `io.github.haedalwang.kcal`이므로 `%APPDATA%\io.github.haedalwang.kcal`에 저장한다.
 
 ## 위험
