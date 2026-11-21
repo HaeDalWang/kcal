@@ -237,18 +237,15 @@ fn codex(
         );
         with_cost(switch, measured(context, ContextKind::Plugins, &s.name))
     });
-    // MCP 사용 횟수와 "프로젝트에서만 켜기" 제안(0022 Codex 갱신). 0회는 근거로 쓰지 않는다: 코드 모드가 아닌 호출 경로를
-    // 못 셀 수 있어 "안 썼다"가 아니라 "모른다"다. 그래서 끄기 제안은 여전히 없다.
+    // MCP 사용 기록은 0회도 붙인다. 끄기와 프로젝트 범위 제안은 같은 기록·세션 기준을 쓴다(0022, 2026-11-21).
     let trusted = scan::codex_trusted_projects(&config);
     let codex_usage = usage.and_then(|u| u.codex.as_deref());
     let servers = scan::codex_mcp_server_states(&config).into_iter().map(|s| {
         let mut switch = base(Agent::Codex, SwitchKind::Mcp, &s.name, s.enabled);
         if let Some(index) = codex_usage {
             let used = index.for_server(&codex_server_key(&s.name));
-            if used.total > 0 {
-                switch.scope_move = scope::codex::proposal(home, s.enabled, &used, &trusted);
-                switch.usage = Some(used);
-            }
+            switch.scope_move = scope::codex::proposal(home, s.enabled, &used, &trusted);
+            switch.usage = Some(used);
         }
         let switch = file_switch(
             switch,
@@ -376,8 +373,8 @@ fn claude(
     switches
 }
 
-/// 전체 스위치 목록. `snapshot`: 전역 컨텍스트 측정(없으면 토큰을 모른다). `usage`: Claude 사용 기록(없으면 Claude는
-/// 토큰만으로 제안한다. Codex·Kiro는 기록이 없어 제안하지 않는다). 제안 먼저 토큰 큰 순, 나머지는 원래 순서.
+/// 전체 스위치 목록. `snapshot`: 전역 컨텍스트 측정(없으면 토큰을 모른다). `usage`: Claude·Codex MCP 사용 기록.
+/// 사용 기록이 없으면 제안하지 않는다. 제안 먼저 토큰 큰 순, 나머지는 원래 순서.
 pub fn list(
     home: &Path,
     snapshot: Option<&ContextSnapshot>,
@@ -399,7 +396,7 @@ pub fn list(
     for switch in &mut all {
         // 사용 기록이 있으면 최근 N일 0회이고, 기록을 다 봤고, 세션이 `min_sessions`(tuning `diagnoseMinSessions`)개 이상일 때만
         // (0017 "E는 사용 기록 근거가 있을 때만"). 기록이 없거나 적으면 "안 쓴다"가 아니라 "모른다".
-        // Codex·Kiro는 읽을 사용 기록이 없고, Claude도 기록 읽기가 실패하면 근거가 없다: 제안하지 않는다(0022).
+        // Codex 플러그인·Kiro는 사용 기록이 없다. 읽기에 실패해도 근거가 없어 제안하지 않는다(0022).
         let is_unused = match &switch.usage {
             Some(u) => u.total == 0 && !u.is_partial && u.sessions >= u.min_sessions,
             None => false,
@@ -792,4 +789,5 @@ mod tests {
             3
         );
     }
+    include!("switches_codex_tests.rs");
 }
