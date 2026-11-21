@@ -156,7 +156,13 @@ fn load(path: &Path) -> Settings {
                 .seen_agents
                 .map(|ids| agents_in_order(&ids))
                 .unwrap_or_else(|| Agent::ALL.to_vec());
-            validate_agents(&file.enabled_agents).map(|enabled| (enabled, seen))
+            // 모르는 id(새 버전이 쓴 에이전트)는 건너뛴다: 버전을 내려도 꺼 둔 설정이 남는다.
+            let known: Vec<String> = file
+                .enabled_agents
+                .into_iter()
+                .filter(|id| Agent::from_id(id).is_some())
+                .collect();
+            validate_agents(&known).map(|enabled| (enabled, seen))
         });
     let file = serde_json::from_str::<Value>(&text).ok();
     let tuning = file
@@ -555,6 +561,16 @@ mod tests {
             assert_eq!(settings.enabled_agents, Agent::ALL);
             assert!(settings.reason.is_some(), "{text}");
         }
+    }
+
+    #[test]
+    fn unknown_agent_in_file_is_skipped_and_the_rest_kept() {
+        let path = temp_file("unknown-agent");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, r#"{"enabledAgents":["antigravity","codex"]}"#).unwrap();
+        let settings = load(&path);
+        assert_eq!(settings.enabled_agents, [Agent::Codex]);
+        assert_eq!(settings.reason, None);
     }
 
     #[test]
