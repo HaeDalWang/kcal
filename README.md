@@ -4,7 +4,7 @@
 
 <h1 align="center">kcal</h1>
 
-<p align="center"><b>A macOS menu bar app for Claude Code, Codex and Kiro: see what your agent loads before you type, and how much usage limit is left.</b><br/>Local only. Changes your agent config only after you confirm, with a backup and Undo.</p>
+<p align="center"><b>A macOS menu bar and Windows tray app for Claude Code, Codex and Kiro: see what your agent loads before you type, and how much usage limit is left.</b><br/>Local only. Changes your agent config only after you confirm, with a backup and Undo.</p>
 
 <p align="center">
   <img src="docs/assets/demo.gif" alt="kcal demo with demo data: the menu bar popover shows usage limit left and startup context, the Claude tab shows recent 5-hour window bars (hovering a bar shows its start time and usage) and a one-line startup context summary, then Checks → Diagnose turns a plugin off showing the exact line it changes, and Undo puts it back" width="720">
@@ -17,7 +17,7 @@
 
 ## Install
 
-You need macOS and Claude Code. With a Claude Pro or Max login you see your limit left and the startup context; with an API key, Bedrock or Vertex you see the startup context only. Codex and Kiro are optional. Details and what I have not tested: [Requirements](#requirements). One line:
+You need macOS or Windows x64 and Claude Code. For Windows, see [below](#windows-x64). With a Claude Pro or Max login you see your limit left and the startup context; with an API key, Bedrock or Vertex you see the startup context only. Codex and Kiro are optional. Details and what I have not tested: [Requirements](#requirements). On macOS, one line:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | sh
@@ -40,6 +40,18 @@ The script downloads the latest release, checks its SHA-256, installs `kcal.app`
 - The fix for all of this is a paid Apple Developer ID and notarization, which kcal does not have.
 
 </details>
+
+### Windows (x64)
+
+Download [kcal-windows-x64-setup.exe](https://github.com/HaeDalWang/kcal/releases/latest/download/kcal-windows-x64-setup.exe) from the latest release and run it (available from the next tagged release). The installer is **unsigned**. If SmartScreen shows **Windows protected your PC**, choose **More info → Run anyway**. Your organization's policy may block this option.
+
+- **What it reads:** Claude login from `%USERPROFILE%\.claude\.credentials.json` (no Keychain); Codex login from `%USERPROFILE%\.codex\auth.json`; session logs and config under `%USERPROFILE%\.claude`, `%USERPROFILE%\.codex`, `%USERPROFILE%\.kiro`, plus `%USERPROFILE%\.claude.json` and `%USERPROFILE%\.agents\skills`. It also reads project instruction/config files; see [the privacy table](docs/privacy.md). Kiro limits use your installed `kiro-cli`. If present, the optional fallback log is `%USERPROFILE%\.local\share\agent-usage-audit\data\claude-ratelimits.jsonl`.
+- **Settings:** `%APPDATA%\io.github.haedalwang.kcal\settings.json`. kcal's other saved data is in the same folder. `%USERPROFILE%` is your home folder; `%APPDATA%` is Windows' roaming application-data folder. Paste either path in File Explorer's address bar.
+- **Tray:** open the hidden-icons overflow (**^**) on the taskbar, then drag kcal's icon onto the visible tray to pin it. Click it to open the popover.
+- **Start at login:** kcal does not add itself. Press **Win+R**, enter `shell:startup`, and put a shortcut to the installed kcal app there. Remove the shortcut to stop starting at login.
+- **Remove:** quit kcal, then **Settings → Apps → Installed apps → kcal → Uninstall**. To remove saved data too, delete the settings folder above; remove any startup shortcut. Confirmed agent edits and their backups stay beside the original files; use Undo before uninstalling if wanted.
+
+A development build ran on one Windows 11 PC (tray, tooltip, popover). The released NSIS install/uninstall flow, light mode and positioning across monitors with different scaling have **not been tested**.
 
 ## What it measures
 
@@ -69,7 +81,7 @@ Diagnose suggests turning something off only when your last 30 days of Claude Co
 There is no telemetry, no analytics, no updater, and no kcal server. In short:
 
 - Your Claude Code login token goes only to `api.anthropic.com` (Codex: `chatgpt.com`, only if enabled), to ask for your limit. It is not stored or refreshed. By default this check runs every 5 minutes while the app is running.
-- Session logs, agent config and project files are read on your Mac; kcal keeps sizes, names and counts, not message text.
+- Session logs, agent config and project files are read on your computer; kcal keeps sizes, names and counts, not message text.
 - The one other upload is the Claude handoff button, only when you press it: one instruction file goes to Anthropic through your own Claude Code.
 - kcal writes its own settings folder and, only when you confirm, config edits with `.bak` backups and Undo.
 
@@ -80,7 +92,7 @@ The full table of what kcal reads, sends and writes, with the source file and fu
 - macOS. Built as a universal binary (arm64 and x86_64). The app's declared minimum is macOS 10.13 (Tauri's default).
 - [Claude Code](https://code.claude.com) signed in with a Claude Pro or Max account (limits exist only for subscription plans). With an API key, Bedrock or Vertex you still get startup context, but no limit.
 - Codex CLI and Kiro CLI are optional. kcal shows only the agents you enable in Settings, and enables the ones it finds on first run.
-- Windows: not yet. It builds and passes tests on CI, and a build has run on one Windows 11 PC (tray, tooltip, popover), but there is no released installer and install and light mode are untested.
+- Windows x64: unsigned NSIS installer; see [Windows](#windows-x64) for installation and limitations.
 
 ### Not yet tested
 
@@ -97,7 +109,7 @@ It is as safe as the source you can read: this repository, built by [`release.ym
 Your sessions, prompts and config contents are not uploaded by kcal. The only network calls are the usage endpoints, and the Claude handoff button if you press it. See [the privacy table](docs/privacy.md).
 
 **Why does it need my token?**
-Your limit left lives behind the same usage endpoint Claude Code uses, and that endpoint needs your login. kcal reads the token from the Keychain, uses it for that one request, and never refreshes or saves it. If the Keychain read or the usage request fails (for example you deny the Keychain prompt), kcal shows no limit for Claude.
+Your limit left lives behind the same usage endpoint Claude Code uses, and that endpoint needs your login. kcal reads the token from the macOS Keychain or the Windows credentials file, uses it for that one request, and never refreshes or saves it. If the login read or the usage request fails (for example you deny the Keychain prompt), kcal shows no limit for Claude.
 
 **Is the startup number exact?**
 Not always. System prompt, built-in tools and MCP tool definitions are measured from the request Claude Code sent (Claude Code 2.1.300 or newer). Instruction files, rules, skills and agent definitions are file size, so the total is partly an estimate. Tokens are bytes ÷ 4, not a real tokenizer. kcal puts `~` in front of the total when any startup item is estimated, and the tooltip says which kind it is.
@@ -106,15 +118,17 @@ Not always. System prompt, built-in tools and MCP tool definitions are measured 
 Yes. Claude Code alone is enough. The other tabs only appear for agents you enable.
 
 **How heavy is it?**
-It's a Tauri app (Rust + the system WebKit), not Electron. One run, release build, no agents set up, idle for 5 minutes on an Apple M5 Mac: the main process used 0.02 s of CPU time; its memory footprint was 24 MB, plus about 40 MB for the WebKit processes that draw the popover (their CPU time is not in the 0.02 s). Activity Monitor's RSS counts shared pages and showed about 91 MB for the main process alone. With agents set up it also checks your limits on a timer; that case is not measured yet.
+It's a Tauri app (Rust + the system WebView: WebKit on macOS, WebView2 on Windows), not Electron. One run, release build, no agents set up, idle for 5 minutes on an Apple M5 Mac: the main process used 0.02 s of CPU time; its memory footprint was 24 MB, plus about 40 MB for the WebKit processes that draw the popover (their CPU time is not in the 0.02 s). Activity Monitor's RSS counts shared pages and showed about 91 MB for the main process alone. With agents set up it also checks your limits on a timer; that case is not measured yet.
 
 **Does it start at login?**
-Not by itself. Add it in **System Settings → General → Login Items** (the name varies a little by macOS version): under "Open at Login", press + and pick kcal.app.
+For Windows, see [Start at login](#windows-x64). On macOS, add it in **System Settings → General → Login Items** (the name varies a little by macOS version): under "Open at Login", press + and pick kcal.app.
 
 **What about Windows and Linux?**
-Windows: not yet, see above. Linux: not supported.
+Windows x64: see [installation and limitations](#windows-x64). Linux: not supported.
 
 **How do I uninstall?**
+
+For Windows, see [Remove](#windows-x64). On macOS:
 
 ```sh
 rm -rf /Applications/kcal.app "$HOME/Applications/kcal.app" \

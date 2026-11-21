@@ -244,7 +244,9 @@ export function TuningForm({ settings, isSaving, onSave, children, footer }: Tun
 
   const renderField = (key: TuningKey) => {
     const spec = specs.get(key);
-    if (!spec) return null;
+    if (!spec || (key === "keychainTimeoutSecs" && !navigator.userAgent.includes("Mac"))) {
+      return null;
+    }
     const info = { ...FIELDS[key], ...t.tuning.fields[key] };
     const id = `tuning-${key}`;
     const error = errors[key];
