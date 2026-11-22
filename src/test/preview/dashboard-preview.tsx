@@ -33,6 +33,7 @@ import {
   CODEX_APPLIED,
   CODEX_SCOPE_PREVIEW,
   CODEX_FAST_CHECK,
+  SAVED_ADVICE_CHECKS,
   DASHBOARD_CHECKS,
   DASHBOARD_SWITCHES,
   EFFORT_APPLIED,
@@ -209,6 +210,7 @@ const checks = [
   ...(rules ? [RULES_CHECK] : []),
   ...(handoff ? [LONG_CHECK] : []),
   ...(query.has("fast") ? [CODEX_FAST_CHECK] : []),
+  ...(query.has("saved") ? SAVED_ADVICE_CHECKS : []),
   ...DASHBOARD_CHECKS,
 ];
 const OPUS_UNAVAILABLE: HandoffError = { kind: "opusUnavailable" };

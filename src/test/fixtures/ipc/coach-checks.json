@@ -390,5 +390,185 @@
       }
     ],
     "tokens": null
+  },
+  {
+    "agent": "codex",
+    "docs": [],
+    "facts": {
+      "evidence": ["synthetic setting"],
+      "topic": "reasoning-effort",
+      "type": "savedAdvice"
+    },
+    "file": "/synthetic/settings",
+    "id": "synthetic-reasoning-effort",
+    "isDismissed": false,
+    "kind": "D",
+    "options": [
+      {
+        "changes": [],
+        "id": "guide",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
+  },
+  {
+    "agent": "codex",
+    "docs": [],
+    "facts": {
+      "evidence": ["synthetic setting"],
+      "topic": "instructions-size",
+      "type": "savedAdvice"
+    },
+    "file": "/synthetic/settings",
+    "id": "synthetic-instructions-size",
+    "isDismissed": false,
+    "kind": "A",
+    "options": [
+      {
+        "changes": [],
+        "id": "guide",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
+  },
+  {
+    "agent": "codex",
+    "docs": [],
+    "facts": {
+      "evidence": ["synthetic setting"],
+      "topic": "duplicate-hooks",
+      "type": "savedAdvice"
+    },
+    "file": "/synthetic/settings",
+    "id": "synthetic-duplicate-hooks",
+    "isDismissed": false,
+    "kind": "B",
+    "options": [
+      {
+        "changes": [],
+        "id": "guide",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
+  },
+  {
+    "agent": "kiro",
+    "docs": [],
+    "facts": {
+      "evidence": ["synthetic setting"],
+      "topic": "tool-search-v3",
+      "type": "savedAdvice"
+    },
+    "file": "/synthetic/settings",
+    "id": "synthetic-tool-search-v3",
+    "isDismissed": false,
+    "kind": "A",
+    "options": [
+      {
+        "changes": [],
+        "id": "guide",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
+  },
+  {
+    "agent": "kiro",
+    "docs": [],
+    "facts": {
+      "evidence": ["synthetic setting"],
+      "topic": "tool-search-v2",
+      "type": "savedAdvice"
+    },
+    "file": "/synthetic/settings",
+    "id": "synthetic-tool-search-v2",
+    "isDismissed": false,
+    "kind": "A",
+    "options": [
+      {
+        "changes": [],
+        "id": "guide",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
+  },
+  {
+    "agent": "kiro",
+    "docs": [],
+    "facts": {
+      "evidence": ["synthetic setting"],
+      "topic": "auto-compaction",
+      "type": "savedAdvice"
+    },
+    "file": "/synthetic/settings",
+    "id": "synthetic-auto-compaction",
+    "isDismissed": false,
+    "kind": "D",
+    "options": [
+      {
+        "changes": [],
+        "id": "guide",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      },
+      {
+        "changes": [],
+        "id": "keep",
+        "instruction": "synthetic instruction",
+        "isRecommended": false,
+        "isWritable": false
+      }
+    ],
+    "tokens": null
   }
 ]

@@ -571,3 +571,6 @@ fn real_checks_records_timing_on_this_mac() {
         .write_all(out.as_bytes())
         .unwrap();
 }
+
+#[path = "saved_advice_tests.rs"]
+mod saved_advice_tests;

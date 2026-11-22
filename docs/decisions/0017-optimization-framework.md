@@ -105,6 +105,24 @@ kcal의 몫은 점검 결과를 해석해 주는 것이다. 설정을 모르는 
 - **보지 않는 것**: 프로젝트 `.codex/config.toml`(신뢰한 폴더)·profile 층·CLI override·관리자 정책(`ponytail:` 주석, `scope_codex.rs`의 신뢰 판정을 얹으면 층을 늘릴 수 있다). 저장된 설정 안내이지 "지금 적용 중"이 아니다. Ultrafast는 `service_tier` 값이 문서에 없어 다루지 않는다. Codex의 최소 CLI 버전은 문서에 없어 "0.171.0부터"로 쓰지 않는다.
 - **이 Mac은 해당 없음**: `service_tier = "default"`(2026-11-21 조율자 확인). 그래서 실제 기록·설정으로 검증하지 않았고 임시 HOME 테스트와 합성 카드 화면으로만 확인했다.
 
+### 첫 점검 (Codex) 2차 — 2026-11-22
+
+- **카드**: `D-codex-reasoning-effort`, `A-codex-instructions-size`, `B-codex-duplicate-hooks:<layer path>`. 모두 안내만 하며 기존 적용·되돌리기 경로를 바꾸지 않는다. Fast 카드와 Claude 카드는 그대로다.
+- **effort**: 사용자 또는 신뢰 프로젝트 config.toml의 최상위 `model_reasoning_effort` 또는 `plan_mode_reasoning_effort`가 `max`·`ultra`이면 `/model`로 직접 검토하도록 안내한다. 프로젝트 effort override가 있으면 그 layer만 판정하고 해당 파일을 표시한다. 선택된 profile·`xhigh`·profile 안의 값·잘못된 TOML은 제외한다. 잃는 것은 가장 어려운 문제에서의 깊이다. 근거: Codex 사실표 D, facts 134–140·143(2026-11-21).
+- **지시 파일**: 저장된 system→user→신뢰 프로젝트 설정의 byte budget·fallback·root markers를 반영한다. override→AGENTS→fallback 중 첫 비어 있지 않은 UTF-8 파일을 골라 원문 바이트를 센다. 프로젝트 파일 개별 초과와 합계만 초과를 구분하며 실제 잘림을 단정하지 않는다. 사용자 지시 파일은 선택 여부만 확인하고 프로젝트 합계에 더하지 않는다. profile·읽기 실패·미지원 TOML은 판정 보류다. 내용 정리·분리 초안은 사용자가 요청하고 직접 검토·수정한다. 지시 손실과 자동 적용 방식 변화 가능성을 표시한다. 근거: facts 1–17·125·265, 기본 32768 bytes(확인 2026-11-21, tuning 아님).
+- **hook**: hooks 활성 설정 아래 동일 layer의 hooks.json과 config.toml에서 Event·matcher·전체 command handler(타입·명령·timeout·async·statusMessage 포함)가 같은 경우만 표시한다. 부분 일치·알 수 없는 필드·조건·linked worktree는 제외한다. untrusted 프로젝트와 `allow_managed_hooks_only` 정책도 제외한다. command를 실행하거나 화면에 전달하지 않는다. 현재 두 번 실행 중인지·절약량은 모른다. 의도적인 두 번째 실행이나 결과를 잃을 수 있어 사용자가 검토한다. 근거: facts 122–123·271–274·304–307.
+- **trust 판정 보완 (2026-11-22)**: 사실표가 하위 폴더의 명시적 untrusted 충돌을 확정하지 않아, 각 layer의 폴더부터 조상을 올라가며 가장 가까운 명시적 trust를 적용한다. 값이 없으면 조상 trusted를 상속하고, 하위 trusted로 부모 layer를 허용하지 않는다.
+- **읽기 경계**: 새 판정은 auth.json을 읽지 않는다. CODEX_HOME override는 현재 표준 경로 판정에서 보류한다. TOML 의존성 추가가 허용된 범위가 아니어서 단일 줄 scalar/array·table·hook array table만 보수적으로 읽고, 알 수 없는 array table의 키는 카드 판정에서 제외한다. 중복 키·잘못된 구문은 판정 보류다. 실행 중 profile·CLI override·cloud 정책을 확정하지 않아 화면은 저장 설정 안내로 제한한다.
+
+### 첫 점검 (Kiro) — 2026-11-22
+
+- **카드**: `A-kiro-tool-search-v3`, `A-kiro-tool-search-v2`, `D-kiro-auto-compaction`. Kiro `checks` capability와 ko/en 문구·합성 preview·IPC fixture를 추가했다. 모두 안내만 하며 표시한 cli.json을 사용자가 직접 수정한다.
+- **검색**: 전역 `chat.agentEngine`이 정확히 v3/v2인 저장 기본 설정만 본다. workspace의 `toolSearch.enabled`가 전역보다 우선한다. V3는 false, V2는 false/미설정일 때 유효 MCP 서버가 있어야 한다. 같은 이름 서버는 workspace가 우선하며 `disabled: true`는 제외한다. 권고 JSON은 `"toolSearch.enabled": true`. 명시 false가 있던 유효 파일, 미설정이면 workspace 파일을 표시한다. 저장된 minPct·minTokens를 표시하며 기본값은 5%·50000 tokens다. 정의 검색 단계·임계값 아래 변화 없음·절약량 모름을 설명한다.
+- **압축**: 저장 v3의 유효 `chat.disableAutoCompaction`이 true일 때 `"chat.disableAutoCompaction": false`를 직접 설정하도록 안내한다. threshold는 저장값 또는 문서 기본 80%이며 다음 시작·로드 세션부터 적용된다. 오래된 대화·도구 호출 세부가 요약되고 같은 세션에서 전체 기록 복원이 불가능하므로 필요하면 사전 export한다.
+- **제외**: malformed JSON·schema/type 불일치·engine 미설정·외부 KIRO_HOME/KIRO_DEFAULT_SETTINGS·알 수 없는 agent/cloud/registry 설정은 보류한다. 선택된 agent와 MCP 상속을 파일로 확정할 수 없어 agent 파일이 있는 환경도 보류한다. MCP env·header는 deserialize하지 않고 disabled만 남긴다. 실행 중 세션·연결 성공·도구 수·실제 절약량은 확정하지 않는다.
+- **버전 조회**: V3 검색은 CLI 2.31.1+, 압축은 3.3.0+를 요구한다(2026-11-21 확인 상수). 저장 설정·제외 조건·MCP를 먼저 판정하고 V3 카드 후보가 있을 때만 usage와 같은 `kiro_cli_candidates(home, PATH)`의 첫 실행 파일에 `--version`을 호출한다. stdout의 stable X.Y.Z를 읽고 prerelease는 버전 모름으로 둔다. 결과는 CLI 경로·mtime별 process cache에 실패·timeout도 저장하고 CLI 갱신 시 다시 조회한다. `tuning.kiro_timeout()`과 기존 timeout 시 child 종료 경로를 재사용한다. CLI 없음·timeout·실패 종료·파싱 실패는 버전 모름으로 두어 V3 카드 둘을 숨긴다. V2에는 숫자 버전 하한을 만들거나 CLI를 호출하지 않는다. 테스트는 버전 주입·임시 실행 파일만 사용한다.
+- **근거**: Kiro 사실표 2026-11-21 `refresh.md` 후보 1–3·공통 판정 한계, facts 86–102·145–168·403·416–418·439–441·470–471·484·496–498·529·547–549. 이 Mac의 실제 설정이나 버전으로 판정하지 않았다.
+
 ## 나중에: 카탈로그 (사용자 아이디어 2026-11-06)
 
 - 예: 세션 10개 중 2개에서만 쓰는 스킬이 전역에 설치돼 있으면 → 전역에서 빼서 "카탈로그"에 보관한다. 필요할 때 언급하면 그 프로젝트에만 설치되게 돕는다.

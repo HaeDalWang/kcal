@@ -419,6 +419,30 @@ fn coach_checks_match_fixture() {
             )
         },
     ];
+    let mut checks = checks.to_vec();
+    for (topic, kind, agent) in [
+        ("reasoning-effort", CheckKind::D, Agent::Codex),
+        ("instructions-size", CheckKind::A, Agent::Codex),
+        ("duplicate-hooks", CheckKind::B, Agent::Codex),
+        ("tool-search-v3", CheckKind::A, Agent::Kiro),
+        ("tool-search-v2", CheckKind::A, Agent::Kiro),
+        ("auto-compaction", CheckKind::D, Agent::Kiro),
+    ] {
+        checks.push(CoachCheck {
+            id: format!("synthetic-{topic}"),
+            kind,
+            agent,
+            facts: CheckFacts::SavedAdvice {
+                topic: topic.into(),
+                evidence: vec!["synthetic setting".into()],
+            },
+            options: vec![option("guide", false), option("keep", false)],
+            file: "/synthetic/settings".into(),
+            docs: vec![],
+            tokens: None,
+            is_dismissed: false,
+        });
+    }
     check("coach-checks", &checks);
     check(
         "check-preview",

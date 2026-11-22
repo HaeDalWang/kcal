@@ -15,7 +15,7 @@ const OLD_BRANCHES: Record<Agent, { label: string; unit: string; features: Agent
     unit: "request",
     features: ["behaviorDetails", "switchShare", "checks"],
   },
-  kiro: { label: "Kiro", unit: "question", features: ["creditLimit"] },
+  kiro: { label: "Kiro", unit: "question", features: ["creditLimit", "checks"] },
 };
 const ALL_FEATURES: AgentFeature[] = [
   "creditLimit",

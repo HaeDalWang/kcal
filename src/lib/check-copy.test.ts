@@ -212,12 +212,10 @@ describe("alertCount", () => {
 });
 
 describe("noChecksText", () => {
-  it("says nothing to fix for Claude and that no checks exist yet for Codex and Kiro", () => {
+  it("says nothing to fix when supported agents have no matching cards", () => {
     expect(noChecksText("claude", "Claude")).toBe("지금 고칠 것이 없어요.");
     expect(noChecksText("codex", "Codex")).toBe("지금 고칠 것이 없어요.");
-    expect(noChecksText("kiro", "Kiro")).toBe(
-      "Kiro는 아직 최적화 점검이 없어요. 지금은 Claude Code와 Codex만 점검해요.",
-    );
+    expect(noChecksText("kiro", "Kiro")).toBe("지금 고칠 것이 없어요.");
   });
 
   it("says Codex was not found by its own name and command, without the Claude setup link", () => {
@@ -280,9 +278,7 @@ describe("Codex fast-mode card", () => {
       expect(checkCopy(CODEX_FAST_CHECK).actions[0].note).toBe(
         "You lose: Generation speed. GPT-6.2 Astra is about 1.5x faster than Standard (docs).",
       );
-      expect(noChecksText("kiro", "Kiro")).toBe(
-        "No optimization checks for Kiro yet. Only Claude Code and Codex are checked so far.",
-      );
+      expect(noChecksText("kiro", "Kiro")).toBe("Nothing to fix right now.");
     } finally {
       setLanguage("ko");
     }
@@ -441,4 +437,28 @@ describe("rules card copy (0018 작업 B)", () => {
     expect(ruleProblemText("pathAbsolute")).toBe("파일 목록이 ‘/’나 ‘~’로 시작해요");
     expect(unknownKeysText(2)).toBe("Claude 제안을 쓸 수 없어요(모르는 규칙 2개에 답했어요)");
   });
+});
+
+// Advice copy must retain the file, evidence, actor and loss in both languages.
+describe("saved-setting advice", () => {
+  it.each(["ko", "en"] as const)(
+    "answers the three questions in %s without an apply action",
+    async (lang) => {
+      const { SAVED_ADVICE_CHECKS } = await import("@/test/preview/checks-fixtures");
+      setLanguage(lang);
+      for (const card of SAVED_ADVICE_CHECKS) {
+        const copy = checkCopy(card);
+        expect(copy.title.length).toBeGreaterThan(0);
+        expect(copy.what.length).toBeGreaterThan(0);
+        expect(copy.mine).toContain("kcal");
+        expect(copy.mineList).toContain(card.file);
+        expect(copy.who.length).toBeGreaterThan(0);
+        expect(copy.actions.find((a) => a.option === "guide")?.instruction).toBeTruthy();
+        expect(copy.actions.find((a) => a.option === "guide")?.note).toBeTruthy();
+        expect(card.options.every((o) => !o.isWritable && o.changes.length === 0)).toBe(true);
+        if (lang === "en") expect(JSON.stringify(copy)).not.toMatch(/[가-힣]/);
+      }
+      setLanguage("ko");
+    },
+  );
 });

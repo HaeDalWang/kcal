@@ -65,7 +65,7 @@ export const AGENT_DESCRIPTORS: Record<Agent, AgentDescriptor> = {
     appName: "Kiro",
     color: "var(--agent-kiro)",
     unit: "question",
-    features: new Set(["creditLimit"]),
+    features: new Set(["creditLimit", "checks"]),
     mark: {
       viewBox: "0 0 48 48",
       transform: "translate(0 48) scale(0.1 -0.1)",

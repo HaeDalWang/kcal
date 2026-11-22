@@ -6,17 +6,22 @@
 //! TS 짝은 `src/lib/ipc.ts`의 같은 이름 타입.
 
 mod codex_fast;
+mod codex_saved;
 pub(crate) mod diff;
 pub(crate) mod dismissed;
 mod duplicates;
 mod git;
 pub(crate) mod handoff;
 mod ineffective;
+mod kiro_saved;
 pub(crate) mod long_instructions;
 pub(crate) mod models;
 pub(crate) mod rules_apply;
 pub(crate) mod rules_handoff;
 pub(crate) mod rules_paths;
+mod saved_advice;
+mod saved_toml;
+mod saved_workspace;
 
 use std::path::{Path, PathBuf};
 
@@ -89,6 +94,11 @@ pub enum SettingsScope {
     rename_all_fields = "camelCase"
 )]
 pub enum CheckFacts {
+    /// File-only advice. Evidence never contains hook commands, auth or MCP env.
+    SavedAdvice {
+        topic: String,
+        evidence: Vec<String>,
+    },
     EffortLevel {
         value: Effort,
         days: u64,
@@ -321,6 +331,7 @@ pub fn list(home: &Path, records: &RecentRecords, tuning: &Tuning) -> Vec<CoachC
     .chain(long_instructions::long_instructions(&input))
     .chain(rules_paths::rules_paths(&input))
     .chain(codex_fast::fast_mode(&input))
+    .chain(saved_advice::list(&input))
     .collect();
     let text = std::fs::read_to_string(&file).unwrap_or_default();
     for option in checks.iter_mut().flat_map(|c| c.options.iter_mut()) {

@@ -556,6 +556,66 @@ export const en: Messages = {
       who: "Claude (Opus 5.5) suggests a change per rule; if you pick one, kcal keeps a backup and applies it. You can undo it here.",
       better: "Less loads every session, which saves your limit.",
     },
+    savedAdvice: {
+      "reasoning-effort": {
+        title: "Thinking depth is saved as Max or Ultra",
+        headline:
+          "Review saved Codex thinking depth. The running session setting has not been checked.",
+        what: "Use `/model` in Codex to choose a lower effort suitable for the task. Check the separate Plan mode setting too.",
+        mine: "Your thinking-depth choice in config.toml changes. kcal does not edit the file.",
+        who: "You make the choice directly in Codex.",
+        loses: "Depth on the hardest problems may decrease.",
+      },
+      "instructions-size": {
+        title: "Instruction files exceed the documented budget",
+        headline:
+          "Selected project instruction files are measured in raw UTF-8 bytes against the saved budget. A combined-only excess does not establish truncation.",
+        what: "Review the individual and combined sizes below. If needed, ask Claude for a split that preserves project-specific requirements.",
+        mine: "Only instruction files you choose after review change. kcal does not edit files.",
+        who: "You review the draft and edit the files yourself.",
+        loses: "Instructions may be lost, and moving them into skills can change when they apply.",
+      },
+      "duplicate-hooks": {
+        title: "The same hook command is registered in two files",
+        headline:
+          "The same layer has matching Event, matcher and complete command handler values in config.toml and hooks.json. This does not establish two executions.",
+        what: "Review intent and side effects in both files. If needed, ask Claude for a draft using one format. No commands are run or entries deleted automatically.",
+        mine: "Only hook registrations you choose after review change. kcal does not edit files.",
+        who: "You review the draft and edit the files yourself.",
+        loses:
+          "An intentional second execution or its different result may be lost. Savings are unknown.",
+      },
+      "tool-search-v3": {
+        title: "MCP tool search is off for V3",
+        headline:
+          "Based on saved local defaults. Local V3 can find and load tool definitions when needed. The running session has not been checked.",
+        what: 'Set `"toolSearch.enabled": true` in the file below yourself. Saved minPct and minTokens thresholds still apply.',
+        mine: "One value in the displayed cli.json changes. kcal does not edit the file.",
+        who: "You edit the JSON yourself.",
+        loses:
+          "Search and loading replace preloading every definition. Delay and savings are unknown.",
+      },
+      "tool-search-v2": {
+        title: "MCP tool search has not been enabled for V2",
+        headline:
+          "Based on saved local defaults. Local V2 can use legacy tool_search above its thresholds.",
+        what: 'Set `"toolSearch.enabled": true` in the file below yourself. Defaults are above 5% or 50000 tokens; saved thresholds take precedence.',
+        mine: "One value in the displayed cli.json changes. kcal does not edit the file.",
+        who: "You edit the JSON yourself.",
+        loses:
+          "Above the thresholds, definitions are no longer all preloaded. Below them there may be no change. Savings are unknown.",
+      },
+      "auto-compaction": {
+        title: "Automatic compaction is off",
+        headline:
+          "Based on saved local defaults. Local V3 can use documented automatic compaction again.",
+        what: 'Set `"chat.disableAutoCompaction": false` in the file below yourself. The threshold below (80% if unset) applies to sessions started or loaded next. Export the session before compaction if needed.',
+        mine: "One value in the displayed cli.json changes. kcal does not edit the file.",
+        who: "You edit the JSON yourself.",
+        loses:
+          "Older conversation and tool-call details are summarized. Compaction is one-way; the full previous history cannot be restored in the same session.",
+      },
+    },
     codexFast: {
       title: (multiplier) =>
         multiplier

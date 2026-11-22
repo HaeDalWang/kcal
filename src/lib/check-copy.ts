@@ -302,6 +302,25 @@ function codexFastCopy(check: CoachCheck, f: Facts<"codexFastMode">): CheckCopy 
   };
 }
 
+function savedAdviceCopy(check: CoachCheck, f: Facts<"savedAdvice">): CheckCopy {
+  const copy = t.checks.savedAdvice[f.topic];
+  return {
+    title: copy.title,
+    shortTitle: copy.title,
+    headline: copy.headline,
+    note: null,
+    what: copy.what,
+    mine: copy.mine,
+    mineList: [check.file, ...f.evidence],
+    who: copy.who,
+    better: copy.headline,
+    actions: actionsOf(check, {
+      guide: { label: copy.title, instruction: copy.what, note: t.checksView.loses(copy.loses) },
+    }),
+    keepReason: null,
+  };
+}
+
 /** 검사에 떨어진 이유(괄호 안). */
 export function ruleProblemText(problem: RuleProblem): string {
   return t.checks.problem[problem];
@@ -434,6 +453,8 @@ export function checkCopy(check: CoachCheck): CheckCopy {
       return longCopy(check, f);
     case "rulesPaths":
       return rulesCopy(check, f);
+    case "savedAdvice":
+      return savedAdviceCopy(check, f);
     case "codexFastMode":
       return codexFastCopy(check, f);
   }
@@ -590,6 +611,8 @@ export function checkChips(check: CoachCheck): string[] {
         return [chip.lines(integer.format(f.lines), f.limit)];
       case "rulesPaths":
         return [chip.ruleCount(integer.format(f.rules.length), integer.format(f.chars))];
+      case "savedAdvice":
+        return [];
       case "codexFastMode":
         return [
           ...(f.model ? [chip.fastModel(f.model)] : []),

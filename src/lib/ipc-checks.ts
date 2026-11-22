@@ -47,6 +47,17 @@ export type RuleFact = {
 /** Rust `coach::checks::CheckFacts`. 문구는 `src/lib/check-copy.ts`가 이 사실로 만든다. */
 export type CheckFacts =
   | {
+      type: "savedAdvice";
+      topic:
+        | "reasoning-effort"
+        | "instructions-size"
+        | "duplicate-hooks"
+        | "tool-search-v3"
+        | "tool-search-v2"
+        | "auto-compaction";
+      evidence: string[];
+    }
+  | {
       type: "effortLevel";
       value: Effort;
       days: number;

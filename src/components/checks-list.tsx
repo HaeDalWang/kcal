@@ -151,7 +151,7 @@ function GuideAction({ facts, action }: { facts: CoachCheck["facts"]; action: Ch
       </div>
     );
   }
-  if (facts.type === "codexFastMode" && action.instruction) {
+  if ((facts.type === "codexFastMode" || facts.type === "savedAdvice") && action.instruction) {
     return (
       <div className="flex flex-col gap-0.5">
         <p className="text-xs">

@@ -672,3 +672,59 @@ export const CODEX_APPLIED: AppliedSwitch = {
     "cp '/Users/me/.codex/config.toml.kcal-20261105T090000000Z.bak' '/Users/me/.codex/config.toml'",
   undoOf: null,
 };
+
+/** All six saved-setting cards, synthetic only. */
+export const SAVED_ADVICE_CHECKS: CoachCheck[] = [
+  ["reasoning-effort", "D", "codex", ['model_reasoning_effort = "max"']],
+  [
+    "instructions-size",
+    "A",
+    "codex",
+    ["project_doc_max_bytes = 32768", "individual-over: 40000 bytes"],
+  ],
+  ["duplicate-hooks", "B", "codex", ["SessionStart", "/Users/me/.codex/hooks.json"]],
+  [
+    "tool-search-v3",
+    "A",
+    "kiro",
+    ['"toolSearch.enabled": true', "toolSearch.minPct = 5", "toolSearch.minTokens = 50000"],
+  ],
+  [
+    "tool-search-v2",
+    "A",
+    "kiro",
+    ['"toolSearch.enabled": true', "toolSearch.minPct = 5", "toolSearch.minTokens = 50000"],
+  ],
+  [
+    "auto-compaction",
+    "D",
+    "kiro",
+    ['"chat.disableAutoCompaction": false', "compaction.autoCompactionThreshold = 80%"],
+  ],
+].map(([topic, kind, agent, evidence]) => ({
+  id: `${kind}-${agent}-${topic}`,
+  kind,
+  agent,
+  facts: { type: "savedAdvice", topic, evidence },
+  options: [
+    {
+      id: "guide",
+      isRecommended: true,
+      isWritable: false,
+      instruction: "Advice only",
+      changes: [],
+    },
+    { id: "keep", isRecommended: false, isWritable: false, instruction: null, changes: [] },
+  ],
+  file:
+    agent === "codex"
+      ? "/Users/me/.codex/config.toml"
+      : "/Users/me/project/.kiro/settings/cli.json",
+  docs: [
+    agent === "codex"
+      ? "https://learn.chatgpt.com/docs/models"
+      : "https://kiro.dev/docs/mcp/tool-search/",
+  ],
+  tokens: null,
+  isDismissed: false,
+})) as CoachCheck[];

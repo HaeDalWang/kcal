@@ -553,6 +553,63 @@ export const ko = {
       who: "Claude(Opus 5.5)가 규칙마다 제안하고, 고르면 kcal이 백업을 남기고 바꿔요. 여기서 되돌릴 수 있어요.",
       better: "세션마다 싣는 양이 줄어 한도를 아껴요.",
     },
+    savedAdvice: {
+      "reasoning-effort": {
+        title: "생각 깊이가 Max·Ultra로 저장돼 있어요",
+        headline: "저장된 Codex 생각 깊이를 검토해요. 실행 중 세션의 설정은 확인하지 않았어요.",
+        what: "Codex에서 `/model`로 작업에 맞는 낮은 생각 깊이를 직접 고르세요. Plan 모드 값도 따로 확인하세요.",
+        mine: "내 config.toml의 생각 깊이 선택이 바뀌어요. kcal은 파일을 고치지 않아요.",
+        who: "당신이 Codex에서 직접 선택해요.",
+        loses: "가장 어려운 문제에서 깊이 생각하는 능력이 줄 수 있어요.",
+      },
+      "instructions-size": {
+        title: "지시 파일 크기가 문서 한도를 넘어요",
+        headline:
+          "선택된 프로젝트 지시 파일의 UTF-8 원문 크기를 저장된 한도와 비교했어요. 합계만 초과했다면 실제 잘림 여부는 모릅니다.",
+        what: "아래 개별·합계 크기를 보고 내용을 정리할지 검토하세요. 필요하면 Claude에게 프로젝트 고유 요구를 보존하는 분리 초안을 요청하세요.",
+        mine: "검토 후 당신이 선택한 지시 파일 내용만 바뀌어요. 지금 kcal은 파일을 고치지 않아요.",
+        who: "당신이 초안을 검토하고 직접 수정해요.",
+        loses: "지시가 빠질 수 있고, 스킬로 옮기면 자동 적용 방식이 달라질 수 있어요.",
+      },
+      "duplicate-hooks": {
+        title: "같은 hook 명령이 두 파일에 등록돼 있어요",
+        headline:
+          "같은 범위의 config.toml과 hooks.json에서 Event·matcher·전체 command handler가 같은 등록을 찾았어요. 두 번 실행 중인지는 모릅니다.",
+        what: "두 파일의 등록 의도와 부작용을 검토하세요. 필요하면 Claude에게 한 형식으로 합치는 초안을 요청하세요. 명령을 실행하거나 자동 삭제하지 않아요.",
+        mine: "검토 후 당신이 선택한 hook 등록만 바뀌어요. kcal은 파일을 고치지 않아요.",
+        who: "당신이 초안을 검토하고 직접 수정해요.",
+        loses: "의도적인 두 번째 실행이나 그 실행의 다른 결과를 잃을 수 있어요. 절약량은 모릅니다.",
+      },
+      "tool-search-v3": {
+        title: "V3의 MCP 도구 검색이 꺼져 있어요",
+        headline:
+          "저장 기본 설정 기준이에요. local V3에서 필요한 도구 정의를 찾아 싣도록 바꿀 수 있어요. 실행 중 세션은 확인하지 않았어요.",
+        what: '아래 파일에 `"toolSearch.enabled": true`를 직접 설정하세요. 저장된 minPct·minTokens 임계값은 그대로 적용돼요.',
+        mine: "표시된 cli.json의 값 하나가 바뀌어요. kcal은 파일을 고치지 않아요.",
+        who: "당신이 직접 JSON을 수정해요.",
+        loses: "도구 정의를 전부 미리 싣는 대신 검색·로딩 단계가 생겨요. 지연·절약량은 모릅니다.",
+      },
+      "tool-search-v2": {
+        title: "V2의 MCP 도구 검색을 아직 켜지 않았어요",
+        headline:
+          "저장 기본 설정 기준이에요. local V2에서 임계값을 넘으면 legacy tool_search로 도구 정의를 찾게 할 수 있어요.",
+        what: '아래 파일에 `"toolSearch.enabled": true`를 직접 설정하세요. 기본 임계값은 5% 또는 50000 tokens 초과이며, 저장된 임계값이 있으면 그 값을 사용해요.',
+        mine: "표시된 cli.json의 값 하나가 바뀌어요. kcal은 파일을 고치지 않아요.",
+        who: "당신이 직접 JSON을 수정해요.",
+        loses:
+          "임계값을 넘으면 전체 정의를 미리 싣는 방식이 바뀌어요. 임계값 아래에서는 변화가 없을 수 있어요. 절약량은 모릅니다.",
+      },
+      "auto-compaction": {
+        title: "자동 압축이 꺼져 있어요",
+        headline:
+          "저장 기본 설정 기준이에요. local V3에서 문서에 지정된 자동 압축을 다시 사용할 수 있어요.",
+        what: '아래 파일에 `"chat.disableAutoCompaction": false`를 직접 설정하세요. 아래 임계값(미설정 시 80%)을 사용하며, 다음 시작·로드 세션부터 적용돼요. 필요하면 압축 전에 세션을 export하세요.',
+        mine: "표시된 cli.json의 값 하나가 바뀌어요. kcal은 파일을 고치지 않아요.",
+        who: "당신이 직접 JSON을 수정해요.",
+        loses:
+          "오래된 대화·도구 호출의 세부가 요약돼요. 압축은 단방향이며 같은 세션에서 이전 전체 기록을 복구할 수 없어요.",
+      },
+    },
     codexFast: {
       title: (multiplier: string | null) =>
         multiplier

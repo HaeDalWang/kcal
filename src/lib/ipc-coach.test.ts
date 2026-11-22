@@ -264,6 +264,7 @@ const CHECK_FACTS: { [T in CheckFacts["type"]]: Fields<FactsOf<T>> } = {
     limit: "required",
     rules: "required",
   },
+  savedAdvice: { type: "required", topic: "required", evidence: "required" },
   codexFastMode: { type: "required", model: "required", multiplier: "required" },
 };
 const HANDOFF_PREVIEW = {
