@@ -413,3 +413,30 @@ fn session_tuning_validates_ranges_and_absolute_protected_paths() {
     t.session_protected_folders = vec![std::env::temp_dir().display().to_string()];
     assert!(t.validate().is_ok());
 }
+
+#[test]
+fn diagnose_folder_count_has_a_default_and_rejects_out_of_range_values() {
+    assert_eq!(Tuning::default().diagnose_recent_folders, 5);
+    for count in [0, 21] {
+        let t = Tuning {
+            diagnose_recent_folders: count,
+            ..Tuning::default()
+        };
+        assert!(t.validate().unwrap_err().contains("diagnoseRecentFolders"));
+        assert_eq!(
+            Tuning::from_json(&json!({"diagnoseRecentFolders": count})).diagnose_recent_folders,
+            5
+        );
+    }
+    for count in [1, 3, 20] {
+        let t = Tuning {
+            diagnose_recent_folders: count,
+            ..Tuning::default()
+        };
+        assert!(t.validate().is_ok());
+        assert_eq!(
+            Tuning::from_json(&json!({"diagnoseRecentFolders": count})).diagnose_recent_folders,
+            count
+        );
+    }
+}

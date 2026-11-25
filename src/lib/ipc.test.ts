@@ -288,6 +288,7 @@ const TUNING = {
   checkAlertMin: "required",
   claudeHandoffTimeoutSecs: "required",
   claudeHandoffMinRemaining: "required",
+  diagnoseRecentFolders: "required",
   diagnoseUsageDays: "required",
   diagnoseUsageFiles: "required",
   diagnoseUsageMaxMib: "required",

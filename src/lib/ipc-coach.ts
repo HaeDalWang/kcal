@@ -18,6 +18,7 @@ export type CoachSwitch = {
   agent: Agent;
   kind: SwitchKind;
   name: string;
+  projectPath?: string;
   enabled: boolean;
   /** 시작 때 실리는 토큰. 모르면 null. */
   tokens: number | null;

@@ -771,7 +771,7 @@ export const en: Messages = {
       ratesTtlSecs: { label: "Recalculate tokens per 1%" },
       contextTtlSecs: { label: "Remeasure startup context" },
       metricsTtlSecs: { label: "Recalculate requests and cache hits" },
-      httpTimeoutSecs: { label: "Usage API" },
+      httpTimeoutSecs: { label: "Usage API and MCP health" },
       keychainTimeoutSecs: { label: "Keychain", hint: "macOS only" },
       kiroTimeoutSecs: { label: "kiro-cli" },
       claudeHandoffTimeoutSecs: {
@@ -792,6 +792,7 @@ export const en: Messages = {
       claudeLogFiles: { label: "Claude conversation log files" },
       compareDays: { label: "Change effect period", hint: "before and after each" },
       checkModelDays: { label: "Recent logs used by checks (days)" },
+      diagnoseRecentFolders: { label: "Recent work folders to diagnose" },
       diagnoseUsageDays: {
         label: "Usage period for Diagnose",
         hint: "unused in this period = suggested to turn off",

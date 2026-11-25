@@ -760,7 +760,7 @@ export const ko = {
       ratesTtlSecs: { label: "1%당 토큰 다시 계산" },
       contextTtlSecs: { label: "시작 컨텍스트 다시 측정" },
       metricsTtlSecs: { label: "요청 수·캐시 적중률 다시 계산" },
-      httpTimeoutSecs: { label: "사용량 API" },
+      httpTimeoutSecs: { label: "사용량 API·MCP 연결 확인" },
       keychainTimeoutSecs: { label: "키체인", hint: "macOS에서만 써요" },
       kiroTimeoutSecs: { label: "kiro-cli" },
       claudeHandoffTimeoutSecs: {
@@ -781,6 +781,7 @@ export const ko = {
       claudeLogFiles: { label: "Claude 대화 기록 파일" },
       compareDays: { label: "처방 효과 비교 기간", hint: "적용 전·후 각각" },
       checkModelDays: { label: "최적화 판정에 쓰는 최근 기록(일)" },
+      diagnoseRecentFolders: { label: "진단할 최근 작업 폴더 수" },
       diagnoseUsageDays: {
         label: "진단하기 사용 기록 기간",
         hint: "이 기간에 0번이면 끄기를 권해요",

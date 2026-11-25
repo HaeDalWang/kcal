@@ -5,6 +5,7 @@ use super::*;
 #[test]
 fn coach_types_match_fixture() {
     let switch = CoachSwitch {
+        project_path: None,
         target: "codex/plugin:synthetic@m".into(),
         agent: Agent::Codex,
         kind: SwitchKind::Plugin,

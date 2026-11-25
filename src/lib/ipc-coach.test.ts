@@ -63,6 +63,7 @@ const COACH_SWITCH = {
   scope: "required",
   scopeMove: "required",
   scopeGuide: "optional",
+  projectPath: "optional",
   contents: "required",
   skill: "required",
   format: "required",

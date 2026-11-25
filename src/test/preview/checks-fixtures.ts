@@ -505,8 +505,41 @@ const usage = (projects: [string, number][], projectCount = projects.length): Sw
 });
 const ALL_PROJECTS = { user: true, projects: [] };
 
+/** Connector guidance and the same project MCP in two distinct work folders. */
+export const DIAG46_SWITCHES: CoachSwitch[] = [
+  sw("claude/connector:claude.ai Figma", "claude.ai Figma", 900, {
+    kind: "mcp",
+    format: "manual",
+    file: null,
+    isProposed: false,
+    instruction: appliedLabel(
+      "하나 끄기: 해당 프로젝트에서 /mcp → claude.ai Figma → 끄기(disabledMcpServers). 또는 deniedMcpServers에 표시 이름을 넣으세요.\n전부 끄기: disableClaudeAiConnectors: true 또는 ENABLE_CLAUDEAI_MCP_SERVERS=false.\nDesktop local/SSH: https://claude.ai/customize/connectors 에서 연결을 끊으세요. kcal은 설정을 바꾸지 않아요.",
+      "Turn off one: in that project, /mcp → claude.ai Figma → disable (disabledMcpServers). Or add its display name to deniedMcpServers.\nTurn off all: disableClaudeAiConnectors: true or ENABLE_CLAUDEAI_MCP_SERVERS=false.\nDesktop local/SSH: disconnect at https://claude.ai/customize/connectors. kcal does not change settings.",
+    ),
+  }),
+  ...["kcal", "side-app"].map((folder) =>
+    sw(
+      `claude/mcp:${JSON.stringify(["project-docs", `/Users/me/work/${folder}`])}`,
+      "project-docs",
+      null,
+      {
+        kind: "mcp",
+        projectPath: `/Users/me/work/${folder}`,
+        format: "manual",
+        file: null,
+        isProposed: false,
+        instruction: appliedLabel(
+          "이 폴더의 Claude Code에서 /mcp를 열고 이 서버를 끄세요.",
+          "Open /mcp in Claude Code in this folder and disable this server.",
+        ),
+      },
+    ),
+  ),
+];
+
 /** 대시보드 점검 탭의 진단하기 스위치(에이전트마다 몇 개). Claude는 사용 기록·범위가 붙는다(0022). */
 export const DASHBOARD_SWITCHES: CoachSwitch[] = [
+  ...DIAG46_SWITCHES,
   sw("claude/plugin:k8s-tools@market", "k8s-tools@market", 266, {
     file: "/Users/me/.claude/settings.json",
     usage: usage([]),

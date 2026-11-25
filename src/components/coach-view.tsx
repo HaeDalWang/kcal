@@ -209,7 +209,10 @@ function ManualPanel({ target, onCancel }: { target: CoachSwitch; onCancel: () =
       className="flex flex-col gap-1.5 border-t px-5 py-2.5 outline-none"
     >
       <h2 className="text-[13px] font-medium">{target.name}</h2>
-      <p className="text-xs">{target.instruction}</p>
+      {target.projectPath && (
+        <p className="text-xs break-all text-muted-foreground">{target.projectPath}</p>
+      )}
+      <p className="text-xs whitespace-pre-line">{target.instruction}</p>
       <div className="flex justify-end">
         <Button size="xs" variant="ghost" onClick={onCancel}>
           {t.coach.close}

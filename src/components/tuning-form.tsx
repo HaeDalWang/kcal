@@ -74,6 +74,7 @@ const FIELDS: Record<TuningKey, FieldInfo> = {
   claudeLogFiles: { unit: "count", section: "scan" },
   compareDays: { unit: "days", section: "scan" },
   checkModelDays: { unit: "days", section: "scan" },
+  diagnoseRecentFolders: { unit: "count", section: "scan" },
   diagnoseUsageDays: { unit: "days", section: "scan" },
   diagnoseUsageFiles: { unit: "count", section: "scan" },
   diagnoseUsageMaxMib: { unit: "mib", section: "scan" },
