@@ -11,7 +11,7 @@
   <br/><sub>데모 데이터입니다. kcal은 당신의 세션에서 나온 숫자를 보여 줍니다.</sub>
 </p>
 
-**제작자의 설정에서 Claude Code는 첫 메시지 전에 37.6K 토큰을 실었습니다. Opus 5.5의 400K 창 중 9%입니다. 그중 절반쯤(19.6K)은 제작자가 추가한 것에서 왔습니다. 스킬 52개(9.3K), 메모리 파일 9개(6.3K), MCP 서버 지침과 도구(3.6K), 커스텀 에이전트 3개(0.4K)입니다.** kcal은 당신의 설정에 대해 같은 내역을 보여 주고, 끌 만한 것을 알려 줍니다. <sub>Claude Code 2.1.322의 `/context`로 2026-11-12에 쟀습니다. 당신의 숫자는 다릅니다.</sub>
+**제작자의 설정에서 Claude Code는 첫 메시지 전에 20.6K 토큰을 실었습니다. Opus 5.5의 400K 창 중 5%입니다. 그중 약 78%(16.2K)는 제작자가 추가한 것에서 왔습니다. 스킬 45개(8.8K), 메모리 파일 6개(4.5K), MCP 서버 지침과 도구(2.3K), 커스텀 에이전트 4개(0.6K)입니다. Claude Code 자체의 시스템 프롬프트와 도구는 4.5K였습니다.** kcal은 당신의 설정에 대해 같은 내역을 보여 주고, 끌 만한 것을 알려 줍니다. <sub>Claude Code 2.1.332의 `/context`로 2026-11-25에 쟀습니다. 당신의 숫자는 다릅니다.</sub>
 
 [CodexBar](https://github.com/steipete/CodexBar)는 여러 AI 코딩 제공자의 사용 한도를 보여 주고, [ccusage](https://github.com/ccusage/ccusage)는 로컬 로그에서 토큰 사용량을 읽고, Claude Code의 `/context`는 현재 세션에서 컨텍스트 창이 어떻게 쓰이는지 보여 줍니다. kcal은 Claude Code, Codex, Kiro의 남은 한도와 시작 컨텍스트를 메뉴 막대 팝오버 하나에 모아 보여 주고, 무엇을 꺼야 할지 알려 줍니다. Anthropic, OpenAI, AWS와 관련이 없습니다.
 
@@ -43,7 +43,7 @@ curl -fsSL https://raw.githubusercontent.com/HaeDalWang/kcal/main/install.sh | s
 
 ### Windows (x64)
 
-최신 릴리스에서 [kcal-windows-x64-setup.exe](https://github.com/HaeDalWang/kcal/releases/latest/download/kcal-windows-x64-setup.exe)를 받아 실행하세요(다음 태그 릴리스부터 제공). 설치 파일은 **서명되지 않았습니다**. SmartScreen에 **Windows protected your PC(Windows의 PC 보호)**가 나오면 **More info(추가 정보) → Run anyway(실행)**를 누르세요. 조직 정책이 이 선택을 막을 수 있습니다.
+최신 릴리스에서 [kcal-windows-x64-setup.exe](https://github.com/HaeDalWang/kcal/releases/latest/download/kcal-windows-x64-setup.exe)를 받아 실행하세요. 설치 파일은 **서명되지 않았습니다**. SmartScreen에 **Windows protected your PC(Windows의 PC 보호)**가 나오면 **More info(추가 정보) → Run anyway(실행)**를 누르세요. 조직 정책이 이 선택을 막을 수 있습니다.
 
 - **읽는 것:** Claude 로그인은 `%USERPROFILE%\.claude\.credentials.json`에서(Keychain 없음), Codex 로그인은 `%USERPROFILE%\.codex\auth.json`에서 읽습니다. 세션 로그와 설정은 `%USERPROFILE%\.claude`, `%USERPROFILE%\.codex`, `%USERPROFILE%\.kiro`, 그리고 `%USERPROFILE%\.claude.json`과 `%USERPROFILE%\.agents\skills`에서 읽습니다. 프로젝트 지침·설정 파일도 읽습니다([개인정보 표](docs/privacy.md)). Kiro 한도는 설치된 `kiro-cli`로 조회합니다. 선택적인 대체 로그 `%USERPROFILE%\.local\share\agent-usage-audit\data\claude-ratelimits.jsonl`도 있으면 읽습니다.
 - **설정:** `%APPDATA%\io.github.haedalwang.kcal\settings.json`. kcal의 다른 저장 데이터도 같은 폴더에 있습니다. `%USERPROFILE%`은 홈 폴더, `%APPDATA%`는 Windows의 로밍 앱 데이터 폴더입니다. 파일 탐색기 주소창에 경로를 붙여 넣으세요.

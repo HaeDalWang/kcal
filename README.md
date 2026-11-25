@@ -11,7 +11,7 @@
   <br/><sub>Demo data. kcal shows numbers from your own sessions.</sub>
 </p>
 
-**In the author's setup, Claude Code loaded 37.6K tokens before the first message: 9% of Opus 5.5's 400K-token context window. About half of that (19.6K) came from what the author added: 52 skills (9.3K), 9 memory files (6.3K), MCP server instructions and tools (3.6K), 3 custom agents (0.4K).** kcal shows the same split for your setup and points at what you could switch off. <sub>Measured with `/context` in Claude Code 2.1.322 on 2026-11-12. Your numbers will differ.</sub>
+**In the author's setup, Claude Code loaded 20.6K tokens before the first message: 5% of Opus 5.5's 400K-token context window. About 78% of that (16.2K) came from what the author added: 45 skills (8.8K), 6 memory files (4.5K), MCP server instructions and tools (2.3K), 4 custom agents (0.6K). Claude Code's own system prompt and tools were 4.5K.** kcal shows the same split for your setup and points at what you could switch off. <sub>Measured with `/context` in Claude Code 2.1.332 on 2026-11-25. Your numbers will differ.</sub>
 
 [CodexBar](https://github.com/steipete/CodexBar) shows usage limits for many AI coding providers, [ccusage](https://github.com/ccusage/ccusage) reads token usage from local logs, and Claude Code's `/context` shows how the context window is used in the current session. kcal puts the limit left and the startup context for Claude Code, Codex and Kiro in one menu bar popover, and suggests what to switch off. Not affiliated with Anthropic, OpenAI or AWS.
 
@@ -43,7 +43,7 @@ The script downloads the latest release, checks its SHA-256, installs `kcal.app`
 
 ### Windows (x64)
 
-Download [kcal-windows-x64-setup.exe](https://github.com/HaeDalWang/kcal/releases/latest/download/kcal-windows-x64-setup.exe) from the latest release and run it (available from the next tagged release). The installer is **unsigned**. If SmartScreen shows **Windows protected your PC**, choose **More info → Run anyway**. Your organization's policy may block this option.
+Download [kcal-windows-x64-setup.exe](https://github.com/HaeDalWang/kcal/releases/latest/download/kcal-windows-x64-setup.exe) from the latest release and run it. The installer is **unsigned**. If SmartScreen shows **Windows protected your PC**, choose **More info → Run anyway**. Your organization's policy may block this option.
 
 - **What it reads:** Claude login from `%USERPROFILE%\.claude\.credentials.json` (no Keychain); Codex login from `%USERPROFILE%\.codex\auth.json`; session logs and config under `%USERPROFILE%\.claude`, `%USERPROFILE%\.codex`, `%USERPROFILE%\.kiro`, plus `%USERPROFILE%\.claude.json` and `%USERPROFILE%\.agents\skills`. It also reads project instruction/config files; see [the privacy table](docs/privacy.md). Kiro limits use your installed `kiro-cli`. If present, the optional fallback log is `%USERPROFILE%\.local\share\agent-usage-audit\data\claude-ratelimits.jsonl`.
 - **Settings:** `%APPDATA%\io.github.haedalwang.kcal\settings.json`. kcal's other saved data is in the same folder. `%USERPROFILE%` is your home folder; `%APPDATA%` is Windows' roaming application-data folder. Paste either path in File Explorer's address bar.
