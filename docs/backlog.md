@@ -10,7 +10,7 @@
 
 - [ ] **다음 주제: 진단하기 구멍 4·6 (핸드오프 2026-11-25).** 결정은 아래 "결정이 필요한 것 → 진단하기 개선"의 2026-11-25 줄. 4 = claude.ai 커넥터를 `claude mcp list` 출력으로 보고 끄는 방법 안내만(설정 안 씀, 근거 문서는 그 항목에 있음). 6 = 최근 세션 폴더 여러 개(개수는 tuning, 0007). 0017 E 틀에 붙인다. 그 다음 순서: Antigravity 읽기 조사(0027 ④) → 프로젝트 단위 켜기(Codex 플러그인 실제 `codex exec` 확인 허락됨, Kiro는 명령·JSON 안내만). 주제마다 새 세션.
   - 직전 주제 끝(0030 세션 현황·끄기, `a6b3577` main push): 실제 끄기 신호는 진짜 프로세스로 안 해 봄(단위 테스트만), Windows 미실행. Codex 샌드박스는 `claude`·`ps`·서버를 막으니 실제 데이터 읽기·화면은 샌드박스 밖에서 다시 확인한다(화면은 Edge `playwright-cli`, `PLAYWRIGHT_MCP_BROWSER=msedge`).
-- [ ] **v0.1.4 게시됨(2026-11-21, 태그 `bc4d895`) — Windows 동료 확인 전에 게시(사용자 결정).** 남은 사람 확인: Windows 설치본 첫 실행(아래 "Windows 확인 남음"), 미서명 설치본에서 자동 시작 켠 뒤 재로그인(macOS·Windows). Codex `McpToolCall`이 옛 CLI 버전 rollout에도 있는지는 모름. main의 `55a08da`(Claude 환율 최근 창만)·`7d005e6`(모르는 에이전트 id 건너뛰기)는 다음 릴리스에 들어간다.
+- [ ] **v0.1.5 게시(2026-11-25)**: 세션 보기(macOS)·claude.ai 커넥터·최근 작업 폴더 진단·Codex/Kiro 저장 설정 카드. 남은 사람 확인(v0.1.4부터 이어짐): Windows 설치본 첫 실행(아래 "Windows 확인 남음"), 미서명 설치본에서 자동 시작 켠 뒤 재로그인(macOS·Windows). Codex `McpToolCall`이 옛 CLI 버전 rollout에도 있는지는 모름.
 
 ## 사람이 확인할 것 (실기·실계정)
 
