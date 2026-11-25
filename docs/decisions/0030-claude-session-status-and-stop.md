@@ -7,7 +7,7 @@
 - Safety: no automatic stopping. The button lists what it will stop and asks once. Excluded: non-idle sessions, sessions whose child processes use CPU at or above a threshold, and sessions inside user-listed protected folders. The PID is re-checked against the session id right before signalling.
 - Loss: the conversation stays and resumes with `claude --resume`; text typed but not sent in the input box is lost. There is no undo.
 
-- 상태: 결정(구현 전)
+- 상태: 결정(구현함)
 - 날짜: 2026-11-25
 - 앞선 결정: [0003](0003-product-scope.md) 범위, [0007](0007-tuning.md) tuning, [0027](0027-agent-descriptor-and-picker.md) 에이전트 설명표
 
@@ -37,6 +37,11 @@
 - 되돌리기가 없는 첫 동작이다. "확인 뒤에만 바꾼다"(README)에 맞춰 확인 창 없이 끄는 길은 만들지 않는다.
 - `status` 판정은 Claude Code가 한다. `idle`이어도 사용자가 입력창에 글을 쓰는 중일 수 있다(모름). 그래서 IDLE 기준 기본값을 길게(24h) 둔다.
 - 다른 앱이 띄운 봇 세션은 kcal이 가리지 못한다. 보호 폴더로 막는다.
+
+## 구현 메모
+
+- 확인 창에 표시한 PID·sessionId만 종료 command에 넘긴다. 종료 직전 제외 조건 전체와 PID·sessionId·idle을 다시 검사한다.
+- CPU·작업 폴더·보호 폴더 경로를 확인할 수 없으면 안전하게 종료 대상에서 제외한다. 새 의존성·polling은 없다.
 
 ## 남은 것
 

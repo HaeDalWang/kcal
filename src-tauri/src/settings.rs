@@ -666,7 +666,9 @@ mod tests {
             api_interval_secs: 120,
             ..Tuning::default()
         };
-        state.set(&ids(&["claude"]), Some(faster), None).unwrap();
+        state
+            .set(&ids(&["claude"]), Some(faster.clone()), None)
+            .unwrap();
         let bad = Tuning {
             bytes_per_token: 0,
             ..Tuning::default()

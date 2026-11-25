@@ -1,0 +1,50 @@
+{
+  "canStop": true,
+  "idleHours": 24,
+  "sessions": [
+    {
+      "cwd": "/work/project",
+      "exclusion": null,
+      "idleSeconds": 90000,
+      "kind": null,
+      "pid": 42,
+      "sessionId": "fixture-session",
+      "startedAt": null,
+      "status": "waiting",
+      "stopEligible": false
+    },
+    {
+      "cwd": "/work/project",
+      "exclusion": null,
+      "idleSeconds": 90000,
+      "kind": null,
+      "pid": 42,
+      "sessionId": "fixture-session",
+      "startedAt": null,
+      "status": "busy",
+      "stopEligible": false
+    },
+    {
+      "cwd": "/work/project",
+      "exclusion": null,
+      "idleSeconds": 90000,
+      "kind": null,
+      "pid": 42,
+      "sessionId": "fixture-session",
+      "startedAt": null,
+      "status": "idle",
+      "stopEligible": true
+    },
+    {
+      "cwd": null,
+      "exclusion": null,
+      "idleSeconds": null,
+      "kind": null,
+      "pid": null,
+      "sessionId": null,
+      "startedAt": null,
+      "status": null,
+      "stopEligible": false
+    }
+  ]
+}

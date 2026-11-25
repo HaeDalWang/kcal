@@ -9,6 +9,7 @@ mod i18n;
 mod ipc_fixtures;
 mod metrics;
 mod rate;
+mod sessions;
 mod settings;
 mod tray;
 mod tuning;
@@ -58,6 +59,8 @@ pub fn run() {
         .manage(coach::usage::UsageState::default())
         .manage(coach::checks::handoff::HandoffState::default())
         .invoke_handler(tauri::generate_handler![
+            sessions::list_claude_sessions,
+            sessions::stop_idle_claude_sessions,
             usage::get_usage,
             usage::get_installed_agents,
             context::get_context,

@@ -727,6 +727,7 @@ export const ko = {
   },
   tuning: {
     units: {
+      hours: "시간",
       minutes: "분",
       seconds: "초",
       kib: "KiB",
@@ -789,6 +790,14 @@ export const ko = {
         label: "끄기를 권하는 데 필요한 세션 수",
         hint: "이보다 적으면 쓰는지 알 수 없어요",
       },
+      sessionIdleHours: {
+        label: "세션 대기 기준",
+        hint: "이 시간보다 오래 대기한 세션만 끌 수 있어요",
+      },
+      sessionChildCpuPercent: {
+        label: "자식 프로세스 CPU 기준",
+        hint: "이 값 이상이면 세션을 끄지 않아요",
+      },
       scopeMinUses: {
         label: "프로젝트에서만 켜기를 권하는 데 필요한 사용 횟수",
         hint: "이보다 적으면 자주 쓰는지 알 수 없어요",
@@ -829,6 +838,23 @@ export const ko = {
     reset: "기본값으로",
     saving: "저장 중…",
     save: "저장",
+  },
+  sessions: {
+    title: "세션",
+    waiting: "입력 대기",
+    busy: "작업 중",
+    idle: "대기",
+    unknown: "상태 모름",
+    empty: "실행 중인 세션이 없어요.",
+    refresh: "세션 새로고침",
+    stop: (hours: number, count: number) => `${hours}h 넘은 ${count}개 끄기`,
+    confirm: "세션을 끌까요?",
+    cancel: "취소",
+    confirmStop: "확인하고 끄기",
+    loss: "보내지 않은 입력은 사라져요. 대화는 claude --resume으로 이어갈 수 있어요. 되돌릴 수 없어요.",
+    result: (count: number, skipped: number) => `${count}개 종료 · ${skipped}개 건너뜀`,
+    protectedFolders: "세션 보호 폴더",
+    protectedHint: "절대 경로를 한 줄에 하나씩 입력하세요. 하위 폴더도 보호해요.",
   },
   dashboard: {
     agentPicker: "에이전트 고르기",

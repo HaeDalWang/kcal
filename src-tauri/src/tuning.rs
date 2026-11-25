@@ -10,6 +10,9 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+const SESSION_IDLE_HOURS_RANGE: RangeInclusive<u64> = 1..=720;
+const SESSION_CHILD_CPU_PERCENT_RANGE: RangeInclusive<f64> = 0.1..=100.0;
+
 const MINUTE: u64 = 60;
 const DAY_SECS: u64 = 24 * 60 * 60;
 
@@ -171,7 +174,7 @@ impl Default for AdvancedTuning {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "camelCase")]
 pub struct Tuning {
     /// 한도 조회 간격(Claude·Codex).
@@ -238,6 +241,9 @@ pub struct Tuning {
     pub diagnose_min_sessions: usize,
     /// 진단하기: 기간 안 사용 횟수가 이 수 이상일 때만 "프로젝트에서만 켜기"를 제안한다(1~1000). 적은 횟수는 자주 쓰는지 알 수 없다.
     pub scope_min_uses: usize,
+    pub session_idle_hours: u64,
+    pub session_child_cpu_percent: f64,
+    pub session_protected_folders: Vec<String>,
     pub advanced: AdvancedTuning,
 }
 
@@ -280,6 +286,9 @@ impl Default for Tuning {
             diagnose_usage_max_mib: 2048,
             diagnose_min_sessions: 10,
             scope_min_uses: 3,
+            session_idle_hours: 24,
+            session_child_cpu_percent: 2.0,
+            session_protected_folders: Vec::new(),
             advanced: AdvancedTuning::default(),
         }
     }
@@ -332,12 +341,22 @@ impl Tuning {
 
     /// 필드마다 (spec, 범위 안인가). `spec.default`에는 `self`의 값이 들어간다(`spec()`은 기본값으로 부른다).
     /// 검증과 화면용 spec이 이 표 하나를 쓴다. `good_r2 < range_r2`이면 두 필드 모두 범위 밖이다.
-    fn fields(&self) -> [(TuningFieldSpec, bool); 43] {
+    fn fields(&self) -> [(TuningFieldSpec, bool); 45] {
         let a = &self.advanced;
         let r2_order = a.good_r2 >= a.range_r2;
         let (good_r2, good_ok) = field("advanced.goodR2", a.good_r2, &R2_RANGE);
         let (range_r2, range_ok) = field("advanced.rangeR2", a.range_r2, &R2_RANGE);
         [
+            field(
+                "sessionIdleHours",
+                self.session_idle_hours,
+                &SESSION_IDLE_HOURS_RANGE,
+            ),
+            field(
+                "sessionChildCpuPercent",
+                self.session_child_cpu_percent,
+                &SESSION_CHILD_CPU_PERCENT_RANGE,
+            ),
             field(
                 "apiIntervalSecs",
                 self.api_interval_secs,
@@ -519,10 +538,19 @@ impl Tuning {
     /// 범위를 벗어난 필드 이름(JSON 이름, 묶음은 `advanced.goodR2`처럼 점으로 잇는다).
     /// `good_r2 < range_r2`이면 두 필드를 모두 돌려준다.
     pub fn invalid_fields(&self) -> Vec<&'static str> {
-        self.fields()
+        let mut invalid: Vec<_> = self
+            .fields()
             .into_iter()
             .filter_map(|(spec, is_valid)| (!is_valid).then_some(spec.key))
-            .collect()
+            .collect();
+        if self
+            .session_protected_folders
+            .iter()
+            .any(|p| !std::path::Path::new(p).is_absolute())
+        {
+            invalid.push("sessionProtectedFolders");
+        }
+        invalid
     }
 
     /// 화면이 입력을 검사하고 범위·기본값을 보여 줄 표. 값은 저장 단위다. `Settings.tuningSpec`으로 내려간다.

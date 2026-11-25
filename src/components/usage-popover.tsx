@@ -8,6 +8,7 @@ import {
   startupTitle,
   UsageBars,
 } from "@/components/agent-metrics";
+import { ClaudeSessionsSection } from "@/components/claude-sessions";
 import { Dial } from "@/components/dial";
 import { reasonStateKind, StateText } from "@/components/state-text";
 import { AGENT_COLOR, AGENT_DESCRIPTORS, AGENT_LABEL } from "@/lib/agents";
@@ -622,6 +623,7 @@ export function UsagePopover({
               {trim && onReview && <TrimEntry trim={trim} onReview={onReview} />}
               <UsageBars agent={usage.agent} />
               <StartupSummary agent={usage.agent} />
+              {usage.agent === "claude" && <ClaudeSessionsSection />}
             </div>
           )
         )}

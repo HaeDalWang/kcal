@@ -166,7 +166,7 @@ pub fn start<R: Runtime>(app: AppHandle<R>, on_update: fn(&AppHandle<R>, &UsageS
                 .into_iter()
                 .map(|i| {
                     last_fetch[i] = Some(Instant::now());
-                    let (agent, ctx, tuning) = (Agent::ALL[i], ctx.clone(), tuning);
+                    let (agent, ctx, tuning) = (Agent::ALL[i], ctx.clone(), tuning.clone());
                     (
                         i,
                         tauri::async_runtime::spawn(async move {

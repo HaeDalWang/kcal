@@ -539,11 +539,16 @@ export type Tuning = {
   diagnoseMinSessions: number;
   /** 진단하기: 기간 안 사용이 이 횟수 이상일 때만 "프로젝트에서만 켜기"를 제안한다. */
   scopeMinUses: number;
+  sessionIdleHours: number;
+  sessionChildCpuPercent: number;
+  sessionProtectedFolders: string[];
   advanced: AdvancedTuning;
 };
 
 /** tuning 필드의 JSON 이름. 묶음은 `advanced.goodR2`처럼 점으로 잇는다(Rust `TuningFieldSpec.key`). */
-export type TuningKey = Exclude<keyof Tuning, "advanced"> | `advanced.${keyof AdvancedTuning}`;
+export type TuningKey =
+  | Exclude<keyof Tuning, "advanced" | "sessionProtectedFolders">
+  | `advanced.${keyof AdvancedTuning}`;
 
 /** Rust `tuning::TuningFieldSpec`. 범위(양 끝 포함)·기본값은 저장 단위(초·바이트 등)이고 Rust가 정한다. */
 export type TuningFieldSpec = {
@@ -639,3 +644,25 @@ export function getAppVersion(): Promise<string> {
 
 /** Rust coach::mcp_guide::McpScopeGuide. Masked commands only; kcal never executes them. */
 export type McpScopeGuide = { commands: string[]; undoCommands: string[] };
+
+/** Rust sessions DTOs (0030). Only the displayed, confirmed identities may be stopped. */
+export type ClaudeSession = {
+  pid: number | null;
+  sessionId: string | null;
+  cwd: string | null;
+  status: string | null;
+  startedAt: number | null;
+  kind: string | null;
+  idleSeconds: number | null;
+  stopEligible: boolean;
+  exclusion: string | null;
+};
+export type ClaudeSessions = { sessions: ClaudeSession[]; canStop: boolean; idleHours: number };
+export type SessionTarget = { pid: number; sessionId: string };
+export type StopSessionsResult = { stopped: number; skipped: string[] };
+export function listClaudeSessions(): Promise<ClaudeSessions> {
+  return invoke<ClaudeSessions>("list_claude_sessions");
+}
+export function stopIdleClaudeSessions(targets: SessionTarget[]): Promise<StopSessionsResult> {
+  return invoke<StopSessionsResult>("stop_idle_claude_sessions", { targets });
+}

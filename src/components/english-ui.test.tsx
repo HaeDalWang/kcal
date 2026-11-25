@@ -35,6 +35,7 @@ const ONE_PER_AGENT = {
 };
 
 const FIXTURE: Record<string, unknown> = {
+  list_claude_sessions: { sessions: [], canStop: true, idleHours: 24 },
   get_settings: ENGLISH,
   get_usage: ONE_PER_AGENT,
   get_metrics: metrics,

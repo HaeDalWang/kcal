@@ -18,6 +18,7 @@ import { t } from "@/lib/i18n";
 /** 화면 표시 단위. 저장 값 = 화면 값 × `factor`. 범위·기본값은 Rust spec(저장 단위)에서 바꿔 보인다. 이름은 `t.tuning.units`. */
 const UNITS = {
   minutes: 60,
+  hours: 1,
   seconds: 1,
   kib: 1024,
   mib: 1,
@@ -49,6 +50,8 @@ type FieldInfo = { unit: Unit; section: Section };
 
 /** 필드 단위·섹션(화면 쪽 정보만). 이름·도움말은 `t.tuning.fields`, 범위·기본값은 `Settings.tuningSpec`. */
 const FIELDS: Record<TuningKey, FieldInfo> = {
+  sessionIdleHours: { unit: "hours", section: "limits" },
+  sessionChildCpuPercent: { unit: "percent", section: "limits" },
   apiIntervalSecs: { unit: "minutes", section: "limits" },
   kiroIntervalSecs: { unit: "minutes", section: "limits" },
   refreshMinGapSecs: { unit: "seconds", section: "limits" },
@@ -177,12 +180,13 @@ type TuningFormProps = {
 export function TuningForm({ settings, isSaving, onSave, children, footer }: TuningFormProps) {
   const [edits, setEdits] = useState<Edits>({});
   const [errors, setErrors] = useState<Edits>({});
+  const [protectedFolders, setProtectedFolders] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isTuningOpen, setIsTuningOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const specs = new Map(settings.tuningSpec.map((spec) => [spec.key, spec]));
   const current = (key: TuningKey) => toDisplay(key, readTuning(settings.tuning, key));
-  const isDirty = Object.keys(edits).length > 0;
+  const isDirty = Object.keys(edits).length > 0 || protectedFolders !== null;
 
   const showErrors = (next: Edits) => {
     setErrors(next);
@@ -205,6 +209,7 @@ export function TuningForm({ settings, isSaving, onSave, children, footer }: Tun
       const text = toDisplay(spec.key, spec.default);
       if (text !== current(spec.key)) next[spec.key] = text;
     }
+    setProtectedFolders("");
     setEdits(next);
     setErrors({});
     setFormError(null);
@@ -212,7 +217,16 @@ export function TuningForm({ settings, isSaving, onSave, children, footer }: Tun
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    let tuning = settings.tuning;
+    let tuning =
+      protectedFolders === null
+        ? settings.tuning
+        : {
+            ...settings.tuning,
+            sessionProtectedFolders: protectedFolders
+              .split("\n")
+              .map((p) => p.trim())
+              .filter(Boolean),
+          };
     const nextErrors: Edits = {};
     for (const [key, text] of Object.entries(edits) as [TuningKey, string][]) {
       const spec = specs.get(key);
@@ -228,6 +242,7 @@ export function TuningForm({ settings, isSaving, onSave, children, footer }: Tun
     }
     onSave(tuning).then(
       () => {
+        setProtectedFolders(null);
         setEdits({});
         setErrors({});
         setFormError(null);
@@ -314,6 +329,17 @@ export function TuningForm({ settings, isSaving, onSave, children, footer }: Tun
           </summary>
           {/* WebKit은 <details> 안을 flex로 놓지 않아 gap이 안 먹는다. 묶음 사이 간격은 이 div가 준다. */}
           <div className="flex flex-col gap-4 pt-3">
+            <label className="flex flex-col gap-1 text-sm">
+              {t.sessions.protectedFolders}
+              <textarea
+                value={protectedFolders ?? settings.tuning.sessionProtectedFolders.join("\n")}
+                onChange={(event) => setProtectedFolders(event.target.value)}
+                disabled={isSaving}
+                rows={3}
+                className="w-full resize-y rounded-md border bg-background p-2 text-xs select-text focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50"
+                placeholder={t.sessions.protectedHint}
+              />
+            </label>
             {SECTIONS.map((section) => (
               <fieldset key={section} className="flex flex-col">
                 <legend className={CAPTION_CLASS}>{t.tuning.sections[section]}</legend>

@@ -462,7 +462,7 @@ async fn with_snapshot<T: Send + 'static>(
     let home = home()?;
     let snapshot = context::global_snapshot(app).await.ok();
     let tuning = app.state::<SettingsState>().tuning();
-    let usage = usage::index(app, &home, tuning).await.ok();
+    let usage = usage::index(app, &home, tuning.clone()).await.ok();
     tauri::async_runtime::spawn_blocking(move || work(home, snapshot, usage, tuning))
         .await
         .map_err(|_| AppError::Internal)?

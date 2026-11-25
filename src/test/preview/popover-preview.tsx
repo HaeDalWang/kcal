@@ -65,6 +65,25 @@ const claudeMetrics = {
 
 mockIPC(
   (cmd) => {
+    if (cmd === "list_claude_sessions") {
+      const statuses = isFresh || isNone ? [] : ["waiting", "busy", "idle"];
+      return {
+        canStop: true,
+        idleHours: 24,
+        sessions: statuses.map((status, i) => ({
+          pid: 4200 + i,
+          sessionId: `preview-${i}`,
+          cwd: "/work/project-with-a-long-folder-name/nested/claude-session",
+          status,
+          startedAt: null,
+          kind: "interactive",
+          idleSeconds: status === "idle" ? 90000 : 120,
+          stopEligible: status === "idle",
+          exclusion: status === "idle" ? null : "not_idle",
+        })),
+      };
+    }
+    if (cmd === "stop_idle_claude_sessions") return { stopped: 1, skipped: [] };
     if (isFresh) {
       switch (cmd) {
         case "get_settings":

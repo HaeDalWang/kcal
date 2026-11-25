@@ -293,6 +293,9 @@ const TUNING = {
   diagnoseUsageMaxMib: "required",
   diagnoseMinSessions: "required",
   scopeMinUses: "required",
+  sessionIdleHours: "required",
+  sessionChildCpuPercent: "required",
+  sessionProtectedFolders: "required",
   advanced: "required",
 } satisfies Fields<Tuning>;
 const TUNING_FIELD_SPEC = {
@@ -304,7 +307,7 @@ const TUNING_FIELD_SPEC = {
 } satisfies Fields<TuningFieldSpec>;
 const TUNING_KEY = Object.fromEntries([
   ...Object.keys(TUNING)
-    .filter((k) => k !== "advanced")
+    .filter((k) => k !== "advanced" && k !== "sessionProtectedFolders")
     .map((k) => [k, true]),
   ...Object.keys(ADVANCED_TUNING).map((k) => [`advanced.${k}`, true]),
 ]) as Values<TuningKey>;
@@ -467,7 +470,7 @@ describe("Rust IPC fixtures match ipc.ts types", () => {
     expect(settings.resolvedLanguage in LANG, "Lang").toBe(true);
   });
 
-  it("settings tuningSpec has one entry per tuning field", () => {
+  it("settings tuningSpec has one entry per numeric tuning field", () => {
     const { tuningSpec } = fixture("settings") as Settings;
     tuningSpec.forEach((f) =>
       expectFields<TuningFieldSpec>(f, TUNING_FIELD_SPEC, "TuningFieldSpec"),

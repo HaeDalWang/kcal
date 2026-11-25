@@ -550,3 +550,35 @@ fn app_errors_match_fixture() {
         ],
     );
 }
+
+#[test]
+fn claude_sessions_match_fixture() {
+    use crate::sessions::{ClaudeSession, ClaudeSessions, StopSessionsResult};
+    check(
+        "claude-sessions",
+        &ClaudeSessions {
+            sessions: ["waiting", "busy", "idle"]
+                .into_iter()
+                .map(|status| ClaudeSession {
+                    pid: Some(42),
+                    session_id: Some("fixture-session".into()),
+                    cwd: Some("/work/project".into()),
+                    status: Some(status.into()),
+                    idle_seconds: Some(90000),
+                    stop_eligible: status == "idle",
+                    ..Default::default()
+                })
+                .chain(std::iter::once(ClaudeSession::default()))
+                .collect(),
+            can_stop: true,
+            idle_hours: 24,
+        },
+    );
+    check(
+        "stop-sessions-result",
+        &StopSessionsResult {
+            stopped: 1,
+            skipped: vec!["43: session changed meanwhile".into()],
+        },
+    );
+}

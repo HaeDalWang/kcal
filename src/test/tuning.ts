@@ -41,6 +41,9 @@ export const DEFAULT_TUNING: Tuning = {
   diagnoseUsageMaxMib: 2048,
   diagnoseMinSessions: 10,
   scopeMinUses: 3,
+  sessionIdleHours: 24,
+  sessionChildCpuPercent: 2,
+  sessionProtectedFolders: [],
   advanced: {
     goodR2: 0.7,
     rangeR2: 0.3,

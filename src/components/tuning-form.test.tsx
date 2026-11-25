@@ -34,3 +34,35 @@ describe("TuningForm platform fields", () => {
     }
   });
 });
+
+it("saves protected folders as an array alongside numeric session tuning", async () => {
+  const { fireEvent, screen, waitFor } = await import("@testing-library/react");
+  const onSave = vi.fn(async () => {});
+  render(
+    <TuningForm
+      settings={{
+        enabledAgents: ["claude"],
+        tuning: DEFAULT_TUNING,
+        tuningSpec: TUNING_SPEC,
+        reason: null,
+        language: "ko",
+        resolvedLanguage: "ko",
+      }}
+      isSaving={false}
+      onSave={onSave}
+    >
+      {null}
+    </TuningForm>,
+  );
+  fireEvent.click(screen.getByText("조절 값 (기본값이면 충분해요)"));
+  fireEvent.change(screen.getByLabelText("세션 보호 폴더"), {
+    target: { value: "/work/protected\n\n /work/other " },
+  });
+  fireEvent.click(await screen.findByRole("button", { name: "저장" }));
+  await waitFor(() =>
+    expect(onSave).toHaveBeenCalledWith({
+      ...DEFAULT_TUNING,
+      sessionProtectedFolders: ["/work/protected", "/work/other"],
+    }),
+  );
+});

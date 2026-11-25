@@ -502,10 +502,11 @@ fn now_secs() -> f64 {
 async fn records(app: &AppHandle, home: &Path, tuning: Tuning) -> Result<RecentRecords, AppError> {
     let cache = app.state::<ChecksState>().0.clone();
     let owned = home.to_path_buf();
+    let read_tuning = tuning.clone();
     let cached = cache
         .get(
             tuning.metrics_ttl(),
-            move || read_records(&owned, &tuning, now_secs()),
+            move || read_records(&owned, &read_tuning, now_secs()),
             |_| {},
         )
         .await?;
@@ -526,7 +527,7 @@ async fn with_records<T: Send + 'static>(
 ) -> Result<T, AppError> {
     let home = home()?;
     let tuning = app.state::<SettingsState>().tuning();
-    let records = records(app, &home, tuning).await?;
+    let records = records(app, &home, tuning.clone()).await?;
     tauri::async_runtime::spawn_blocking(move || work(home, records, tuning))
         .await
         .map_err(|_| AppError::Internal)?

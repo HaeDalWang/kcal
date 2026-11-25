@@ -6,10 +6,10 @@
   "tuning": {
     "advanced": {
       "cacheMissRatio": 0.5,
+      "claudeRateDays": 7,
       "goodR2": 0.7,
       "holdoutTrain": 0.7,
       "minSamplesPerVar": 3,
-      "claudeRateDays": 7,
       "rangeR2": 0.3,
       "resetTolSecs": 600
     },
@@ -47,10 +47,27 @@
     "recentBars": 8,
     "refreshMinGapSecs": 30,
     "scopeMinUses": 3,
+    "sessionChildCpuPercent": 2.0,
+    "sessionIdleHours": 24,
+    "sessionProtectedFolders": [],
     "shapeSessionsToSearch": 5,
     "topSessions": 3
   },
   "tuningSpec": [
+    {
+      "default": 24.0,
+      "isInteger": true,
+      "key": "sessionIdleHours",
+      "max": 720.0,
+      "min": 1.0
+    },
+    {
+      "default": 2.0,
+      "isInteger": false,
+      "key": "sessionChildCpuPercent",
+      "max": 100.0,
+      "min": 0.1
+    },
     {
       "default": 300.0,
       "isInteger": true,

@@ -735,6 +735,7 @@ export const en: Messages = {
   },
   tuning: {
     units: {
+      hours: "h",
       minutes: "min",
       seconds: "s",
       kib: "KiB",
@@ -800,6 +801,14 @@ export const en: Messages = {
         label: "Sessions needed to suggest turning off",
         hint: "fewer than this, kcal can’t tell if you use it",
       },
+      sessionIdleHours: {
+        label: "Session idle threshold",
+        hint: "Only sessions idle longer than this can be stopped",
+      },
+      sessionChildCpuPercent: {
+        label: "Child process CPU threshold",
+        hint: "Sessions at or above this are protected",
+      },
       scopeMinUses: {
         label: "Uses needed to suggest a project-only scope",
         hint: "fewer than this, kcal can’t tell if you use it often",
@@ -840,6 +849,23 @@ export const en: Messages = {
     reset: "Reset to defaults",
     saving: "Saving…",
     save: "Save",
+  },
+  sessions: {
+    title: "Sessions",
+    waiting: "Waiting for input",
+    busy: "Busy",
+    idle: "Idle",
+    unknown: "Unknown status",
+    empty: "No running sessions.",
+    refresh: "Refresh sessions",
+    stop: (hours: number, count: number) => `Stop ${count} idle over ${hours}h`,
+    confirm: "Stop these sessions?",
+    cancel: "Cancel",
+    confirmStop: "Confirm and stop",
+    loss: "Unsent input will be lost. Continue the conversation with claude --resume. This cannot be undone.",
+    result: (count: number, skipped: number) => `${count} stopped · ${skipped} skipped`,
+    protectedFolders: "Protected session folders",
+    protectedHint: "One absolute path per line. Subfolders are protected too.",
   },
   dashboard: {
     agentPicker: "Choose agent",

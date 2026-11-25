@@ -523,10 +523,11 @@ fn now_secs() -> f64 {
 pub async fn index(app: &AppHandle, home: &Path, tuning: Tuning) -> Result<UsageIndex, AppError> {
     let cache = app.state::<UsageState>().0.clone();
     let owned = home.to_path_buf();
+    let read_tuning = tuning.clone();
     let cached = cache
         .get(
             tuning.metrics_ttl(),
-            move || read(&owned, &tuning, now_secs()),
+            move || read(&owned, &read_tuning, now_secs()),
             |_| {},
         )
         .await?;
