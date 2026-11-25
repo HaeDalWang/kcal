@@ -8,14 +8,14 @@ kcal이 OS마다 다르게 읽거나 다르게 동작해야 하는 것을 모은
 
 ## 에이전트 인증·데이터 위치 (1층 측정·한도 조회에 필요)
 
-| 항목                     | macOS                                               | Windows                                                                                                                                                       | 근거           |
-| ------------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| Claude Code OAuth 토큰   | Keychain `Claude Code-credentials` (확인됨, 0003)   | **평문 파일** `%USERPROFILE%\.claude\.credentials.json`, 키 `claudeAiOauth.{accessToken, refreshToken, expiresAt, subscriptionType, rateLimitTier}` (확인됨)  | win 2026-11-03 |
-| Codex 인증               | `~/.codex/auth.json` (0003)                         | `%USERPROFILE%\.codex\auth.json`, 키 `auth_mode`, `tokens.{access_token, account_id, …}`, `last_refresh` (확인됨)                                             | win 2026-11-03 |
-| Codex rollout(세션 로그) | `~/.codex/sessions/` (0003, `.jsonl.zst` 압축 있음) | `%USERPROFILE%\.codex\sessions\YYYY\MM\DD\rollout-*.jsonl`, `token_count` 이벤트에 `rate_limits`(5h·7일, `resets_at` epoch) 있음 (확인됨). `.zst`는 아직 없음 | win 2026-11-03 |
-| Codex CLI                | 설치됨                                              | 데스크톱 앱은 `codex` 명령을 주지 않는다 → `npm i -g @openai/codex` (0.166.0), 인증 공유 (확인됨)                                                             | win 2026-11-03 |
-| Kiro CLI                 | 동작, `/usage` 나옴(사용자 확인)                    | `kiro-cli` 2.37.1 `%LOCALAPPDATA%\Kiro-Cli\kiro-cli.exe` 동작(확인됨). `/usage` 동작(확인됨)                                                                  | win 2026-11-03 |
-| Kiro 데이터              | 모름                                                | `%LOCALAPPDATA%\Kiro-Cli\data.sqlite3`, 설정 `%USERPROFILE%\.kiro\{settings,skills,hooks}` (확인됨)                                                           | win 2026-11-03 |
+| 항목                     | macOS                                               | Windows                                                                                                                                                                                   | 근거           |
+| ------------------------ | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Claude Code OAuth 토큰   | Keychain `Claude Code-credentials` (확인됨, 0003)   | **평문 파일** `%USERPROFILE%\.claude\.credentials.json`, 키 `claudeAiOauth.{accessToken, refreshToken, expiresAt, subscriptionType, rateLimitTier}` (확인됨)                              | win 2026-11-03 |
+| Codex 인증               | `~/.codex/auth.json` (0003)                         | `%USERPROFILE%\.codex\auth.json`, 키 `auth_mode`, `tokens.{access_token, account_id, …}`, `last_refresh` (확인됨)                                                                         | win 2026-11-03 |
+| Codex rollout(세션 로그) | `~/.codex/sessions/` (0003, `.jsonl.zst` 압축 있음) | `%USERPROFILE%\.codex\sessions\YYYY\MM\DD\rollout-*.jsonl`, `token_count` 이벤트에 `rate_limits`(5h·7일, `resets_at` epoch) 있음 (확인됨). 오래된 rollout은 `.jsonl.zst`로 압축됨(확인됨) | win 2026-11-25 |
+| Codex CLI                | 설치됨                                              | 데스크톱 앱은 `codex` 명령을 주지 않는다 → `npm i -g @openai/codex` (0.166.0), 인증 공유 (확인됨)                                                                                         | win 2026-11-03 |
+| Kiro CLI                 | 동작, `/usage` 나옴(사용자 확인)                    | `kiro-cli` 2.37.1 `%LOCALAPPDATA%\Kiro-Cli\kiro-cli.exe` 동작(확인됨). `/usage` 동작(확인됨)                                                                                              | win 2026-11-03 |
+| Kiro 데이터              | 모름                                                | `%LOCALAPPDATA%\Kiro-Cli\data.sqlite3`, 설정 `%USERPROFILE%\.kiro\{settings,skills,hooks}` (확인됨)                                                                                       | win 2026-11-03 |
 
 ## 개발 환경
 
@@ -50,3 +50,9 @@ kcal이 OS마다 다르게 읽거나 다르게 동작해야 하는 것을 모은
 | `pnpm check`(`5837040`)                        | 통과               | Vitest 208/208, Rust 327 통과 · 4 실패(kiro-cli·전역 CLAUDE.md가 테스트에 샘)                                               | win 2026-11-16 |
 | release 앱 트레이·팝오버·한도                  | 확인               | 확인(툴팁·개요 탭 실제 값, 아이콘은 처음엔 숨겨진 아이콘 안)                                                                | win 2026-11-16 |
 | 유휴 CPU(release, 10초)                        | 모름               | 0초, WorkingSet 33MB                                                                                                        | win 2026-11-16 |
+| `pnpm rust:check`(`b58ae23`)                   | 통과               | 452 통과 · 0 실패(11-16 환경 샘 해소)                                                                                       | win 2026-11-25 |
+| `pnpm check`(`b58ae23`)                        | 통과               | 프론트 Vitest 275/275, `installer:test`에서 exit 1(cmd PATH에 `sh` 없음)                                                    | win 2026-11-25 |
+| 읽기 IPC 12개·`refresh_all`                    | 확인               | 확인(3~121ms, 세 에이전트 실제 값)                                                                                          | win 2026-11-25 |
+| 진단하기 미리보기·입력 거부                    | 확인               | 확인(파일 해시 불변, 목록 밖 대상 거부). 적용·Undo 미확인                                                                   | win 2026-11-25 |
+| 대시보드 오늘 칸, 로컬 기록 없는 % 에이전트    | 모름               | "한도 못 읽음"으로 잘못 보임(API로는 읽음)                                                                                  | win 2026-11-25 |
+| 유휴 CPU(dev, 대시보드 열림, 30초)             | 모름               | 0초, kcal 52.6MB + WebView2 합 543MB                                                                                        | win 2026-11-25 |

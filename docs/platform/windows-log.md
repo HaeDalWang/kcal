@@ -3,6 +3,50 @@
 기기: 레노버 노트북, Windows 11 Pro 10.0.22631. 테스트 전용(개발은 macOS).
 새 기록은 위에 추가한다. 비교표는 [`README.md`](README.md).
 
+## 2026-11-25 — dev 앱 전체 기능 점검 (`b58ae23`)
+
+원격 main이 다시 force-push 돼 있었다(`ahead 1, behind 210`). 로컬 전용 커밋 `1258b95`는 원격 `c609ca9`와 패치가 같음을 확인하고 `backup/main-before-sync-20261125`로 남긴 뒤 `origin/main`에 맞췄다. 에이전트: Claude Code 2.1.332, codex-cli 0.166.0, kiro-cli 2.37.1.
+
+### 검증
+
+| 명령                                           | exit | 결과                                                                                           |
+| ---------------------------------------------- | ---- | ---------------------------------------------------------------------------------------------- |
+| `pnpm install --frozen-lockfile`               | 0    |                                                                                                |
+| `typecheck` / `lint` / `format:check` / `test` | 0    | Vitest 29 files, 275/275                                                                       |
+| `pnpm check`                                   | 1    | `installer:test`에서 멈춤: `'sh' is not recognized` (아래)                                     |
+| `sh install.test.sh` (Git Bash)                | 0    | `install-test: macOS only, skipped`                                                            |
+| `pnpm rust:check`                              | 0    | 452 통과 · 0 실패 · 15 ignored. 11-16의 4 실패(kiro-cli·전역 CLAUDE.md 샘)가 해소됨(`bad67dc`) |
+| `pnpm tauri:dev:mcp`                           | —    | bridge `127.0.0.1:9224`                                                                        |
+
+`pnpm check`: pnpm 스크립트는 Windows에서 cmd로 돌고 이 기기 PATH에는 `sh`가 없다(Git Bash에는 있음). CI `windows-latest`는 통과한다(추정: runner PATH에 Git `sh`가 있음). Windows 개발 PC에서만 걸리는 마찰이다.
+
+### IPC (MCP `webview_execute_js`, popover 창)
+
+- 읽기 12개 모두 성공, 3~121ms: `get_settings`, `get_installed_agents`(claude·codex·kiro), `get_autostart`(false), `get_autostart_path_warning`(false), `get_usage`, `get_context`, `get_rates`, `get_metrics`, `get_health`, `get_checks`, `get_switches`, `get_coach_log`([]).
+- 한도: Claude API 5h 16%·7d 5% 사용, Codex API 5h 87%·7d 14%, Kiro CLI 월 97.5%. `refresh_all` 뒤 세 에이전트 `checkedAt` 갱신(Kiro CLI 약 4초).
+- 시작 컨텍스트: Claude 37,004 토큰(실측, 창 1M), Codex ~1,564(전부 추정, MCP 3개 스키마 미산정), Kiro ~420.
+- 환율: Claude·Codex 모두 `insufficient`(창 1개). 진단하기 Claude 세션 8 < 10이라 끄기 제안 없음(설계대로).
+- `get_checks` 경로·id에 `\\?\C:\…` 앞머리가 그대로 남는다(`A2-claude-rules-paths:\\?\C:\Users\…\rules`). 화면 표시는 확인 안 함.
+- 미리보기(쓰기 없음): `preview_switch` Codex 플러그인(`visualize`, 40번째 줄 `enabled = true → false`)·Codex MCP(`node_repl`, 새 줄 46번째)·Claude 플러그인, `preview_check` git 지시문(`includeGitInstructions → false`) 모두 정상. 호출 전후 `~\.codex\config.toml`·`~\.claude\settings.json` SHA-256 동일, `.bak` 없음. 목록 밖 대상(`../../etc/passwd`)과 `keep`은 `invalid_input`으로 거부.
+- `plugin:window|show`는 `core:window:allow-show` 없음으로 거부(최소 권한, 정상).
+- 적용·Undo는 실제 사용자 설정을 바꾸므로 하지 않았다.
+
+### 화면
+
+- 팝오버: 개요·Claude·Codex·Kiro 탭, 다크·라이트(`dark` 클래스를 임시로 떼서 확인) 모두 겹침·잘림 없음. 숨은 팝오버를 MCP 스크린샷으로 찍으면 acrylic 배경이 빠져 다크 모드 흰 글씨가 안 보인다 → 캡처할 때만 `body` 배경을 임시로 깔았다.
+- 대시보드(점검·사용량 탭): 뜬다. 숨긴 카드 2개(11-16)·Codex "그대로 둠 11개"가 IPC 값과 맞다. MCP 스크린샷·JS가 대시보드 창에서 시간 초과돼 OS 화면 캡처로 확인했다(아래 3).
+- 유휴 CPU(dev, 대시보드 열림, 30초) 0초. WorkingSet kcal 52.6MB, WebView2 프로세스 7개 합 543MB(release 33MB와 조건이 달라 비교 못 함).
+
+### 발견
+
+1. **대시보드 오늘 칸 "Codex — 한도 못 읽음"(확인됨).** 팝오버는 API로 Codex 13% 남음을 읽는다. 이 기기 Codex rollout은 11-03 하나뿐이라 `get_metrics` codex `bars`가 비고, `daily-activity.tsx:57` `isUnread = !isCredits && bars.length === 0 && used === 0`이 "한도 못 읽음"으로 판정한다. 다른 기기에서만 Codex를 쓰는 사용자는 모두 이렇게 보일 것(추정). 같은 칸의 Kiro는 "0 크레딧". 기대: "기록 없음" 계열.
+2. **Codex 플러그인 스킬 경로에 `\./skills/`가 섞인다(확인됨, IPC).** 예: `…\spreadsheets\26.1123.11515\./skills/`. 매니페스트 `skills` 값(`./skills/`)을 정규화 없이 붙임(추정). 화면 노출은 확인 안 함.
+3. **개발 도구: `tauri.mcp.conf.json` `mcp-dev` capability가 `"windows": ["popover"]`뿐(확인됨).** 대시보드 창에서 `mcp-bridge.script_result not allowed on window "dashboard"`가 5초마다 콘솔에 찍히고 MCP 스크린샷·JS가 시간 초과된다. 프로덕션 빌드에는 영향 없음.
+4. Codex가 이 기기에서도 rollout을 `.jsonl.zst`로 압축했다(`rollout-2026-11-03T11-40-28-….jsonl.zst`).
+5. Kiro 탭 "최근 하루별 크레딧"이 7일 모두 0(최고 0 크레딧)인데 월 97.5% 사용·"14h 58m 후 소진". 이 기기에 Kiro 세션 기록이 없어서이고 값끼리 모순은 아니다(소진 예측은 월 평균 기준, 추정).
+
+확인 안 함: 트레이 아이콘 클릭·툴팁(창을 MCP로만 다룸), release 설치본, 진단하기 적용·Undo.
+
 ## 2026-11-16 — 공개 버전 release 빌드·실행 (`5837040`)
 
 공개 직전 확인. 원격 히스토리가 공개용으로 새로 쓰여 로컬 main과 공통 조상이 없었다. 로컬은 `backup/pre-public-af78c0d` 브랜치로 남기고 `origin/main`에 맞췄다.

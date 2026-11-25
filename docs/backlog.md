@@ -116,7 +116,12 @@
 - [ ] 배율이 다른 다중 모니터에서 팝오버 위치.
 - [ ] 코칭 경로·권한, 6층 검진.
 - [ ] 실제 rollout `payload.cwd` 형태(`\\?\C:\…`인지). `fsutil::is_inside`가 앞머리를 떼는 것은 단위 테스트만(`bad67dc`).
-- [ ] kiro-cli·전역 CLAUDE.md가 있는 Windows PC에서 테스트 다시 돌리기(테스트 격리 `bad67dc` 뒤).
+- [x] kiro-cli·전역 CLAUDE.md가 있는 Windows PC에서 테스트 다시 돌리기(테스트 격리 `bad67dc` 뒤). 2026-11-25 `b58ae23` Rust 452 통과·0 실패(`windows-log.md`).
+- [ ] 대시보드 오늘 칸: 로컬 기록이 없는 % 에이전트(다른 기기에서만 쓴 Codex)가 "한도 못 읽음"으로 보인다. API로는 읽고 있다. `daily-activity.tsx:57` `isUnread`가 `bars` 비어 있음을 "못 읽음"으로 본다. 2026-11-25 Windows 확인.
+- [ ] Codex 플러그인 스킬 경로에 `\./skills/`가 섞인다(`get_context` 경로, 2026-11-25 Windows). 매니페스트 `skills` 경로 정규화.
+- [ ] 개발 도구: `tauri.mcp.conf.json` `mcp-dev`가 `popover` 창만 허용해 대시보드 창 MCP 스크린샷·JS가 시간 초과된다(`dashboard` 추가).
+- [ ] Windows 개발 PC에서 `pnpm check`가 `installer:test`(`sh install.test.sh`)에서 멈춘다: cmd PATH에 `sh` 없음. CI는 통과.
+- [ ] Windows 진단하기 적용·Undo 실기(미리보기는 2026-11-25 확인). `get_checks` 경로·id의 `\\?\` 앞머리가 화면에 보이는지도 함께 본다.
 
 ## 나중에
 
