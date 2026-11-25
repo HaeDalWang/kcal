@@ -1,0 +1,9 @@
+Checking MCP server health…
+
+claude.ai Figma: https://mcp.figma.com/mcp - ✔ Connected
+claude.ai Slack: https://mcp.example.com/slack - ✗ Failed to connect
+claude.ai Drive: https://mcp.example.com/drive - ⚠ Needs authentication
+plugin:context7:context7: https://mcp.example.com/mcp (HTTP) - ✔ Connected
+local: node server.js - ✓ Connected
+pending: npx example mcp - ⏸ Pending approval (run `claude` to approve)
+broken: command args - ✗ Failed to connect

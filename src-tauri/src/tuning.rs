@@ -78,6 +78,7 @@ const CHECK_MODEL_DAYS_RANGE: RangeInclusive<u64> = 1..=180;
 const CHECK_ALERT_MIN_RANGE: RangeInclusive<u64> = 1..=20;
 const CLAUDE_HANDOFF_TIMEOUT_SECS_RANGE: RangeInclusive<u64> = MINUTE..=30 * MINUTE;
 const CLAUDE_HANDOFF_MIN_REMAINING_RANGE: RangeInclusive<u64> = 0..=90;
+const DIAGNOSE_RECENT_FOLDERS_RANGE: RangeInclusive<usize> = 1..=20;
 const DIAGNOSE_USAGE_DAYS_RANGE: RangeInclusive<u64> = 1..=365;
 const DIAGNOSE_USAGE_FILES_RANGE: RangeInclusive<usize> = 1..=10_000;
 const DIAGNOSE_USAGE_MAX_MIB_RANGE: RangeInclusive<u64> = 16..=65_536;
@@ -233,6 +234,8 @@ pub struct Tuning {
     pub claude_handoff_min_remaining: u64,
     /// 진단하기(0022): 플러그인·MCP 사용 횟수를 세는 최근 Claude 기록 기간(일). 이 기간에 0회면 끄기를 권한다.
     pub diagnose_usage_days: u64,
+    /// Number of distinct recent session folders to inspect in Diagnose.
+    pub diagnose_recent_folders: usize,
     /// 진단하기: 그 기간에 여는 Claude 기록 파일 수 상한(최근에 바뀐 순).
     pub diagnose_usage_files: usize,
     /// 진단하기: 여는 기록 크기 합계 상한(MiB). 넘으면 더 오래된 파일은 읽지 않고 "일부만 봄"으로 표시한다.
@@ -282,6 +285,7 @@ impl Default for Tuning {
             claude_handoff_timeout_secs: 5 * MINUTE,
             claude_handoff_min_remaining: 20,
             diagnose_usage_days: 30,
+            diagnose_recent_folders: 5,
             diagnose_usage_files: 1000,
             diagnose_usage_max_mib: 2048,
             diagnose_min_sessions: 10,
@@ -341,7 +345,7 @@ impl Tuning {
 
     /// 필드마다 (spec, 범위 안인가). `spec.default`에는 `self`의 값이 들어간다(`spec()`은 기본값으로 부른다).
     /// 검증과 화면용 spec이 이 표 하나를 쓴다. `good_r2 < range_r2`이면 두 필드 모두 범위 밖이다.
-    fn fields(&self) -> [(TuningFieldSpec, bool); 45] {
+    fn fields(&self) -> [(TuningFieldSpec, bool); 46] {
         let a = &self.advanced;
         let r2_order = a.good_r2 >= a.range_r2;
         let (good_r2, good_ok) = field("advanced.goodR2", a.good_r2, &R2_RANGE);
@@ -503,6 +507,11 @@ impl Tuning {
                 "diagnoseMinSessions",
                 self.diagnose_min_sessions,
                 &DIAGNOSE_MIN_SESSIONS_RANGE,
+            ),
+            field(
+                "diagnoseRecentFolders",
+                self.diagnose_recent_folders,
+                &DIAGNOSE_RECENT_FOLDERS_RANGE,
             ),
             field("scopeMinUses", self.scope_min_uses, &SCOPE_MIN_USES_RANGE),
             (good_r2, good_ok && r2_order),

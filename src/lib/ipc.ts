@@ -530,6 +530,7 @@ export type Tuning = {
   /** Claude에게 맡기기: 가장 적게 남은 Claude 창의 남은 %가 이보다 적거나 모르면 실행하지 않는다. */
   claudeHandoffMinRemaining: number;
   /** 진단하기: 플러그인·MCP 사용 횟수를 세는 최근 Claude 기록 기간(일). 0회면 끄기를 권한다. */
+  diagnoseRecentFolders: number;
   diagnoseUsageDays: number;
   /** 진단하기: 그 기간에 여는 Claude 기록 파일 수 상한. */
   diagnoseUsageFiles: number;

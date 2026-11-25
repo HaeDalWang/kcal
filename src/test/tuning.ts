@@ -36,6 +36,7 @@ export const DEFAULT_TUNING: Tuning = {
   checkAlertMin: 1,
   claudeHandoffTimeoutSecs: 300,
   claudeHandoffMinRemaining: 20,
+  diagnoseRecentFolders: 5,
   diagnoseUsageDays: 30,
   diagnoseUsageFiles: 1000,
   diagnoseUsageMaxMib: 2048,

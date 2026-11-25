@@ -29,6 +29,7 @@
     "contextTtlSecs": 600,
     "dailyGoalPercent": 14,
     "diagnoseMinSessions": 10,
+    "diagnoseRecentFolders": 5,
     "diagnoseUsageDays": 30,
     "diagnoseUsageFiles": 1000,
     "diagnoseUsageMaxMib": 2048,
@@ -312,6 +313,13 @@
       "key": "diagnoseMinSessions",
       "max": 1000.0,
       "min": 0.0
+    },
+    {
+      "default": 5.0,
+      "isInteger": true,
+      "key": "diagnoseRecentFolders",
+      "max": 20.0,
+      "min": 1.0
     },
     {
       "default": 3.0,

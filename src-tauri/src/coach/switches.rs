@@ -3,7 +3,7 @@
 //! 설정 읽기는 `context::scan`의 함수를 그대로 쓴다. 토큰은 전역 컨텍스트 측정(캐시)의 항목에서 이름으로 맞추고,
 //! Claude MCP는 실제로 보낸 요청(`shape`)에서 잰 값을 쓴다. 모르면 `None`(추측하지 않는다).
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
@@ -67,6 +67,8 @@ pub struct CoachSwitch {
     pub agent: Agent,
     pub kind: SwitchKind,
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_path: Option<String>,
     pub enabled: bool,
     /// 시작 때 실리는 토큰(추정 또는 실측). 모르면 `None`.
     pub tokens: Option<u64>,
@@ -131,7 +133,7 @@ pub fn writable_files(home: &Path) -> [PathBuf; 3] {
 
 /// 한 에이전트의 측정 항목에서 이름으로 토큰·로딩 시점을 찾는다.
 /// 플러그인 항목 이름은 `<id> (스킬 N개)`, MCP는 `<name>`(크기 모름)이다. 시작 항목의 토큰만 더한다.
-fn measured(
+pub(super) fn measured(
     context: Option<&AgentContext>,
     kind: ContextKind,
     name: &str,
@@ -155,7 +157,7 @@ fn measured(
 }
 
 /// Claude가 도구 이름에 쓰는 서버 이름(영숫자·`_`·`-` 밖은 `_`).
-fn tool_server_name(name: &str) -> String {
+pub(super) fn tool_server_name(name: &str) -> String {
     name.chars()
         .map(|c| {
             if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
@@ -179,6 +181,7 @@ pub(super) fn base(agent: Agent, kind: SwitchKind, name: &str, enabled: bool) ->
         agent,
         kind,
         name: name.to_owned(),
+        project_path: None,
         enabled,
         tokens: None,
         loading: None,
@@ -321,55 +324,32 @@ fn claude(
         })
         .collect();
 
-    // MCP: 설정에 있는 user scope 서버 + 마지막 요청에 실린 서버(플러그인·커넥터 포함). 쓰지 않고 안내만 한다.
     let sent = shape::latest(home, None, tuning.shape_sessions_to_search);
-    let mut sent_tokens: HashMap<String, u64> = sent
-        .iter()
-        .flat_map(|s| &s.mcp)
-        .map(|s| {
-            (
-                s.server.clone(),
-                fsutil::estimate(s.bytes, tuning.bytes_per_token),
-            )
-        })
-        .collect();
-    let mut seen = HashSet::new();
-    let manual = |name: &str| CoachSwitch {
-        instruction: Some(claude_mcp_instruction().into()),
-        ..base(Agent::Claude, SwitchKind::Mcp, name, true)
-    };
-    let mut configured = scan::claude_mcp_servers(home, None);
-    configured.sort();
-    for (name, _) in configured {
-        let mut switch = manual(&name);
-        match sent_tokens.remove(&tool_server_name(&name)) {
-            Some(tokens) => {
-                (switch.tokens, switch.loading) = (Some(tokens), Some(Loading::Startup))
-            }
-            // 요청 기록이 있는데 거기 없으면 지연 로딩(또는 연결 안 됨)이다. 기록이 없으면 측정 항목의 시점을 쓴다.
-            None if sent.is_some() => switch.loading = Some(Loading::Deferred),
-            None => switch.loading = measured(context, ContextKind::Mcp, &name).1,
+    let mut project_rows = Vec::new();
+    for workspace in shape::recent_workspaces(
+        home,
+        tuning.diagnose_usage_files,
+        tuning.diagnose_recent_folders,
+    ) {
+        if scope::is_project_dir(home, &workspace) {
+            project_rows.extend(super::folders::project_switches(
+                home, &settings, usage, &workspace, tuning,
+            ));
         }
-        seen.insert(name);
-        switches.push(switch);
     }
-    let mut rest: Vec<(String, u64)> = sent_tokens
-        .into_iter()
-        .filter(|(n, _)| !seen.contains(n))
-        .collect();
-    rest.sort();
-    switches.extend(rest.into_iter().map(|(name, tokens)| CoachSwitch {
-        tokens: Some(tokens),
-        loading: Some(Loading::Startup),
-        ..manual(&name)
-    }));
+    switches.extend(super::folders::global_mcp(
+        home,
+        context,
+        sent.as_ref(),
+        &project_rows,
+        tuning,
+    ));
     let mut switches: Vec<CoachSwitch> = switches
         .into_iter()
         .map(|s| with_usage(s, home, usage, &projects, &names))
         .collect();
-    // 스킬 단위(0022): 개인 스킬 + 가장 최근 세션의 작업 폴더의 프로젝트 스킬. 플러그인 스킬은 넣지 않는다.
-    let workspace = sent.as_ref().and_then(|s| s.cwd.as_deref()).map(Path::new);
-    switches.extend(skills::list(home, Some(&settings), usage, workspace));
+    switches.extend(skills::list(home, Some(&settings), usage, None));
+    switches.extend(project_rows);
     switches
 }
 
@@ -401,7 +381,6 @@ pub fn list(
             Some(u) => u.total == 0 && !u.is_partial && u.sessions >= u.min_sessions,
             None => false,
         };
-        // 스킬은 크기를 몰라 토큰 조건이 없다: `skills::skill_switch`가 같은 근거 기준으로 이미 정했다.
         if skills::is_skill(switch) {
             continue;
         }

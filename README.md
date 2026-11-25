@@ -84,6 +84,7 @@ There is no telemetry, no analytics, no updater, and no kcal server. In short:
 
 - Your Claude Code login token goes only to `api.anthropic.com` (Codex: `chatgpt.com`, only if enabled), to ask for your limit. It is not stored or refreshed. By default this check runs every 5 minutes while the app is running.
 - Session logs, agent config and project files are read on your computer; kcal keeps sizes, names and counts, not message text.
+- To discover claude.ai connectors and show manual off steps, kcal runs `claude mcp list` from your home folder at most once per startup-context remeasure interval (10 minutes by default). Claude Code may contact connector services and start configured MCP servers for health checks. kcal uses its HTTP timeout setting and never writes connector settings.
 - The one other upload is the Claude handoff button, only when you press it: one instruction file goes to Anthropic through your own Claude Code.
 - kcal writes its own settings folder and, only when you confirm, config edits with `.bak` backups and Undo.
 

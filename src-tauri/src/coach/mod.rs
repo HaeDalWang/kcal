@@ -4,8 +4,10 @@
 //! TS 쪽 짝은 `src/lib/ipc.ts`의 같은 이름 타입.
 
 pub(crate) mod checks;
+mod connectors;
 pub(crate) mod contents;
 pub(crate) mod edit;
+mod folders;
 pub(crate) mod log;
 mod mcp_guide;
 pub(crate) mod scope;
@@ -470,15 +472,27 @@ async fn with_snapshot<T: Send + 'static>(
 
 #[tauri::command]
 pub async fn get_switches(app: AppHandle) -> Result<Vec<CoachSwitch>, AppError> {
-    with_snapshot(&app, |home, snapshot, usage, tuning| {
-        Ok(switches::list(
-            &home,
-            snapshot.as_ref(),
-            usage.as_ref(),
-            &tuning,
-        ))
+    let home = home()?;
+    let settings = app.state::<SettingsState>().get()?;
+    let claude = settings.is_enabled(crate::usage::Agent::Claude);
+    // The CLI health check takes seconds; run it beside the snapshot instead of before it.
+    let connectors = claude.then(|| {
+        let tuning = settings.tuning.clone();
+        tauri::async_runtime::spawn(async move { connectors::read(&home, &tuning).await })
+    });
+    let (mut all, sent, tuning) = with_snapshot(&app, move |home, snapshot, usage, tuning| {
+        let sent = claude
+            .then(|| crate::context::shape::latest(&home, None, tuning.shape_sessions_to_search))
+            .flatten();
+        let all = switches::list(&home, snapshot.as_ref(), usage.as_ref(), &tuning);
+        Ok((all, sent, tuning))
     })
-    .await
+    .await?;
+    if let Some(task) = connectors {
+        let found = task.await.unwrap_or_default();
+        connectors::append(&mut all, found, sent.as_ref(), &tuning);
+    }
+    Ok(all)
 }
 
 #[tauri::command]

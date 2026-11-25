@@ -51,6 +51,7 @@ const hasTooFewUses = (item: CoachSwitch) =>
 
 /** "범위: 전체" 또는 "범위: 프로젝트 kcal, foo". 꺼져 있고 어느 프로젝트에서도 안 켰으면 null. */
 function scopeText(item: CoachSwitch): string | null {
+  if (item.projectPath) return item.projectPath;
   if (!item.scope) return null;
   if (item.scope.user) return t.coach.scopeAll;
   const on = item.scope.projects.filter((p) => p.enabled).map((p) => p.name);
@@ -252,8 +253,12 @@ function SuggestRow({
             aria-hidden
             className={`size-[12px] shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none ${isOpen ? "rotate-90" : ""}`}
           />
-          <span className="truncate font-medium" title={item.name}>
+          <span
+            className="truncate font-medium"
+            title={[item.name, item.projectPath].filter(Boolean).join(" · ")}
+          >
             {item.name}
+            {item.projectPath ? ` · ${item.projectPath}` : ""}
           </span>
           <KindChip item={item} />
           <span
@@ -318,8 +323,12 @@ function KeepRow({
     .join("\n");
   return (
     <li className="flex items-center gap-2 text-xs">
-      <span className="min-w-0 truncate" title={item.name}>
+      <span
+        className="min-w-0 truncate"
+        title={[item.name, item.projectPath].filter(Boolean).join(" · ")}
+      >
         {item.name}
+        {item.projectPath ? ` · ${item.projectPath}` : ""}
       </span>
       <span
         className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground tabular-nums"

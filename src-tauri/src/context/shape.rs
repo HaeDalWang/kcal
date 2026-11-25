@@ -424,6 +424,33 @@ fn recent_transcripts(
         .collect()
 }
 
+/// Diagnose scans recent distinct cwds even when the session has no request shape.
+pub fn recent_workspaces(home: &Path, sessions: usize, count: usize) -> Vec<PathBuf> {
+    let mut folders = Vec::new();
+    for file in recent_transcripts(home, None, sessions) {
+        if folders.len() == count {
+            break;
+        }
+        let Ok(file) = std::fs::File::open(file) else {
+            continue;
+        };
+        let cwd = BufReader::new(file)
+            .split(b'\n')
+            .map_while(Result::ok)
+            .find_map(|line| {
+                let row: Value = serde_json::from_slice(&line).ok()?;
+                row.get("cwd")?.as_str().map(PathBuf::from)
+            });
+        if let Some(cwd) =
+            cwd.filter(|p| p.is_absolute() && p.is_dir() && p != home && p.parent().is_some())
+            && !folders.contains(&cwd)
+        {
+            folders.push(cwd);
+        }
+    }
+    folders
+}
+
 /// 최근 세션 `sessions_to_search`개 중 가장 새 shape(지난달 shape는 지금 설정을 말해 주지 않는다). 없으면 `None`.
 /// `workspace`가 `Some`이면 그 프로젝트 폴더에서 작업 폴더(`cwd`)가 정확히 같은 세션만 본다
 /// (폴더 이름 규칙상 `/a-b`와 `/a/b`가 같은 폴더에 섞일 수 있다).
