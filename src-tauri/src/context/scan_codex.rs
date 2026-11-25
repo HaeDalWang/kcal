@@ -87,7 +87,12 @@ pub(super) fn codex_plugin_skills(plugin: &Path) -> PathBuf {
                 )
             })
         });
-    plugin.join(relative.unwrap_or(Path::new("skills")))
+    let relative: PathBuf = relative
+        .unwrap_or(Path::new("skills"))
+        .components()
+        .filter(|c| matches!(c, std::path::Component::Normal(_)))
+        .collect();
+    plugin.join(relative)
 }
 
 pub(super) fn codex_enabled_plugins(config: &str) -> Vec<String> {

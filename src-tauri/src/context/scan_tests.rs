@@ -489,15 +489,35 @@ fn codex_plugin_skills_follow_the_manifest_path_inside_the_plugin() {
         codex_plugin_skills(plugin.path()),
         plugin.path().join("skills")
     );
-    plugin.write(".codex-plugin/plugin.json", r#"{"skills": "./my-skills/"}"#);
-    assert_eq!(
-        codex_plugin_skills(plugin.path()),
-        plugin.path().join("./my-skills/")
+    for (raw, expected) in [
+        ("./skills", "skills"),
+        ("skills", "skills"),
+        ("./a/./b", "a/b"),
+        ("./my-skills/", "my-skills"),
+        ("../x", "skills"),
+        ("a/../x", "skills"),
+    ] {
+        plugin.write(
+            ".codex-plugin/plugin.json",
+            &serde_json::json!({"skills": raw}).to_string(),
+        );
+        // Path 비교는 `.`을 무시하므로 실제 직렬화되는 경로를 비교한다.
+        assert_eq!(
+            codex_plugin_skills(plugin.path()).as_os_str(),
+            plugin
+                .path()
+                .join(expected.split('/').collect::<PathBuf>())
+                .as_os_str(),
+            "{raw}"
+        );
+    }
+    plugin.write(
+        ".codex-plugin/plugin.json",
+        &serde_json::json!({"skills": plugin.path().join("outside")}).to_string(),
     );
-    plugin.write(".codex-plugin/plugin.json", r#"{"skills": "../outside"}"#);
     assert_eq!(
-        codex_plugin_skills(plugin.path()),
-        plugin.path().join("skills")
+        codex_plugin_skills(plugin.path()).as_os_str(),
+        plugin.path().join("skills").as_os_str()
     );
 }
 

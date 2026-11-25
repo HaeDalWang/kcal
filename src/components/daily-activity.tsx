@@ -37,7 +37,7 @@ type AgentDay = {
   goal: number | null;
   /** Kiro는 크레딧, 나머지는 %. */
   isCredits: boolean;
-  /** % 에이전트인데 한도 표본이 하나도 없다(로그인 못 읽음 등). 0 %가 아니라 모르는 값이다. */
+  /** % 에이전트인데 읽은 한도 창이 없다(로그인 못 읽음 등). 0 %가 아니라 모르는 값이다. */
   isUnread: boolean;
   /** % 에이전트인데 요청은 있고 쓴 %p는 0이다. 한도 표본이 아직 오르지 않았거나 앱이 꺼져 있던 때라 0 %를 확정할 수 없다. */
   isPending: boolean;
@@ -54,18 +54,15 @@ function agentDays(
     const m = metrics?.agents.find((a) => a.agent === agent);
     const activity = dayActivity(m?.hourly ?? [], day);
     const isCredits = hasFeature(agent, "creditLimit");
-    const isUnread = !isCredits && m !== undefined && m.bars.length === 0 && activity.used === 0;
+    const usage = usages?.find((u) => u.agent === agent);
+    const isUnread =
+      !isCredits && usage?.checkedAt != null && usage.windows.length === 0 && activity.used === 0;
     return {
       agent,
       activity,
-      goal: dailyGoal(
-        agent,
-        settings.tuning,
-        usages?.find((u) => u.agent === agent),
-        day,
-      ),
+      goal: dailyGoal(agent, settings.tuning, usage, day),
       isCredits,
-      // 5시간 막대(`bars`)는 한도 표본으로만 생긴다. 비어 있으면 그날 %도 읽지 못한 것이다.
+      // `bars`는 로컬 구간 기록이다. 한도 조회 여부는 `AgentUsage.windows`로 판단한다.
       isUnread,
       // 한도 %는 표본(앱이 켜져 있을 때만 기록)의 1%p 단위 증가분이라, 오늘은 요청이 있어도 아직 0일 수 있다(0015).
       // 지난날의 0은 확정값이라 오늘만 "집계 전"으로 보인다.

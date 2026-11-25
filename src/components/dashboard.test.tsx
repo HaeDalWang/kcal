@@ -334,7 +334,7 @@ describe("Dashboard", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-11-04T14:00:00Z"));
     try {
-      // Claude는 요청이 있지만 한도 표본이 없다(막대 0개, 쓴 양 0).
+      // Claude는 요청이 있지만 한도 조회에 실패했다(windows 없음, reason 있음).
       const unread = {
         ...metrics,
         agents: metrics.agents.map((a) =>
@@ -347,9 +347,20 @@ describe("Dashboard", () => {
             : a,
         ),
       };
-      mockIPC((cmd) => (cmd === "get_metrics" ? unread : (FIXTURE[cmd] ?? null)), {
-        shouldMockEvents: true,
-      });
+      const unreadUsage = {
+        agents: usage.agents.map((a) =>
+          a.agent === "claude" ? { ...a, windows: [], reason: "Sign in" } : a,
+        ),
+      };
+      mockIPC(
+        (cmd) =>
+          cmd === "get_metrics"
+            ? unread
+            : cmd === "get_usage"
+              ? unreadUsage
+              : (FIXTURE[cmd] ?? null),
+        { shouldMockEvents: true },
+      );
       render(<Dashboard />);
       const card = await screen.findByRole("region", { name: "오늘 쓴 양" });
       expect(within(card).getByText("—")).toBeTruthy();
@@ -363,6 +374,36 @@ describe("Dashboard", () => {
       vi.useRealTimers();
     }
   });
+
+  it.each([false, true])(
+    "does not mark readable limits unread without local bars (empty day: %s)",
+    async (emptyDay) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-04T14:00:00Z"));
+      try {
+        const noLocalRecords = {
+          ...metrics,
+          agents: metrics.agents.map((a) =>
+            a.agent === "codex" || emptyDay ? { ...a, bars: [], hourly: [] } : a,
+          ),
+        };
+        mockIPC((cmd) => (cmd === "get_metrics" ? noLocalRecords : (FIXTURE[cmd] ?? null)), {
+          shouldMockEvents: true,
+        });
+        render(<Dashboard />);
+        const card = await screen.findByRole("region", { name: "오늘 쓴 양" });
+        await waitFor(() => expect(metricsStore.getSnapshot().value).toEqual(noLocalRecords));
+        const codex = within(card).getByText("Codex").closest("li")!;
+        expect(within(codex).queryByText("한도 못 읽음")).toBeNull();
+        expect(within(codex).getByText(emptyDay ? "기록 없음" : "0")).toBeTruthy();
+        expect(within(card).getByRole("img").getAttribute("aria-label")).not.toContain(
+          "Codex 한도 못 읽음",
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
 
   it("shows pending, not a confident 0 %, when requests exist but no limit sample rose", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
