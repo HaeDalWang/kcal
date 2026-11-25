@@ -8,7 +8,7 @@
         {
           "identifier": "mcp-dev",
           "description": "개발 전용: MCP bridge 권한. pnpm tauri:dev:mcp에서만 이 overlay로 추가된다.",
-          "windows": ["popover"],
+          "windows": ["popover", "dashboard"],
           "permissions": ["mcp-bridge:default"]
         }
       ]
