@@ -15,20 +15,25 @@ import { Dashboard } from "@/components/dashboard";
 import { followSystemTheme } from "@/lib/theme";
 import { diagnoseBackend } from "@/test/preview/demo-diagnose";
 import { demoFixtures } from "@/test/preview/demo-fixtures";
+import { tourBackend, tourFixtures } from "@/test/preview/demo-tour";
 import "@/index.css";
 
 const OPEN_DASHBOARD = "demo:open-dashboard";
 const params = new URLSearchParams(location.search);
 const zoom = Number(params.get("zoom") ?? "1");
-const isDiagnoseScene = params.get("scene") === "diagnose";
+const SCENE_H = 860;
+const isTourScene = params.get("scene") === "tour";
+// The tour reuses the Diagnose backend (apply and Undo) and adds Kiro, sessions and Checks data.
+const isDiagnoseScene = params.get("scene") === "diagnose" || isTourScene;
 const diagnose = isDiagnoseScene ? diagnoseBackend() : null;
+const tour = isTourScene ? tourBackend() : null;
 const now = Date.now();
-const data = demoFixtures(now);
+const data = isTourScene ? tourFixtures(now) : demoFixtures(now);
 
 mockWindows("popover", "dashboard");
 mockIPC(
   (cmd, args) => {
-    const handled = diagnose?.(cmd, args);
+    const handled = tour?.(cmd, args) ?? diagnose?.(cmd, args);
     if (handled !== undefined) return handled;
     switch (cmd) {
       case "get_settings":
@@ -120,7 +125,7 @@ function Scene() {
       className="relative overflow-hidden"
       style={{
         width: 1000,
-        height: 860,
+        height: SCENE_H,
         background: "linear-gradient(160deg, #2b3550 0%, #1c2438 55%, #141a2b 100%)",
       }}
     >
@@ -128,7 +133,17 @@ function Scene() {
       {!isDashboardOpen && (
         <div
           className="absolute top-[34px] right-[12px] w-[310px] overflow-hidden rounded-[12px] bg-background text-foreground shadow-2xl ring-1 ring-white/15"
-          style={{ zoom }}
+          // The real window caps its height (the tray scrolls inside it); the tour does the same so a long
+          // Claude tab stays inside the scene. `data-demo="popover"` is the scroll box the recorder moves.
+          data-demo="popover"
+          style={{
+            zoom,
+            ...(isTourScene && {
+              maxHeight: `${(SCENE_H - 48) / zoom}px`,
+              overflowY: "auto",
+              scrollbarWidth: "none",
+            }),
+          }}
         >
           <App />
         </div>
@@ -153,6 +168,42 @@ function Scene() {
   );
 }
 
+/** A macOS-style arrow that glides to a point before a click. Preview-only DOM; page pointer events ignore it.
+ * The recording script calls `window.demoCursor.to(x, y)` (CSS transition), waits, then clicks. */
+function installCursor() {
+  const arrow = document.createElement("div");
+  arrow.id = "demo-cursor";
+  arrow.innerHTML =
+    '<svg width="22" height="30" viewBox="0 0 22 30"><path d="M2 1.5v22.2l5.6-5.2 3.6 8.2 3.6-1.6-3.6-8h8z" fill="#000" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+  document.body.append(arrow);
+  const move = (x: number, y: number) => {
+    arrow.style.transform = `translate(${x}px, ${y}px)`;
+  };
+  // The confirm dialog portals to <body>; centre it (and its dimmer) on the popover, not the whole scene.
+  const placement = document.createElement("style");
+  placement.textContent =
+    // Settings' own scroll area is sized for the 800px tray window; the tour's scroll box is shorter.
+    `form>div.overflow-y-auto{max-height:560px!important}` +
+    `[role="dialog"]{left:calc(var(--pop-x) + var(--pop-w) / 2)!important;top:calc(var(--pop-y) + var(--pop-h) / 2)!important}` +
+    `.fixed.inset-0{inset:var(--pop-y) auto auto var(--pop-x)!important;width:var(--pop-w);height:var(--pop-h);border-radius:12px}`;
+  document.head.append(placement);
+  const syncPopoverBox = () => {
+    const box = document.querySelector('[data-demo="popover"]')?.getBoundingClientRect();
+    if (!box) return;
+    const root = document.documentElement.style;
+    root.setProperty("--pop-x", `${box.x}px`);
+    root.setProperty("--pop-y", `${box.y}px`);
+    root.setProperty("--pop-w", `${box.width}px`);
+    root.setProperty("--pop-h", `${box.height}px`);
+  };
+  syncPopoverBox();
+  new MutationObserver(syncPopoverBox).observe(document.body, { childList: true, subtree: true });
+  move(560, 430);
+  Object.assign(window, { demoCursor: { to: move } });
+  document.addEventListener("pointerdown", () => arrow.classList.add("is-down"), true);
+  document.addEventListener("pointerup", () => arrow.classList.remove("is-down"), true);
+}
+
 followSystemTheme();
 const style = document.createElement("style");
 style.textContent =
@@ -160,6 +211,9 @@ style.textContent =
   ".demo-window-in{animation:demo-window-in .18s ease-out}" +
   "html,body{background:#141a2b!important}" +
   "@keyframes demo-ring{from{opacity:.9;transform:translate(-50%,-50%) scale(.4)}to{opacity:0;transform:translate(-50%,-50%) scale(1.6)}}" +
+  "#demo-cursor{position:fixed;left:0;top:0;z-index:10000;pointer-events:none;transition:transform .45s cubic-bezier(.45,.05,.25,1);filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}" +
+  "#demo-cursor svg{display:block;transform-origin:2px 2px;transition:transform .08s}" +
+  "#demo-cursor.is-down svg{transform:scale(.85)}" +
   ".demo-ring{position:fixed;z-index:9999;width:36px;height:36px;border-radius:9999px;border:3px solid #fff;pointer-events:none;animation:demo-ring .7s ease-out forwards}";
 document.head.append(style);
 if (isDiagnoseScene) {
@@ -177,6 +231,7 @@ if (isDiagnoseScene) {
     true,
   );
 }
+if (isTourScene) installCursor();
 const root = document.getElementById("root");
 if (!root) throw new Error("#root element is missing.");
 createRoot(root).render(
