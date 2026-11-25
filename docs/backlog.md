@@ -117,6 +117,7 @@
 - [ ] 코칭 경로·권한, 6층 검진.
 - [ ] 실제 rollout `payload.cwd` 형태(`\\?\C:\…`인지). `fsutil::is_inside`가 앞머리를 떼는 것은 단위 테스트만(`bad67dc`).
 - [x] kiro-cli·전역 CLAUDE.md가 있는 Windows PC에서 테스트 다시 돌리기(테스트 격리 `bad67dc` 뒤). 2026-11-25 `b58ae23` Rust 452 통과·0 실패(`windows-log.md`).
+- [ ] 릴리스 Windows `.sha256`을 LF로 쓰게 고침(2026-11-25, v0.1.4·v0.1.5 파일은 CRLF라 macOS `shasum -c`가 실패, 해시 자체는 일치 확인). 다음 릴리스에서 `shasum -a 256 -c kcal-windows-x64-setup.exe.sha256`이 통과하는지 본다.
 - [ ] Windows 개발 PC에서 `pnpm check`가 `installer:test`(`sh install.test.sh`)에서 멈춘다: cmd PATH에 `sh` 없음. CI는 통과.
 - [ ] Windows 진단하기 적용·Undo 실기(미리보기는 2026-11-25 확인). `get_checks` 경로·id의 `\\?\` 앞머리가 화면에 보이는지도 함께 본다.
 

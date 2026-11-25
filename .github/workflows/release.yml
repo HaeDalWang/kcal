@@ -131,7 +131,8 @@ jobs:
           $name = 'kcal-windows-x64-setup.exe'
           Copy-Item $installers[0].FullName "out/$name"
           $hash = (Get-FileHash "out/$name" -Algorithm SHA256).Hash.ToLowerInvariant()
-          Set-Content -Path "out/$name.sha256" -Value "$hash  $name" -Encoding ascii
+          # LF only: `shasum -c` on macOS/Linux reads a CRLF line as a file name ending in \r.
+          [IO.File]::WriteAllText("$PWD/out/$name.sha256", "$hash  $name`n")
       - name: Upload to draft release
         shell: bash
         env:
