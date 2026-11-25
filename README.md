@@ -11,7 +11,7 @@
   <br/><sub>Demo data. kcal shows numbers from your own sessions.</sub>
 </p>
 
-**In the author's setup, Claude Code loaded 20.6K tokens before the first message: 5% of Opus 5.5's 400K-token context window. About 78% of that (16.2K) came from what the author added: 45 skills (8.8K), 6 memory files (4.5K), MCP server instructions and tools (2.3K), 4 custom agents (0.6K). Claude Code's own system prompt and tools were 4.5K.** kcal shows the same split for your setup and points at what you could switch off. <sub>Measured with `/context` in Claude Code 2.1.332 on 2026-11-25. Your numbers will differ.</sub>
+**In the author's setup, Claude Code loaded 20.6K tokens before the first message: 5% of Opus 5.5's 400K-token context window. About 79% of that (16.2K) came from what the author added: 45 skills (8.8K), 6 memory files (4.5K), MCP server instructions and tools (2.3K), 4 custom agents (0.6K). Claude Code's own system prompt and tools were 4.4K.** kcal shows the same split for your setup and points at what you could switch off. <sub>Measured with `/context` in Claude Code 2.1.332 on 2026-11-25. Your numbers will differ.</sub>
 
 [CodexBar](https://github.com/steipete/CodexBar) shows usage limits for many AI coding providers, [ccusage](https://github.com/ccusage/ccusage) reads token usage from local logs, and Claude Code's `/context` shows how the context window is used in the current session. kcal puts the limit left and the startup context for Claude Code, Codex and Kiro in one menu bar popover, and suggests what to switch off. Not affiliated with Anthropic, OpenAI or AWS.
 
