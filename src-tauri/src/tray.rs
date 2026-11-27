@@ -122,16 +122,20 @@ pub fn fit_popover_height<R: Runtime>(
 
 fn resize<R: Runtime>(window: &WebviewWindow<R>, height: f64) -> tauri::Result<()> {
     let scale = window.scale_factor()?;
-    let outer = window.outer_size()?;
-    let width = outer.width as f64 / scale;
+    let inner = window.inner_size()?;
+    // `set_size`는 inner 크기다. 폭을 outer로 읽으면 Windows에서 테두리(약 14 논리 px)만큼 매번 넓어진다.
+    let width = inner.width as f64 / scale;
     #[cfg(not(target_os = "macos"))]
-    let before = (window.outer_position()?, window.inner_size()?.height as f64);
+    let before = (
+        window.outer_position()?,
+        window.outer_size()?.height as f64,
+        inner.height as f64,
+    );
     window.set_size(LogicalSize::new(width, height))?;
     // macOS는 메뉴 막대 아래에 붙어 아래로만 자라므로 그대로 둔다.
     #[cfg(not(target_os = "macos"))]
     if let Some(monitor) = window.current_monitor()? {
-        let (position, inner_height) = before;
-        let old_height = outer.height as f64;
+        let (position, old_height, inner_height) = before;
         let new_height = old_height + height * scale - inner_height;
         let y = refit_top(
             position.y as f64,
