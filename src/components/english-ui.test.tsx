@@ -129,7 +129,7 @@ describe("English UI", () => {
     fireEvent.click(
       within(screen.getByRole("navigation", { name: "Menu" })).getByText("Settings…"),
     );
-    await screen.findByRole("combobox");
+    await screen.findByRole("combobox", { name: "Language" });
     expect(screen.getByRole("option", { name: "한국어" })).toBeTruthy();
     // 언어 선택지의 "한국어"는 모국어 이름이라 예외.
     expect(

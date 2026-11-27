@@ -155,6 +155,7 @@ describe("ChecksTab", () => {
     const ago = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString();
     const settings: Settings = {
       enabledAgents: ALL,
+      trayIcon: "bars",
       tuning: DEFAULT_TUNING,
       tuningSpec: TUNING_SPEC,
       reason: null,
@@ -249,6 +250,7 @@ describe("ChecksTab", () => {
     };
     const settings: Settings = {
       enabledAgents: ALL,
+      trayIcon: "bars",
       tuning: { ...DEFAULT_TUNING, claudeHandoffMinRemaining: 70 },
       tuningSpec: TUNING_SPEC,
       reason: null,

@@ -31,6 +31,7 @@ import type {
   RateSnapshot,
   RateStatus,
   Settings,
+  TrayIcon,
   Spread,
   TokenRange,
   TokenRate,
@@ -314,12 +315,14 @@ const TUNING_KEY = Object.fromEntries([
 ]) as Values<TuningKey>;
 const SETTINGS = {
   enabledAgents: "required",
+  trayIcon: "required",
   tuning: "required",
   tuningSpec: "required",
   reason: "required",
   language: "required",
   resolvedLanguage: "required",
 } satisfies Fields<Settings>;
+const TRAY_ICON = { bars: true, percent: true, icon: true } satisfies Values<TrayIcon>;
 const LANGUAGE_CHOICE = { auto: true, ko: true, en: true } satisfies Values<LanguageChoice>;
 const LANG = { ko: true, en: true } satisfies Values<Lang>;
 const APP_ERROR = { kind: "required", message: "required" } satisfies Fields<AppError>;
@@ -467,6 +470,7 @@ describe("Rust IPC fixtures match ipc.ts types", () => {
     expectFields<Tuning>(settings.tuning, TUNING, "Tuning");
     expectFields<AdvancedTuning>(settings.tuning.advanced, ADVANCED_TUNING, "AdvancedTuning");
     settings.enabledAgents.forEach((a) => expect(a in AGENT, `enabled agent ${a}`).toBe(true));
+    expect(settings.trayIcon in TRAY_ICON, "TrayIcon").toBe(true);
     expect(settings.language in LANGUAGE_CHOICE, "LanguageChoice").toBe(true);
     expect(settings.resolvedLanguage in LANG, "Lang").toBe(true);
   });

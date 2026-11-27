@@ -17,6 +17,7 @@ import {
   type Agent,
   type Settings,
   type Tuning,
+  type TrayIcon,
 } from "@/lib/ipc";
 
 type SettingsViewProps = {
@@ -85,9 +86,14 @@ export function SettingsView({ settings, onSaved, onBack }: SettingsViewProps) {
   };
 
   // 저장은 한 번에 하나만(토글과 tuning 저장이 서로의 값을 덮어쓰지 않게).
-  const save = (agents: Agent[], tuning?: Tuning, language?: LanguageChoice) => {
+  const save = (
+    agents: Agent[],
+    tuning?: Tuning,
+    language?: LanguageChoice,
+    trayIcon?: TrayIcon,
+  ) => {
     setIsSaving(true);
-    return setSettings(agents, tuning, language).then(
+    return setSettings(agents, tuning, language, trayIcon).then(
       (saved) => {
         setIsSaving(false);
         onSaved(saved);
@@ -168,6 +174,31 @@ export function SettingsView({ settings, onSaved, onBack }: SettingsViewProps) {
               <p className="mt-1 px-1.5 text-xs text-muted-foreground">{t.settings.minOne}</p>
             )}
           </fieldset>
+          <div className="flex flex-col">
+            <div className={GROUP_CLASS}>
+              <label className={`${ROW_CLASS} text-sm`}>
+                <span className="flex-1">{t.settings.trayIcon}</span>
+                <select
+                  value={settings.trayIcon}
+                  disabled={isSaving}
+                  aria-describedby="tray-icon-hint"
+                  onChange={(event) =>
+                    report(save(enabled, undefined, undefined, event.target.value as TrayIcon))
+                  }
+                  className="h-6 rounded-md border border-input bg-background px-1.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring disabled:opacity-50"
+                >
+                  {(["bars", "percent", "icon"] as const).map((mode) => (
+                    <option key={mode} value={mode}>
+                      {t.settings.trayIconOptions[mode]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p id="tray-icon-hint" className="mt-1 px-1.5 text-xs text-muted-foreground">
+              {t.settings.trayIconHint}
+            </p>
+          </div>
           <div className="flex flex-col">
             <div className={GROUP_CLASS}>
               <label className={`${ROW_CLASS} text-sm`}>

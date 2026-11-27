@@ -728,6 +728,9 @@ export const en: Messages = {
     hidden: (count) => ns(count, "hidden card"),
   },
   settings: {
+    trayIcon: "Menu bar icon",
+    trayIconOptions: { bars: "Bars", percent: "Remaining %", icon: "Icon only" },
+    trayIconHint: "Shows the agent with the least left.",
     autostart: "Start at login",
     autostartPathHint: "Path saved; moving the app breaks autostart.",
     title: "Settings",

@@ -97,9 +97,84 @@ pub fn render(fills: &[Option<f64>], colors: &[[u8; 3]], spec: &Spec) -> (Vec<u8
     (rgba, w, h)
 }
 
+/// 3×5 픽셀 글꼴. 32px 안에서 100도 세 자리 그대로 그린다.
+#[cfg(any(not(target_os = "macos"), test))]
+const DIGITS: [[u8; 5]; 10] = [
+    [0b111, 0b101, 0b101, 0b101, 0b111],
+    [0b010, 0b110, 0b010, 0b010, 0b111],
+    [0b111, 0b001, 0b111, 0b100, 0b111],
+    [0b111, 0b001, 0b111, 0b001, 0b111],
+    [0b101, 0b101, 0b111, 0b001, 0b001],
+    [0b111, 0b100, 0b111, 0b001, 0b111],
+    [0b111, 0b100, 0b111, 0b101, 0b111],
+    [0b111, 0b001, 0b001, 0b001, 0b001],
+    [0b111, 0b101, 0b111, 0b101, 0b111],
+    [0b111, 0b101, 0b111, 0b001, 0b111],
+];
+
+/// 밝은 숫자 RGBA. 글꼴 한 칸 2×4px, 자간 2px. 세 자리 폭은 22px.
+#[cfg(any(not(target_os = "macos"), test))]
+pub fn render_number(number: u8) -> (Vec<u8>, u32, u32) {
+    const SIZE: usize = 32;
+    const GLYPH_WIDTH: usize = 3;
+    const SCALE_X: usize = 2;
+    const SCALE_Y: usize = 4;
+    const ADVANCE: usize = (GLYPH_WIDTH + 1) * SCALE_X;
+    let text = number.min(100).to_string();
+    let width = text.len() * ADVANCE - SCALE_X;
+    let left = (SIZE - width) / 2;
+    let top = (SIZE - DIGITS[0].len() * SCALE_Y) / 2;
+    let mut rgba = vec![0; SIZE * SIZE * 4];
+    for (i, digit) in text.bytes().enumerate() {
+        for (row, bits) in DIGITS[(digit - b'0') as usize].iter().enumerate() {
+            for col in 0..GLYPH_WIDTH {
+                if bits & (1 << (GLYPH_WIDTH - 1 - col)) == 0 {
+                    continue;
+                }
+                for y in top + row * SCALE_Y..top + (row + 1) * SCALE_Y {
+                    for x in
+                        left + i * ADVANCE + col * SCALE_X..left + i * ADVANCE + (col + 1) * SCALE_X
+                    {
+                        let at = (y * SIZE + x) * 4;
+                        rgba[at..at + 4].copy_from_slice(&[255; 4]);
+                    }
+                }
+            }
+        }
+    }
+    (rgba, SIZE as u32, SIZE as u32)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn number_renderer_draws_0_7_42_and_100_as_distinct_bright_digits() {
+        let images: Vec<_> = [0, 7, 42, 100].into_iter().map(render_number).collect();
+        for (rgba, width, height) in &images {
+            assert_eq!((*width, *height), (32, 32));
+            assert_eq!(rgba.len(), 32 * 32 * 4);
+            assert!(rgba.as_chunks::<4>().0.contains(&[255; 4]));
+            assert!(
+                rgba.as_chunks::<4>()
+                    .0
+                    .iter()
+                    .all(|p| *p == [255; 4] || *p == [0; 4])
+            );
+        }
+        for (i, image) in images.iter().enumerate() {
+            for other in &images[i + 1..] {
+                assert_ne!(image, other);
+            }
+        }
+        // 100은 99로 줄이지 않고 1과 0 두 개를 모두 그린다.
+        assert_ne!(render_number(100), render_number(99));
+        let rgba = &images[3].0;
+        for (left, right) in [(5, 11), (13, 19), (21, 27)] {
+            assert!((6..26).any(|y| (left..right).any(|x| rgba[(y * 32 + x) * 4 + 3] == 255)));
+        }
+    }
 
     /// 10x7 이미지, 막대 높이 1, 간격 1, 좌우 여백 1(트랙 8px).
     const SMALL: Spec = Spec {

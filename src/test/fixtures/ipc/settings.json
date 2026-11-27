@@ -3,6 +3,7 @@
   "language": "auto",
   "reason": "synthetic reason",
   "resolvedLanguage": "en",
+  "trayIcon": "bars",
   "tuning": {
     "advanced": {
       "cacheMissRatio": 0.5,

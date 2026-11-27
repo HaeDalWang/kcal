@@ -560,10 +560,13 @@ export type TuningFieldSpec = {
   isInteger: boolean;
 };
 
+export type TrayIcon = "bars" | "percent" | "icon";
+
 /** Rust `settings::Settings`. */
 export type Settings = {
   /** 팝오버(탭·개요)와 트레이 값에 표시하고 조회하는 에이전트. `AGENTS` 순서, 1개 이상. */
   enabledAgents: Agent[];
+  trayIcon: TrayIcon;
   tuning: Tuning;
   /** tuning 필드별 범위·기본값. 설정 화면은 이 값으로만 검사·안내한다. */
   tuningSpec: TuningFieldSpec[];
@@ -605,11 +608,13 @@ export function setSettings(
   enabledAgents: Agent[],
   tuning?: Tuning,
   language?: LanguageChoice,
+  trayIcon?: TrayIcon,
 ): Promise<Settings> {
   return invoke<Settings>("set_settings", {
     enabledAgents,
     ...(tuning && { tuning }),
     ...(language && { language }),
+    ...(trayIcon && { trayIcon }),
   });
 }
 

@@ -407,6 +407,7 @@ fn settings_matches_fixture() {
         "settings",
         &Settings {
             enabled_agents: vec![Agent::Claude, Agent::Kiro],
+            tray_icon: crate::settings::TrayIcon::Bars,
             reason: Some("synthetic reason".into()),
             ..Settings::default()
         },

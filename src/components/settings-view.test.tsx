@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { describe, expect, it, vi } from "vitest";
 
@@ -10,6 +10,7 @@ import { DEFAULT_TUNING, TUNING_SPEC } from "@/test/tuning";
 function settingsWith(tuning: Tuning = DEFAULT_TUNING, enabledAgents: Agent[] = [...AGENTS]) {
   return {
     enabledAgents,
+    trayIcon: "bars",
     tuning,
     tuningSpec: TUNING_SPEC,
     reason: null,
@@ -51,6 +52,36 @@ const saveButton = () => {
 };
 
 describe("SettingsView", () => {
+  it("renders three tray icon options and immediately saves the selected trayIcon", async () => {
+    const onSaved = vi.fn();
+    const calls = mockSave((args) => ({ ...settingsWith(), ...args }));
+    render(<SettingsView settings={settingsWith()} onSaved={onSaved} onBack={() => {}} />);
+    const control = screen.getByRole("combobox", { name: "메뉴바 아이콘" });
+    expect(
+      within(control)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["막대", "남은 % 숫자", "아이콘만"]);
+    expect((control as HTMLSelectElement).value).toBe("bars");
+    fireEvent.change(control, { target: { value: "percent" } });
+    await waitFor(() =>
+      expect(onSaved).toHaveBeenCalledWith({ ...settingsWith(), trayIcon: "percent" }),
+    );
+    expect(calls).toEqual([{ enabledAgents: [...AGENTS], trayIcon: "percent" }]);
+    fireEvent.change(control, { target: { value: "icon" } });
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1]).toEqual({ enabledAgents: [...AGENTS], trayIcon: "icon" });
+  });
+
+  it("keeps the saved tray icon and reports a failed save", async () => {
+    mockSave(() => Promise.reject({ kind: "internal", message: "저장 실패" }));
+    render(<SettingsView settings={settingsWith()} onSaved={() => {}} onBack={() => {}} />);
+    const control = screen.getByRole("combobox", { name: "메뉴바 아이콘" });
+    fireEvent.change(control, { target: { value: "percent" } });
+    expect(await screen.findByRole("alert")).toHaveProperty("textContent", "저장 실패");
+    expect((control as HTMLSelectElement).value).toBe("bars");
+  });
+
   it("reads OFF from the OS without enabling autostart", async () => {
     const calls: string[] = [];
     mockIPC((cmd) => {

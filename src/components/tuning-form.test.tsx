@@ -15,6 +15,7 @@ describe("TuningForm platform fields", () => {
         <TuningForm
           settings={{
             enabledAgents: ["claude"],
+            trayIcon: "bars",
             tuning: DEFAULT_TUNING,
             tuningSpec: TUNING_SPEC,
             reason: null,
@@ -42,6 +43,7 @@ it("saves protected folders as an array alongside numeric session tuning", async
     <TuningForm
       settings={{
         enabledAgents: ["claude"],
+        trayIcon: "bars",
         tuning: DEFAULT_TUNING,
         tuningSpec: TUNING_SPEC,
         reason: null,
