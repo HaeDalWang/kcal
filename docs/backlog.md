@@ -70,6 +70,12 @@
   - 시작 전: 결정 기록(0017 E에 붙일지 새로 쓸지)과 진단하기 개선과의 순서를 정한다.
   - 2026-11-19 사용자 결정: 0017 E에 붙이고, 진단하기 5 다음에 한다.
 
+- **Claude Code 2.1.307~332 신기능·11/27 vault 자료에서 나온 후보 중 범위 결정이 필요한 것** (2026-11-27 정리, 0003 범위와 맞는지 먼저 정한다)
+  - 보안 설정 안내 묶음: `permissions.blockWritesOutsideWorkingDirectories`(2.1.314), `permissions.denyInsteadOfPrompting`(2.1.319), `PreSkillShellCommand` hook(2.1.332). 사용량 진단 범위 밖일 수 있다.
+  - MCP 서버가 내주는 스킬(`server:skill`, 2.1.332)을 카탈로그 대상에 넣을지. 서버가 내용을 바꿔도 사용자는 모른다(context7은 서버 URL에 버전 없음, shadcn `@latest`, rea는 6.7.0 고정 — 2026-11-27 확인).
+  - vault "사용자 미검토" 누적 개수·최고령 표시(vault lint 규칙: 10건 초과 또는 2주). kcal이 vault를 읽게 되므로 범위 결정.
+  - "규칙은 늘 넣고 사실은 포인터로" 진단(세컨드브레인 자료, vault에서 보류). "MEMORY 2차 점검은 만들지 않는다" 결정과 충돌하므로, 하려면 그 결정을 다시 연다.
+
 ## 데이터가 쌓여야 하는 것
 
 - [ ] Claude 환율: 2026-11-21 최근 `advanced.claudeRateDays`일(기본 7일, 3~90일) 창만 회귀하도록 변경(0006). 11-17 플랜 업그레이드 전후 혼합을 줄인다. 플랜·한도 변경 후 N일 동안 다시 모으며, 신뢰도가 안정되는지 재확인한다.
@@ -138,6 +144,21 @@
 - Linux 지원(요청 1명). OS별 경로·인증 읽기는 Rust 한 모듈에 모아 둔다.
 - Claude Code statusLine 출력 모드(같은 실행 파일 인자) — 필요해지면 결정.
 - 저장소 소셜 프리뷰 이미지(1280×640) 업로드와 GitHub topics 설정(macos, menu-bar, claude-code, codex, kiro, tauri). 저장소 설정에서 관리자가 한다.
+
+- **Claude Code 2.1.307~332 신기능·11/27 vault 자료에서 나온 후보** (2026-11-27 정리, 추천 순서 1→2→3→4)
+  1. 진단 카드 `CLAUDE_CODE_SUBAGENT_EFFORT` 미설정(2.1.316): 서브에이전트가 세션 effort를 물려받아 비싸다(추정, 확인 = 같은 작업 설정 전후 비교). `D-claude-effort-level` 옆.
+  2. `claude auth status`의 `loginExpiresAt`(2.1.318)으로 로그인 만료 임박 표시, 한도 조회 401의 원인 안내(401 원인이 만료인지는 추정, 확인 = 만료 직전 401 로그 대조).
+  3. 시작 컨텍스트에 MCP 서버 스킬(`server:skill`, 2.1.332)도 세기. 버전 고정 안 된 서버 표시. 실제 컨텍스트 크기는 모름(확인 = 새 세션 `/context` 비교).
+  4. Claude MCP 명령 안내 문구를 `claude mcp add-json <name> -`(stdin, 2.1.327)로 바꾼다. 토큰이 명령줄·셸 기록에 안 남는다(0022 안내 문구).
+  - 진단 카드 `CLAUDE_CODE_DISABLE_AGENT_PROGRESS_SUMMARIES`(2.1.323): 진행 요약 요청 비용. 규모는 모름.
+  - 안내만: 고장 난 설정 파일·안 맞는 hook matcher는 `/status`(2.1.327), API 연결은 `claude doctor`(2.1.331)로 안내. 알려진 한계 "hook 점검은 최근 세션 폴더만"의 보완.
+  - Code Mode(2.1.323) 켬 여부를 측정 조건으로 표시. 11/19 1회 A/B에서 켬 +19%(추정, 표본 1).
+  - 카탈로그·프로젝트 단위: 플러그인 `engines`(2.1.323)·`optionalDependencies`(2.1.331)로 "이 Claude Code 버전에서 동작하나" 판정.
+  - 모델 단가표 Fable 5.2($8/$40, 캐시 읽기 $0.20/Mtok, 2.1.321 기본 모델): 코드에 `fable`은 이미 있다(`coach/checks/models.rs` 등, 확인됨). 단가 대조만 남음.
+  - 사용자 패턴(`/insights` 검토 항목에 붙임): 확신도·근거 요구 빈도(Agent Harness 영상), 계속 손보는 프로젝트 수 = repo별 한 달 커밋한 날 5일 이상(Ronacher 영상, 1편 주장이라 기준은 측정 후 정함).
+  - 판정 설계 참고: 카드 보고를 "파일·줄 → 출처 → 위험 → 경계 → 영향"으로, 파싱 실패는 통과가 아니라 unknown(AI-Infra-Guard). 0014 백업 대상을 비밀값·도구·신원으로 나누기(treg).
+  - 확인만: easel(2.1.330) 차트가 대시보드와 겹치는지. 용도가 달라(세션 안 산출물 vs 상시 메뉴바) 둘 다 둔다(추정).
+  - 뺀 것: `/tasks` 확장, `/tui classic`, `mcp_tool` hook onFailure, 이메일 전송 확인 — 사용량·비용 진단과 연결 없음(추정).
 
 ## 조사 기록 (2026-11-21, 읽기만)
 
