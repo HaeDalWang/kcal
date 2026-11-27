@@ -20,6 +20,8 @@ use crate::i18n::pick;
 
 /// 적용 기록 `target`의 앞부분. TS 짝은 `ipc-coach.ts` `CODEX_SCOPE_TARGET_PREFIX`.
 pub const TARGET_PREFIX: &str = "codex/mcp-scope:";
+/// TS 짝은 `ipc-coach.ts` `CODEX_PLUGIN_SCOPE_TARGET_PREFIX`.
+pub const PLUGIN_TARGET_PREFIX: &str = "codex/plugin-scope:";
 const DIR: &str = ".codex";
 const FILE: &str = "config.toml";
 

@@ -119,9 +119,9 @@ describe("English UI", () => {
       await screen.findByRole("button", { name: "Open dashboard" });
       await waitFor(() => expect(screen.queryAllByText("Loading…")).toHaveLength(0));
       expect(hangulIn(container), agent).toEqual([]);
-      // 계약 fixture에는 Codex 끄기 제안이 있다: 영어 입구 줄(getSwitches는 열 때 읽는다).
+      // Codex plugin에는 끄기를 제안하지 않는다(0022, 2026-11-27).
       if (agent === "Codex") {
-        await waitFor(() => expect(container.textContent).toContain("thing you could trim"));
+        expect(container.textContent).not.toContain("thing you could trim");
         expect(hangulIn(container), "trim entry").toEqual([]);
       }
     }

@@ -16,7 +16,7 @@ use time::OffsetDateTime;
 
 use super::edit::{self, JsonOp, key};
 use super::log::{AppliedSwitch, CoachAction, LoggedFile};
-use super::switches::{self, CoachSwitch};
+use super::switches::{self, CoachSwitch, SwitchKind};
 use super::usage::{SwitchUsage, folder_name};
 use super::{
     append_applied, backup_and_replace, copy_command, io_refusal, is_backup_of, read_text,
@@ -33,13 +33,18 @@ pub mod codex;
 /// 적용 기록 `target`의 앞부분. TS 짝은 `ipc.ts` `SCOPE_TARGET_PREFIX`(화면이 이름 뒤 "켬/끔"을 붙이지 않는다).
 pub const SCOPE_TARGET_PREFIX: &str = "claude/plugin-scope:";
 
-/// "프로젝트에서만 켜기" 적용 기록의 `target`인가(Claude 플러그인·Codex MCP).
+/// "프로젝트에서만 켜기" 적용 기록의 `target`인가(Claude 플러그인·Codex MCP/플러그인).
 pub fn is_scope_target(target: &str) -> bool {
-    target.starts_with(SCOPE_TARGET_PREFIX) || target.starts_with(codex::TARGET_PREFIX)
+    target.starts_with(SCOPE_TARGET_PREFIX)
+        || target.starts_with(codex::TARGET_PREFIX)
+        || target.starts_with(codex::PLUGIN_TARGET_PREFIX)
 }
 
-fn target_prefix(agent: Agent) -> &'static str {
-    if agent == Agent::Codex {
+fn target_prefix(switch: &CoachSwitch) -> &'static str {
+    if switch.agent == Agent::Codex {
+        if switch.kind == SwitchKind::Plugin {
+            return codex::PLUGIN_TARGET_PREFIX;
+        }
         codex::TARGET_PREFIX
     } else {
         SCOPE_TARGET_PREFIX
@@ -520,7 +525,7 @@ pub fn apply(
         id: record_id(now),
         at: now,
         action: CoachAction::Apply,
-        target: format!("{}{}", target_prefix(switch.agent), switch.name),
+        target: format!("{}{}", target_prefix(switch), switch.name),
         agent: switch.agent,
         name: log_name(&switch.name, moving),
         file: path.to_string_lossy().into_owned(),
@@ -565,6 +570,7 @@ pub fn undo(
     let file = PathBuf::from(&applied.file);
     let backup = PathBuf::from(&applied.backup);
     let is_known_file: fn(&LoggedFile) -> bool = if applied.target.starts_with(codex::TARGET_PREFIX)
+        || applied.target.starts_with(codex::PLUGIN_TARGET_PREFIX)
     {
         codex::is_known_project_file
     } else {

@@ -65,7 +65,7 @@ fn proposes_codex_mcp_only_with_enough_complete_zero_use_sessions() {
             all.iter()
                 .filter(|s| s.kind == SwitchKind::Plugin && s.agent == Agent::Codex
                     || s.agent == Agent::Kiro)
-                .all(|s| !s.is_proposed && s.usage.is_none())
+                .all(|s| !s.is_proposed && if s.agent == Agent::Codex { s.usage.is_some() } else { s.usage.is_none() })
         );
     }
 }

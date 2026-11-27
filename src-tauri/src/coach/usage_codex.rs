@@ -21,6 +21,8 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 use super::{Key, MIB, UsageIndex};
+#[path = "usage_codex_plugins.rs"]
+mod plugins;
 use crate::metrics::{DAY_SECS, unix_secs};
 use crate::rate::codex as rollout;
 use crate::tuning::Tuning;
@@ -212,6 +214,7 @@ fn metadata(
 fn read_file(
     file: &Path,
     since: f64,
+    home: &Path,
     seen: &mut HashSet<String>,
     roots: &mut HashMap<PathBuf, PathBuf>,
     index: &mut UsageIndex,
@@ -219,6 +222,7 @@ fn read_file(
     let mut first_cwd: Option<String> = None;
     let mut uses = Vec::new();
     let mut completed = Vec::new();
+    let mut plugin_uses = Vec::new();
     let mut in_window = false;
     let result = read_lines(file, |line| {
         let is_completed =
@@ -226,6 +230,7 @@ fn read_file(
                 index.is_partial = true;
                 false
             });
+        plugin_uses.extend(plugins::line_uses(line, home, since));
         let calls = line_uses(line, since);
         if is_completed {
             completed.extend(calls);
@@ -244,13 +249,16 @@ fn read_file(
         uses = completed;
     }
     let project = project_root(Path::new(&first_cwd?), roots);
-    for (server, id, at) in uses {
+    let uses = uses
+        .into_iter()
+        .map(|(server, id, at)| (Key::Server(server), id, at));
+    for (key, id, at) in uses.chain(plugin_uses) {
         if id.is_some_and(|id| !seen.insert(id)) {
             continue;
         }
         let stat = index
             .counts
-            .entry(Key::Server(server))
+            .entry(key)
             .or_default()
             .entry(project.clone())
             .or_default();
@@ -296,7 +304,7 @@ pub(super) fn read(home: &Path, tuning: &Tuning, now: f64) -> UsageIndex {
             break;
         }
         read_bytes += size;
-        let project = read_file(file, since, &mut seen, &mut roots, &mut index);
+        let project = read_file(file, since, home, &mut seen, &mut roots, &mut index);
         if let Some(project) = project {
             index.sessions += 1;
             *index.project_sessions.entry(project).or_default() += 1;

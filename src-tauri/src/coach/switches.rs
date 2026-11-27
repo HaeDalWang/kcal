@@ -77,11 +77,11 @@ pub struct CoachSwitch {
     /// 끄기 제안 대상: 켜져 있고, 시작 때 실리고, 토큰을 알고, Claude는 최근 N일 0회(Codex·Kiro는 제안 안 함, 0014·0022).
     /// 목록은 제안 먼저 토큰 큰 순.
     pub is_proposed: bool,
-    /// 최근 N일 사용 횟수(Claude만). 모르면 `None`(Codex·Kiro).
+    /// 최근 N일 사용 횟수(Claude·Codex). 모르면 `None`(Kiro).
     pub usage: Option<SwitchUsage>,
     /// 지금 켠 범위(Claude 플러그인만).
     pub scope: Option<SwitchScope>,
-    /// "프로젝트에서만 켜기" 제안(Claude 플러그인, 0022).
+    /// "프로젝트에서만 켜기" 제안(Claude 플러그인·Codex MCP/플러그인, 0022).
     pub scope_move: Option<ScopeMove>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub scope_guide: Option<McpScopeGuide>,
@@ -229,9 +229,19 @@ fn codex(
         return Vec::new();
     }
     let config = fsutil::read_text(&file);
+    let trusted = scan::codex_trusted_projects(&config);
+    let codex_usage = usage.and_then(|u| u.codex.as_deref());
     let plugins = scan::codex_plugin_states(&config).into_iter().map(|s| {
         let mut switch = base(Agent::Codex, SwitchKind::Plugin, &s.name, s.enabled);
         switch.contents = contents::read(&paths::codex_root(home), &s.name);
+        if let Some(index) = codex_usage {
+            let used = index.for_codex_plugin(&s.name);
+            let explicit = edit::set_toml_enabled(&config, &s.section, false)
+                .is_ok_and(|e| e.before.is_some() && e.changed);
+            switch.scope_move =
+                scope::codex::proposal(home, s.enabled && explicit, &used, &trusted);
+            switch.usage = Some(used);
+        }
         let switch = file_switch(
             switch,
             SwitchFormat::Toml,
@@ -241,8 +251,6 @@ fn codex(
         with_cost(switch, measured(context, ContextKind::Plugins, &s.name))
     });
     // MCP 사용 기록은 0회도 붙인다. 끄기와 프로젝트 범위 제안은 같은 기록·세션 기준을 쓴다(0022, 2026-11-21).
-    let trusted = scan::codex_trusted_projects(&config);
-    let codex_usage = usage.and_then(|u| u.codex.as_deref());
     let servers = scan::codex_mcp_server_states(&config).into_iter().map(|s| {
         let mut switch = base(Agent::Codex, SwitchKind::Mcp, &s.name, s.enabled);
         if let Some(index) = codex_usage {
@@ -353,7 +361,7 @@ fn claude(
     switches
 }
 
-/// 전체 스위치 목록. `snapshot`: 전역 컨텍스트 측정(없으면 토큰을 모른다). `usage`: Claude·Codex MCP 사용 기록.
+/// 전체 스위치 목록. `snapshot`: 전역 컨텍스트 측정(없으면 토큰을 모른다). `usage`: Claude·Codex 사용 기록.
 /// 사용 기록이 없으면 제안하지 않는다. 제안 먼저 토큰 큰 순, 나머지는 원래 순서.
 pub fn list(
     home: &Path,
@@ -376,12 +384,14 @@ pub fn list(
     for switch in &mut all {
         // 사용 기록이 있으면 최근 N일 0회이고, 기록을 다 봤고, 세션이 `min_sessions`(tuning `diagnoseMinSessions`)개 이상일 때만
         // (0017 "E는 사용 기록 근거가 있을 때만"). 기록이 없거나 적으면 "안 쓴다"가 아니라 "모른다".
-        // Codex 플러그인·Kiro는 사용 기록이 없다. 읽기에 실패해도 근거가 없어 제안하지 않는다(0022).
+        // Codex 플러그인은 읽기 사용만 알아 끄기를 제안하지 않는다. Kiro는 사용 기록이 없다(0022).
         let is_unused = match &switch.usage {
             Some(u) => u.total == 0 && !u.is_partial && u.sessions >= u.min_sessions,
             None => false,
         };
-        if skills::is_skill(switch) {
+        if skills::is_skill(switch)
+            || (switch.agent == Agent::Codex && switch.kind == SwitchKind::Plugin)
+        {
             continue;
         }
         switch.is_proposed = switch.enabled
@@ -649,7 +659,7 @@ mod tests {
             &Tuning::default(),
         );
         let big = find(all, "codex/plugin:big@m").unwrap();
-        assert!(big.tokens.is_some() && big.usage.is_none() && !big.is_proposed);
+        assert!(big.tokens.is_some() && big.usage.is_some() && !big.is_proposed);
     }
 
     #[test]
