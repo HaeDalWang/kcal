@@ -3,6 +3,21 @@
 기기: 레노버 노트북, Windows 11 Pro 10.0.22631. 테스트 전용(개발은 macOS).
 새 기록은 위에 추가한다. 비교표는 [`README.md`](README.md).
 
+## 2026-11-27 — 팝오버 위치 고침·`!` 인증 상태 점검 (`8deb5e7`)
+
+`git pull` `16424db..8deb5e7`. 에이전트: Claude Code 2.1.332, codex-cli 0.166.0, kiro-cli 2.37.1.
+
+| 명령                    | exit | 결과                                                                     |
+| ----------------------- | ---- | ------------------------------------------------------------------------ |
+| `pnpm check` (Git Bash) | 0    | Vitest 287/287, Rust 485 통과 · 0 실패 · 16 ignored, `install-test` skip |
+| `pnpm tauri:dev:mcp`    | —    | bridge `127.0.0.1:9224`, 증분 빌드 44초                                  |
+
+- Git Bash에서 `pnpm check`가 끝까지 통과한다(백로그 "`installer:test`에서 멈춤"의 추정 확인).
+- 읽기 IPC 11개와 `list_claude_sessions` 성공(4~692ms). 백엔드 `kcal:`·`fit_popover_height` 오류 줄·콘솔 오류 0.
+- 커넥터: `claude mcp list`에 claude.ai 4줄 `✔ Connected`, `plugin:` 줄 `! Needs authentication` 6·`- Not configured` 2, `tauri` `⏸ Pending approval`. 그래도 claude.ai 커넥터 4개 행이 진단하기에 남는다(확인됨, `get_switches`).
+- **팝오버 아래 잘림 해소(확인됨, 1920×1080·125%, 작업 영역 높이 816 논리 px).** 사용자가 트레이로 열고 개요→Claude→세션 펼침·접기 반복→Codex·Kiro. 창 위치를 `ResizeObserver`로 기록: 열 때 top 337.6·bottom 816, 이후 모든 높이(478~712)에서 bottom 816 고정. 크기가 바뀌는 순간 한 번 816.8(0.8px, 반올림)이 찍히고 곧 816. 접으면 676으로 줄어든다("접어도 안 줄어든다" 해소).
+- **새 발견: 높이가 바뀔 때마다 팝오버 폭이 약 14px씩 오른쪽으로 커진다(사용자 보고 + 확인됨).** 설정 폭 310인데 측정 시 inner 584·outer 598.4, x 1069.6이라 오른쪽 끝 1668이 화면 폭 1536을 넘었다. 원인(코드 확인): `tray.rs` `resize`가 `outer_size().width`로 폭을 읽고 `set_size`(inner 크기)로 다시 쓴다. Windows는 decorations 없는 창도 outer−inner가 14.4 논리 px라 호출마다 그만큼 넓어진다. macOS는 outer = inner라 안 보인다(추정). 0.1.0부터 있던 코드(`8c881a1`). 고치는 방향: 폭을 `inner_size()`로 읽는다(높이는 이미 inner 차이를 보정함). 위치 다시 놓기는 y만 고치므로 x도 작업 영역 안으로 자를지 함께 본다.
+
 ## 2026-11-27 — v0.1.5 dev 앱 점검 (`17ff298`)
 
 `git pull --ff-only` `84f1c18..17ff298`. 에이전트: Claude Code 2.1.332, codex-cli 0.166.0, kiro-cli 2.37.1.
