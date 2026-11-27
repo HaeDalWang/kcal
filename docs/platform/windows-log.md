@@ -3,6 +3,23 @@
 기기: 레노버 노트북, Windows 11 Pro 10.0.22631. 테스트 전용(개발은 macOS).
 새 기록은 위에 추가한다. 비교표는 [`README.md`](README.md).
 
+## 2026-11-27 — v0.1.5 dev 앱 점검 (`17ff298`)
+
+`git pull --ff-only` `84f1c18..17ff298`. 에이전트: Claude Code 2.1.332, codex-cli 0.166.0, kiro-cli 2.37.1.
+
+| 명령                                           | exit | 결과                                    |
+| ---------------------------------------------- | ---- | --------------------------------------- |
+| `typecheck` / `lint` / `format:check` / `test` | 0    | Vitest 284/284                          |
+| `pnpm rust:check`                              | 0    | 468 통과 · 0 실패 · 16 ignored          |
+| `pnpm tauri:dev:mcp`                           | —    | bridge `127.0.0.1:9224`, 증분 빌드 54초 |
+
+- 읽기 IPC 11개와 `list_claude_sessions` 성공. 백엔드 `kcal:` 오류 줄·콘솔 오류 0.
+- 세션(팝오버 Claude 탭): Windows에서도 목록이 나온다(작업 중 1·대기 1, cwd `C:\work\…`). `canStop=false`라 끄기 버튼은 없다(설계대로, `sessions/mod.rs`).
+- 커넥터: `claude mcp list` 약 7초, LF 줄바꿈, `✔ Connected`. claude.ai 커넥터 4개가 진단하기 "그대로 둠"에 `알 수 없음`·"끄는 법"으로 나오고 안내 문구 정상. 로컬 `plugin:` 줄은 `! Needs authentication`·`- Not configured`로 찍혔다(백로그).
+- 최근 작업 폴더: 기본 5. 세션 폴더는 `C:\work\kcal`·`C:\work\csg-agent`이고 프로젝트 MCP 행 `tauri · C:\work\kcal`이 폴더 라벨과 함께 나온다. kcal 프로젝트 스킬 행이 없는 것은 `.claude/skills`가 텍스트 파일로 체크아웃됐기 때문(백로그).
+- 11-25 발견 1(Codex "한도 못 읽음")·2(`\./skills/`)·3(대시보드 MCP capability)은 해소 확인. 대시보드 오늘 칸 Codex `0 %`, IPC에 `./` 없음, 대시보드 창 MCP 스크린샷·JS 동작.
+- 참고(플랫폼 무관): 시작 컨텍스트는 claude.ai Figma 1,043토큰(MCP 서버 안내 블록)으로 세지만, 진단하기 커넥터 행은 `알 수 없음`이다. 행 토큰은 도구 스키마(`shape.mcp`)에서만 찾고, 도구 검색으로 지연 로드된 커넥터는 거기에 없다(코드 확인, `connectors.rs` `append`).
+
 ## 2026-11-25 — dev 앱 전체 기능 점검 (`b58ae23`)
 
 원격 main이 다시 force-push 돼 있었다(`ahead 1, behind 210`). 로컬 전용 커밋 `1258b95`는 원격 `c609ca9`와 패치가 같음을 확인하고 `backup/main-before-sync-20261125`로 남긴 뒤 `origin/main`에 맞췄다. 에이전트: Claude Code 2.1.332, codex-cli 0.166.0, kiro-cli 2.37.1.

@@ -128,7 +128,10 @@
 - [x] kiro-cli·전역 CLAUDE.md가 있는 Windows PC에서 테스트 다시 돌리기(테스트 격리 `bad67dc` 뒤). 2026-11-25 `b58ae23` Rust 452 통과·0 실패(`windows-log.md`).
 - [ ] 릴리스 Windows `.sha256`을 LF로 쓰게 고침(2026-11-25, v0.1.4·v0.1.5 파일은 CRLF라 macOS `shasum -c`가 실패, 해시 자체는 일치 확인). 다음 릴리스에서 `shasum -a 256 -c kcal-windows-x64-setup.exe.sha256`이 통과하는지 본다.
 - [ ] Windows 개발 PC에서 `pnpm check`가 `installer:test`(`sh install.test.sh`)에서 멈춘다: cmd PATH에 `sh` 없음. CI는 통과.
-- [ ] Windows 진단하기 적용·Undo 실기(미리보기는 2026-11-25 확인). `get_checks` 경로·id의 `\\?\` 앞머리가 화면에 보이는지도 함께 본다.
+- [ ] Windows 진단하기 적용·Undo 실기(미리보기는 2026-11-25 확인). `get_checks` 경로·id의 `\\?\` 앞머리가 화면에 보이는지도 함께 본다. 2026-11-27 `17ff298`: IPC에는 여전히 남고(`A2-claude-rules-paths:\\?\C:\…`, `file`·`folder`), 대시보드·팝오버 본문에는 안 보였다. 숨긴 카드는 펼칠 수 없어 안을 못 봤다.
+- [ ] **claude.ai 커넥터 파서가 `! Needs authentication`을 모른다(2026-11-27, Windows, Claude Code 2.1.332).** 실제 `claude mcp list` 출력에서 인증 필요 표시는 `⚠`가 아니라 `!`였다(로컬 `plugin:` 줄에서 확인됨). 새 상태 `- Not configured`도 나왔다. `coach/connectors.rs` `parse`는 claude.ai 줄의 모르는 상태를 만나면 결과 전체를 버리므로(코드 확인), 커넥터 하나라도 인증 필요가 되면 커넥터 행이 모두 사라진다. 이 기기는 claude.ai 줄이 모두 `✔ Connected`라 지금은 4개가 다 보인다. claude.ai 줄도 `!`로 찍히는지, macOS도 같은지는 추정 — 확인 = 커넥터 하나를 인증 해제한 뒤 `claude mcp list`. fixture의 `⚠` 줄은 합성 값이다(0031).
+- [ ] **팝오버가 화면 아래로 잘린다(2026-11-27, Windows, 사용자 보고 + dev 앱 재현, 1920×1080·125%).** 팝오버 위치는 열 때 개요 높이로 잡힌다(top 338, bottom 809, 쓸 수 있는 높이 816, 논리 px). 열린 채 Claude 탭으로 가면 높이가 668로 늘어나고 top이 그대로라 bottom이 1007이 된다. 약 190px가 작업 표시줄 아래로 나가 잘린다. 세션 단락을 펼치면 740(bottom 1078)까지 늘어난다(확인됨, MCP 측정). `tray.rs` `fit_popover_height`의 `ponytail:` 주석에 적힌 한계 그대로다. 고치는 방향은 그 주석대로 resize 뒤 다시 배치(작업 표시줄 위에 붙는 배치면 bottom 고정)하고, 높이를 모니터 작업 영역에 맞춰 줄인 뒤 내부 스크롤을 쓴다. 사용자는 "세션 단락을 접어도 다시 안 줄어든다"고도 했다. JS로 `details`를 접었을 때는 668로 줄어 재현되지 않았다(모름). 아래가 화면 밖이라 줄어든 게 안 보였을 수 있다(추정). 확인 = 위치를 고친 뒤 실제 마우스로 펼치고 접기.
+- [ ] **Windows 클론에서 `.claude/skills` 심볼릭 링크가 17바이트 텍스트 파일이 된다(2026-11-27, 확인됨).** `core.symlinks=false`(Git for Windows 기본)라 내용이 `../.agents/skills`인 일반 파일로 체크아웃된다. 그래서 이 기기의 Claude Code 세션에 `tauri-*` 프로젝트 스킬이 안 뜬다(`.kiro/skills`도 같은 구조라 같을 것, 추정). 고치는 방향: README에 `git clone -c core.symlinks=true`(개발자 모드·관리자 권한 필요)를 안내하거나 링크 대신 다른 방식을 쓴다.
 
 ## 나중에
 
