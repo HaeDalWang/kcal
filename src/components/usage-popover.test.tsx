@@ -320,8 +320,8 @@ describe("UsagePopover", () => {
 
     const claude = await screen.findByRole("group", { name: "Claude" });
     expect(within(claude).getByRole("img", { name: "57% 남음" }).textContent).toBe("57%남음");
-    expect(within(claude).getByText("7일 한도").parentElement?.textContent).toMatch(
-      /^7일 한도 · 3d (9h 59m|10h) 후 초기화$/,
+    expect(within(claude).getByText("주간 한도").parentElement?.textContent).toMatch(
+      /^주간 한도 · 3d (9h 59m|10h) 후 초기화$/,
     );
     // 다른 창(5시간)은 막대 줄: 이름 · 막대 · 다이얼처럼 "남음"을 붙인 값과 남은 시간.
     expect(within(claude).getByText("5시간")).toBeTruthy();

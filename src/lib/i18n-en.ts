@@ -71,6 +71,7 @@ export const en: Messages = {
     resetPasses: (count) => `${n(count, "limit reset pass", "limit reset passes")}`,
     reset: "Just reset",
     resetsIn: (duration) => `resets in ${duration}`,
+    resetsAfter: (duration) => `in ${duration}`,
     ago: (duration) => `${duration} ago`,
     updated: (ago) => `Updated ${ago}`,
     openDashboard: "Open dashboard",

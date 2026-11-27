@@ -61,11 +61,11 @@ function msToReset(window: LimitWindow, now: number): number | null {
   return window.resetPassed || left <= 0 ? 0 : left;
 }
 
-/** "4h 35m", 지났으면 "초기화됨" (시각 없으면 null). */
+/** "4h 35m 후", 지났으면 "초기화됨" (시각 없으면 null). */
 function resetIn(window: LimitWindow, now: number): string | null {
   const left = msToReset(window, now);
   if (left === null) return null;
-  return left === 0 ? t.popover.reset : formatDuration(left);
+  return left === 0 ? t.popover.reset : t.popover.resetsAfter(formatDuration(left));
 }
 
 /** "3h 41m 후 초기화", 지났으면 "초기화됨". */

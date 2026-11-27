@@ -8,8 +8,8 @@
 
 ## 진행 중
 
-- [ ] **다음 주제: 진단하기 구멍 4·6 (핸드오프 2026-11-25).** 결정은 아래 "결정이 필요한 것 → 진단하기 개선"의 2026-11-25 줄. 4 = claude.ai 커넥터를 `claude mcp list` 출력으로 보고 끄는 방법 안내만(설정 안 씀, 근거 문서는 그 항목에 있음). 6 = 최근 세션 폴더 여러 개(개수는 tuning, 0007). 0017 E 틀에 붙인다. 그 다음 순서: Antigravity 읽기 조사(0027 ④) → 프로젝트 단위 켜기(Codex 플러그인 실제 `codex exec` 확인 허락됨, Kiro는 명령·JSON 안내만). 주제마다 새 세션.
-  - 직전 주제 끝(0030 세션 현황·끄기, `a6b3577` main push): 실제 끄기 신호는 진짜 프로세스로 안 해 봄(단위 테스트만), Windows 미실행. Codex 샌드박스는 `claude`·`ps`·서버를 막으니 실제 데이터 읽기·화면은 샌드박스 밖에서 다시 확인한다(화면은 Edge `playwright-cli`, `PLAYWRIGHT_MCP_BROWSER=msedge`).
+- [ ] **2026-11-27 세션: 미커밋·미머지 3묶음.** main 작업 트리에 한도 문구(`i18n-ko.ts` `window`·`windowShort` "7일"→"주간", 개요 줄 `resetsAfter` "2일 3시간 후")와 이 백로그. 브랜치 `feat/tray-icon-mode`(worktree `../kcal-wt-tray-icon-mode`, 미커밋)와 `feat/codex-plugin-scope`(worktree `../kcal-wt-codex-plugin-scope`). 커밋·머지는 사람이 요청할 때.
+  - 다음 순서: 프로젝트 단위 켜기 남은 것은 Kiro 명령·JSON 안내(2026-11-24 결정) → Antigravity는 실사용자 기록이 생길 때까지 보류(아래 에이전트 N개 항목).
 - [ ] **v0.1.5 게시(2026-11-25)**: 세션 보기(macOS)·claude.ai 커넥터·최근 작업 폴더 진단·Codex/Kiro 저장 설정 카드. 남은 사람 확인(v0.1.4부터 이어짐): Windows 설치본 첫 실행(아래 "Windows 확인 남음"), 미서명 설치본에서 자동 시작 켠 뒤 재로그인(macOS·Windows). Codex `McpToolCall`이 옛 CLI 버전 rollout에도 있는지는 모름.
 
 ## 사람이 확인할 것 (실기·실계정)
@@ -42,6 +42,7 @@
   - 2026-11-25 사용자 결정: 4·6 둘 다 한다. 4는 `claude mcp list` 출력으로 커넥터를 보고 끄는 방법 안내만(설정은 안 씀). 6은 최근 세션 폴더 여러 개(개수는 tuning)를 본다.
 - [ ] **에이전트 선택에 따라 바뀌는 화면 + 에이전트 N개 대비 구조.** 범위는 [0027](decisions/0027-agent-descriptor-and-picker.md).
   - 진행(2026-11-19): ① 설명표 완료 f3618d8·1b19f04, ② 대시보드 고르기 완료 5f1c7a7. ③ 창 `group`(+ 모델별 한도) 완료 e27b824. 남음: ④ Antigravity(별도 결정).
+  - ④ Antigravity 읽기 조사(2026-11-27, 이 Mac 설치본, 읽기만): 기록은 `~/Library/Application Support/Antigravity/User/globalStorage/state.vscdb`(SQLite `ItemTable`)의 `antigravityUnifiedStateSync.*` 키. 세션 요약 `trajectorySummaries`·한도 후보 `userStatus`·`modelCredits`는 base64 protobuf라 스키마 없이는 필드 뜻을 모름(확인됨: 키 존재. 모름: 세션별 모델·토큰, 남은 %·초기화 시각). 이 Mac DB는 2026-05-21 이후 안 바뀜(확인됨) → 지금 값 검증 불가. MCP·rules·skills 위치는 공식 문서에 있음(사용자 `~/.gemini/config/{mcp_config.json,rules,skills}`, 작업 공간 `.agents/…`, 문서 antigravity.google/docs/{mcp,rules,skills}). 결론: 실제로 쓰는 사용자 기록이 생길 때까지 보류.
   - 요청: 지금 지원하는 에이전트 3개(Claude·Codex·Kiro) 중 무엇을 고르느냐에 따라 화면·대시보드가 그 에이전트에 맞게 바뀌어야 한다. 나중에 유명한 에이전트를 더 붙이므로 3개 고정이 아니라 N개를 전제로 디자인·데이터 화면을 짠다.
   - 지금 상태(코드로 확인):
     - 대시보드 사용량 탭은 고르는 칸이 없다. 켠 에이전트(`enabledAgents`)를 전부 한 페이지에 쌓는다: 링(`DailyActivity`, 동심원) → 처방 효과(`HealthCompare`) → 에이전트별 상세 카드(`AgentPanels`, `dashboard.tsx:36`). 팝오버만 에이전트 탭이 있다.
@@ -70,6 +71,7 @@
       - 2026-11-22 확인(kiro-cli 3.5.0 `mcp status`, 사용자 파일은 안 건드리고 임시 작업 공간에 `{"playwright":{"disabled":true}}`만 둠): 작업 공간 항목이 사용자 항목을 **칸 단위가 아니라 통째로 대체**한다(Command `npx` → 빈 값). 따라서 `{disabled:false}`만 쓰면 command가 없는 서버가 된다 → "칸 하나만 덮기"는 안 된다(확인됨, CLI 설정 보기 기준. 대화 `/tools`도 같은 로더인지는 추정). 남은 길: 사용자 항목 전체 복사(`env` 비밀값이 프로젝트 파일로 감, 위에서 뺀 방식) 또는 명령·JSON 안내만. 2026-11-24 사용자 결정: **명령·JSON 안내만**(kcal은 Kiro 파일을 쓰지 않는다, `env` 비밀값이 프로젝트 파일로 가지 않게).
     - Codex 플러그인: 프로젝트에서만 켜기만, 끄기 제안 없음. 플러그인 `SKILL.md`를 읽은 `exec` 호출을 사용으로 센다(확인됨, 플러그인 MCP 호출 매칭은 모름). 프로젝트 `.codex/config.toml` `plugins.<id>.enabled`가 덮는지는 추정(확인 = 신뢰한 저장소에서 키 두고 스킬 목록). 2026-11-22: `codex debug prompt-input`(0.171.0)은 `-c plugins."…".enabled=`로 사용자 수준에서 바꿔도 스킬 목록이 그대로라 이 방법으로는 판정 못 한다. 실제 세션(`codex exec`에서 스킬 목록 묻기, 한도 씀)으로 확인해야 한다.
       - 2026-11-25 사용자 결정: 임시 신뢰 저장소에서 실제 `codex exec` 1~2회로 확인 허락. 덮으면 적기까지, 안 덮으면 명령 안내만.
+      - 2026-11-27 확인됨(`codex exec` 0.171.0, `--trust`로 신뢰한 임시 저장소, 끝나고 사용자 config 원복): 프로젝트 `.codex/config.toml` `[plugins."<id>"] enabled`가 사용자 값을 양방향으로 덮는다(사용자 켬 `browser` → 프로젝트 false → 스킬 빠짐, 사용자 끔 `pdf` → 프로젝트 true → `pdf:pdf` 실림). `-c projects."…".trust_level`로는 신뢰가 안 걸려 프로젝트 층이 통째로 안 읽힌다("Untrusted project-local configuration is disabled"). → 적기까지 구현 중(`feat/codex-plugin-scope`, 0022 갱신 절).
   - 문제: 플러그인·스킬을 프로젝트마다 켤 수 있다는 것 자체를 모르거나, 알아도 매번 사용자 전체로 켜 두고 프로젝트별로 옮기는 걸 잊는다. 그래서 한 프로젝트에서만 쓰는 것이 모든 세션의 기본 컨텍스트에 실린다.
   - kcal이 할 일: 새 저장소를 만들지 않는다. 기억은 Claude Code 내장(`claude plugin enable --scope project|local` → `.claude/settings.json`·`settings.local.json` `enabledPlugins`)이 맡는다. kcal은 ① **상황 보기**: 플러그인·스킬마다 "켠 범위(사용자/프로젝트) × 실제로 쓴 프로젝트(최근 N일)" 한 장, ② **알려주기**: "사용자 전체로 켜져 있는데 A·B 프로젝트에서만 썼다" → "사용자에서 끄고 A·B에서만 켜기" 제안, ③ **대신 적기**: 0014 적용·되돌리기로 프로젝트 파일에 쓴다.
   - "원할 때 주입": 스킬은 `skillOverrides` `user-invocable-only`(부를 때만 본문, 0017 사실표 E), 플러그인은 세션 중 켜고 끄면 캐시가 깨지므로(0017 사실표 D) 세션 시작 전 프로젝트 파일로.
@@ -78,6 +80,13 @@
   - 확인할 것: (추정) 프로젝트 `enabledPlugins: false`가 사용자 `true`를 덮는다. 한 프로젝트에서 `claude plugin disable <id> --scope local` 뒤 새 세션 `/context`로 확인. (추정) 세션 기록 `cwd`로 프로젝트별 사용 집계가 된다. `~/.claude/projects/*/*.jsonl`의 `cwd`로 확인. (확인됨 2026-11-19, 소스) Codex는 신뢰한 프로젝트의 `.codex/config.toml`이 사용자 설정 위에 키 단위로 겹친다(실제 세션 확인은 남음). (모름) Kiro의 프로젝트 단위 켜기. Codex `plugins._default.enabled`는 읽지 않고 있고, Kiro는 사실표 확인이 필요하다.
   - 시작 전: 결정 기록(0017 E에 붙일지 새로 쓸지)과 진단하기 개선과의 순서를 정한다.
   - 2026-11-19 사용자 결정: 0017 E에 붙이고, 진단하기 5 다음에 한다.
+- [ ] **메뉴바 아이콘 모양 고르기(동료 요청, 2026-11-26).** 구현함(2026-11-27, `feat/tray-icon-mode`, 0012 갱신 절).
+  - 요청: 지금 아이콘은 막대만이라 뜻이 잘 안 읽힌다. 막대를 더 의미 있게 보이게 하고, 표시 방식을 설정에서 고를 수 있게(예: 막대 / 퍼센트 숫자 / 아이콘만).
+  - 지금 상태: 0012 — 켠 에이전트마다 가로 막대(가장 급한 창의 남은 %), macOS 숫자 `set_title`은 0012에서 뺐다(당시 사용자 선택: 막대만). 0012 "열린 것"(막대 3개가 실제 메뉴바에서 읽히나)은 아직 사람이 못 봄.
+  - 정할 것: ① 고를 모양 목록(막대 / 숫자 / 막대 + 숫자 / 불꽃 아이콘만) ② "의미 있게"가 무엇인지(에이전트 구분 표시, 낮을 때 강조, 어느 창 값인지) ③ 숫자 모드에서 에이전트 여럿일 때 무엇을 보일지(가장 낮은 하나 / 전부) ④ Windows는 트레이 `set_title`이 안 먹는 것으로 추정(tray-icon 소스로 확인) → 숫자를 그림으로 그려야 하면 16px에서 읽히는지 확인.
+  - 걸리는 것: 에이전트 N개 구조(위 "에이전트 선택" 항목의 "메뉴바 막대 아이콘이 가늘어진다")와 겹친다. 0012를 바꾸므로 결정 기록 갱신, 설정 값 추가는 settings(0007 tuning 대상은 아님, 모양 선택이라 일반 설정).
+  - 2026-11-27 사용자 결정: 모양은 막대(기본)·남은 % 숫자·아이콘만 3개, 숫자 모드에서 여럿이면 가장 낮은 하나. "막대 + 숫자"·낮을 때 강조는 안 함.
+  - 확인됨(2026-11-27, macOS 실제 메뉴바): 숫자 모드에서 불꽃 + "2%" 표시. 남은 것: 모드를 바꿀 때 숫자 title이 지워지는지(실제 앱, 단위 테스트만), Windows 32px 숫자 그림이 16px에서 읽히는지.
 
 ## 데이터가 쌓여야 하는 것
 
@@ -94,7 +103,7 @@
 - dev 앱에서 HMR 뒤 팝오버가 안 열리는 일이 있다. `hidden_by_blur_at` 미삭제는 원인이 아님을 테스트로 확인했고, 원인은 아직 모름.
 - 미룬 것(0004 "열린 것"): 시계 틀어짐 보정. (Codex `.jsonl.zst`는 0026에서 읽는다.) (수동 새로고침은 0010 대시보드 "새로고침"으로 있고 429 backoff를 지킨다, `lib.rs` `refresh_all`.)
 - 첫 점검의 한계: hook 점검은 최근 세션 폴더만 본다.
-- Codex·Kiro 사실표(0017)와 코드의 차이 중 고치지 않은 것: (Kiro 세션 기록 위치는 2026-11-18 실측으로 맞음 확인, 0017.) Codex `project_root_markers`(한 줄 배열만)·`plugins._default.enabled`는 2026-11-18에 읽게 고쳤다. config에 section이 없는 설치된 Codex 플러그인은 아직 모른다(설치 목록 출처를 찾아야 함). 2026-11-22: 출처는 `codex plugin list`(설치·켜짐 상태를 보임, 원격 마켓플레이스까지 읽어 60초 넘게 걸림). 이 Mac에서 `chrome@openai-bundled`는 section이 없는데 "installed, enabled"이고 실제 프롬프트에 스킬이 실린다(확인됨) → kcal 시작 컨텍스트에서 빠진다. 같은 마켓플레이스의 `computer-use`·`unified-computer-use`는 section 없이 disabled라 로컬 파일(`marketplace.json` policy는 셋 다 같음)로는 켜짐 규칙을 못 가린다(모름). 고치려면 CLI를 부를지 정해야 한다. Codex·Kiro의 다음 점검 후보: 2026-11-21 사실표 갱신에서 각 3개씩 6개가 나왔고(두 `refresh.md`의 "점검 후보"), Codex 빠른 모드 1개(`D-codex-fast-mode`)를 만들었다. 2026-11-22에 남은 5개와 Codex Max·Ultra effort를 더한 6개 안내 카드의 판정·문구·테스트를 추가했다(0017 "첫 점검 (Codex) 2차"·"첫 점검 (Kiro)"). Kiro V3 검색·자동 압축 2개는 저장 설정에 후보가 있을 때만 CLI `--version`으로 하한을 확인하며, 버전을 모르면 숨긴다.
+- Codex·Kiro 사실표(0017)와 코드의 차이 중 고치지 않은 것: (Kiro 세션 기록 위치는 2026-11-18 실측으로 맞음 확인, 0017.) Codex `project_root_markers`(한 줄 배열만)·`plugins._default.enabled`는 2026-11-18에 읽게 고쳤다. config에 section이 없는 설치된 Codex 플러그인은 아직 모른다(설치 목록 출처를 찾아야 함). 2026-11-22: 출처는 `codex plugin list`(설치·켜짐 상태를 보임, 원격 마켓플레이스까지 읽어 60초 넘게 걸림). 이 Mac에서 `chrome@openai-bundled`는 section이 없는데 "installed, enabled"이고 실제 프롬프트에 스킬이 실린다(확인됨) → kcal 시작 컨텍스트에서 빠진다. 같은 마켓플레이스의 `computer-use`·`unified-computer-use`는 section 없이 disabled라 로컬 파일(`marketplace.json` policy는 셋 다 같음)로는 켜짐 규칙을 못 가린다(모름). 고치려면 CLI를 불러야 하는데 2026-11-27 사용자 결정으로 그대로 둔다(느린 CLI·네트워크를 앱에 넣지 않음). Codex·Kiro의 다음 점검 후보: 2026-11-21 사실표 갱신에서 각 3개씩 6개가 나왔고(두 `refresh.md`의 "점검 후보"), Codex 빠른 모드 1개(`D-codex-fast-mode`)를 만들었다. 2026-11-22에 남은 5개와 Codex Max·Ultra effort를 더한 6개 안내 카드의 판정·문구·테스트를 추가했다(0017 "첫 점검 (Codex) 2차"·"첫 점검 (Kiro)"). Kiro V3 검색·자동 압축 2개는 저장 설정에 후보가 있을 때만 CLI `--version`으로 하한을 확인하며, 버전을 모르면 숨긴다.
 - Codex·Kiro 끄기 제안 정책(Codex MCP는 위 "진행 중"으로 풀림, 2026-11-21): 두 에이전트는 사용 기록을 읽는 출처가 없어(근거 없음) 플러그인·MCP 끄기를 제안하지 않고, 사용자가 직접 끌 수만 있다. Claude는 최근 30일 기록(세션 10개 이상)에서 한 번도 안 쓴 것만 제안한다. 같은 기준을 Codex·Kiro에 쓰려면 사용 기록 출처를 먼저 찾아야 한다(결정 0017·0022).
 - Codex 플러그인 매니페스트(2026-11-18, `plugins/build/plugins` 문서): skill 폴더는 기본 `skills/`, 호환 매니페스트 `.codex-plugin/plugin.json`의 `skills` 경로가 있으면 그것을 따르게 고쳤다(이 Mac 설치본 20개는 모두 `./skills/`이거나 없음, 확인됨). 플러그인 MCP 서버도 시작 컨텍스트에 센다(`ba4b9e3`): 매니페스트 `mcpServers`가 있으면 그것(이 Mac 설치본은 `"./.mcp.json"`), 없으면 루트 `mcp.json`(문서 "Fixed package paths", 2026-11-19 확인). 매니페스트가 안 가리키는 `.mcp.json`을 Codex가 읽는지는 모름. 남은 것: 명령(prompts) 필드는 문서에 없다. 최적화 칸의 "고친 것" 줄 문구는 적용한 때의 언어로 남는다.
 - 영어 UI: 예전 변경 기록은 저장된 언어 그대로 보인다. pace ahead/behind와 "Setup"은 0009 용어표 그대로 남겼다.

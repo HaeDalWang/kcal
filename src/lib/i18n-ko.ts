@@ -49,8 +49,8 @@ export const ko = {
   popover: {
     overview: "개요",
     source: { api: "API", log: "기록 파일", cli: "CLI" },
-    window: { "5h": "5시간", "7d": "7일", month: "월" },
-    windowShort: { "5h": "5시간", "7d": "7일", month: "월" },
+    window: { "5h": "5시간", "7d": "주간", month: "월" },
+    windowShort: { "5h": "5시간", "7d": "주간", month: "월" },
     left: (label: string, percent: number) => `${label} ${percent}% 남음`,
     remainingBar: (label: string) => `${label} 남은 비율`,
     creditsLeft: (left: string, limit: string) => `${left} / ${limit} 크레딧 남음`,
@@ -61,6 +61,8 @@ export const ko = {
     resetPasses: (count: number) => `한도 초기화권 ${count}개`,
     reset: "초기화됨",
     resetsIn: (duration: string) => `${duration} 후 초기화`,
+    /** 개요 줄의 짧은 초기화 시간: "2일 3시간 후". 창 이름과 다른 기간임을 보인다. */
+    resetsAfter: (duration: string) => `${duration} 후`,
     ago: (duration: string) => `${duration} 전`,
     updated: (ago: string) => `${ago} 업데이트`,
     openDashboard: "대시보드 열기",
