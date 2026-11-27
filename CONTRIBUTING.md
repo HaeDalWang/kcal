@@ -24,6 +24,8 @@ Regenerate icons with `pnpm tauri icon docs/assets/icon.svg` (this rewrites `src
 pnpm install
 ```
 
+Windows: clone with `git clone -c core.symlinks=true …` (needs Developer Mode or an admin shell). Without it, `.claude/skills` and `.kiro/skills` check out as small text files and the project skills don't load. Run `pnpm check` from Git Bash (its PATH has `sh`): the `installer:test` step calls `sh`, which a plain cmd or PowerShell PATH doesn't have.
+
 ## Commands
 
 | Command                             | What it does                                                                                   |
