@@ -13,7 +13,7 @@ fn coach_types_match_fixture() {
         enabled: true,
         tokens: Some(900),
         loading: Some(Loading::Startup),
-        is_proposed: true,
+        is_proposed: false,
         usage: None,
         scope: None,
         scope_move: None,

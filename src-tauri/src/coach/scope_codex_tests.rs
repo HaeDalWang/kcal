@@ -475,3 +475,6 @@ fn unreadable_compressed_rollout_marks_history_partial() {
         .write(".codex/sessions/rollout-bad.jsonl.zst", "not zstd");
     assert!(index(&f).codex.unwrap().is_partial);
 }
+
+#[path = "scope_codex_plugin_tests.rs"]
+mod plugin_tests;

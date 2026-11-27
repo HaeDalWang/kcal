@@ -78,7 +78,7 @@ pub struct UsageIndex {
     project_sessions: HashMap<PathBuf, usize>,
     /// 기간 안 세션을 시작한 폴더 전부(쓴 것이 없어도).
     pub projects: BTreeSet<PathBuf>,
-    /// Codex rollout에서 센 MCP 사용(0022 Codex 갱신). 같은 구조를 따로 쓴다(세션 수·프로젝트가 에이전트마다 다르다).
+    /// Codex rollout에서 센 MCP·플러그인 사용(0022 Codex 갱신). 같은 구조를 따로 쓴다(세션 수·프로젝트가 에이전트마다 다르다).
     pub codex: Option<Box<UsageIndex>>,
 }
 
@@ -170,6 +170,16 @@ impl UsageIndex {
             self.counts.get(&Key::Server(server.to_owned())),
         );
         self.summary(per_project)
+    }
+
+    /// Codex plugin ID 전체로 집계한다(마켓이 다른 같은 이름을 합치지 않는다).
+    pub fn for_codex_plugin(&self, id: &str) -> SwitchUsage {
+        self.summary(
+            self.counts
+                .get(&Key::Plugin(id.to_owned()))
+                .cloned()
+                .unwrap_or_default(),
+        )
     }
 
     /// 개인 스킬(`project` 없음, 모든 폴더 합계) 또는 그 폴더의 프로젝트 스킬. 프로젝트 스킬은 세션 수도 그 폴더 것만 센다

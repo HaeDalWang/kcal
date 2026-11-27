@@ -6,6 +6,7 @@ import {
   HANDOFF_OPTION,
   PROJECT_SKILL_TARGET_PREFIX,
   CODEX_SCOPE_TARGET_PREFIX,
+  CODEX_PLUGIN_SCOPE_TARGET_PREFIX,
   SCOPE_TARGET_PREFIX,
   SKILL_TARGET_PREFIX,
   type Agent,
@@ -544,7 +545,8 @@ export function appliedName({
   if (
     target.startsWith(CHECK_TARGET_PREFIX) ||
     target.startsWith(SCOPE_TARGET_PREFIX) ||
-    target.startsWith(CODEX_SCOPE_TARGET_PREFIX)
+    target.startsWith(CODEX_SCOPE_TARGET_PREFIX) ||
+    target.startsWith(CODEX_PLUGIN_SCOPE_TARGET_PREFIX)
   )
     return name;
   if (target.startsWith(SKILL_TARGET_PREFIX) || target.startsWith(PROJECT_SKILL_TARGET_PREFIX))

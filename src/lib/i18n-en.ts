@@ -374,7 +374,7 @@ export const en: Messages = {
     moveNoteCodex:
       "These files change together. The project’s .codex/config.toml may be committed to that repository (Codex has no project config file that stays out of version control). Codex only reads this file for projects you trust. Backups are made next to the originals first, and one Undo restores them all.",
     legendCodexMove:
-      " Suggested = an MCP server with no use in your Codex logs, or used in only some projects.",
+      " Suggested = an MCP server with no use in your Codex logs, or an MCP server or plugin used in only some projects.",
     skipped: (names) => `Skipped (folder is gone): ${names}`,
     newFile: "new file",
     confirmMove: "Confirm and move",

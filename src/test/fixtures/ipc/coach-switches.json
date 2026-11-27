@@ -6,7 +6,7 @@
     "file": "/synthetic/.codex/config.toml",
     "format": "toml",
     "instruction": null,
-    "isProposed": true,
+    "isProposed": false,
     "kind": "plugin",
     "loading": "startup",
     "name": "synthetic@m",

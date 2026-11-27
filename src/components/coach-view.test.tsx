@@ -640,6 +640,46 @@ describe("CoachPanel", () => {
     });
   });
 
+  it("renders a Codex plugin scope row and calls preview, apply and undo wrappers", async () => {
+    const target = "codex/plugin:browser@openai-bundled";
+    const moved = {
+      ...MOVED,
+      target: "codex/plugin-scope:browser@openai-bundled",
+      agent: "codex" as const,
+    };
+    const calls = mock({
+      preview_scope_move: () => ({ ...MOVE_PREVIEW, target }),
+      apply_scope_move: () => moved,
+      undo_switch: () => ({ ...moved, action: "undo", undoOf: moved.id }),
+    });
+    renderPanel("codex", {
+      switches: [
+        sw(target, {
+          isProposed: false,
+          usage: usage([["kcal", 5]]),
+          scopeMove: { projects: [{ name: "kcal", path: "/h/work/kcal" }], skipped: [] },
+        }),
+      ],
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "browser@openai-bundled 프로젝트에서만 켜기" }),
+    );
+    const panel = await screen.findByRole("group", { name: "바꿀 내용 확인" });
+    expect(within(panel).getByText(/커밋될 수 있어요/)).toBeTruthy();
+    expect(calls.find((c) => c.cmd === "preview_scope_move")?.args).toEqual({ target });
+    fireEvent.click(within(panel).getByRole("button", { name: "확인하고 옮기기" }));
+    const done = await screen.findByRole("group", { name: "적용 결과" });
+    expect(within(done).getByText(moved.name)).toBeTruthy();
+    expect(calls.find((c) => c.cmd === "apply_scope_move")?.args).toEqual({
+      target,
+      beforeHash: MOVE_PREVIEW.beforeHash,
+    });
+    fireEvent.click(within(done).getByRole("button", { name: "되돌리기" }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.cmd === "undo_switch")?.args).toEqual({ id: moved.id }),
+    );
+  });
+
   it("hides a skill's description instead of turning it off, with skill wording and no backup line for a new file", async () => {
     const calls = mock({
       preview_switch: () => ({

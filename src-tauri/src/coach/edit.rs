@@ -66,6 +66,13 @@ pub(crate) fn header_indices(lines: &[&str]) -> Vec<usize> {
 /// section이 없거나 두 번 나오면, `enabled` 값이 true/false가 아니면 거부한다. 다른 바이트는 그대로다.
 pub fn set_toml_enabled(content: &str, section: &str, enabled: bool) -> Result<Edit, String> {
     let lines: Vec<&str> = content.split('\n').collect();
+    if section.starts_with("plugins.") && has_plugin_root_key(&lines) {
+        return Err(pick(
+            "이 파일이 plugins를 [plugins.이름] 꼴이 아닌 방식으로 적고 있어 고치지 않아요.",
+            "This file writes plugins in a form other than [plugins.name], so kcal won't edit it.",
+        )
+        .into());
+    }
     let headers = header_indices(&lines);
     let matching: Vec<usize> = headers
         .iter()
@@ -147,6 +154,23 @@ pub fn set_toml_enabled(content: &str, section: &str, enabled: bool) -> Result<E
 static MCP_ROOT_KEY: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^\s*(?:\[\s*mcp_servers\s*\]|mcp_servers\s*[.=])").unwrap());
 
+static PLUGIN_TABLE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"^\s*\[\s*["']?plugins["']?\s*\]"#).unwrap());
+
+static PLUGIN_DOTTED: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"^\s*["']?plugins["']?\s*[.=]"#).unwrap());
+
+/// `plugins`를 `[plugins.이름]`이 아닌 꼴(`[plugins]` 표, 루트의 `plugins = …`·`plugins.x = …`)로 적었나.
+/// 점 키는 첫 표 헤더 앞(루트)만 본다: `[features]` 아래 `plugins = true`는 다른 표의 키다.
+fn has_plugin_root_key(lines: &[&str]) -> bool {
+    let root_end = header_indices(lines)
+        .first()
+        .copied()
+        .unwrap_or(lines.len());
+    lines.iter().any(|l| PLUGIN_TABLE.is_match(l))
+        || lines[..root_end].iter().any(|l| PLUGIN_DOTTED.is_match(l))
+}
+
 /// 프로젝트 `.codex/config.toml`의 `[section]`에 `enabled = true`를 둔다(Codex "프로젝트에서만 켜기", 0022).
 /// section이 있으면 `set_toml_enabled`와 같고, 없으면 파일 끝에 새 section을 덧붙인다. 파일이 `mcp_servers`를 표 헤더 없이
 /// 인라인·점 키로 적었으면(같은 표를 두 번 정의해 Codex가 설정을 못 읽게 될 수 있어) 거부한다.
@@ -155,10 +179,18 @@ pub fn enable_toml_section(content: &str, section: &str) -> Result<Edit, String>
     let has_section = header_indices(&lines)
         .iter()
         .any(|&i| SECTION.captures(lines[i]).is_some_and(|c| &c[1] == section));
+    let plugin = section.starts_with("plugins.");
+    if plugin && has_plugin_root_key(&lines) {
+        return Err(pick(
+            "이 파일이 plugins를 [plugins.이름] 꼴이 아닌 방식으로 적고 있어 고치지 않아요.",
+            "This file writes plugins in a form other than [plugins.name], so kcal won't edit it.",
+        )
+        .into());
+    }
     if has_section {
         return set_toml_enabled(content, section, true);
     }
-    if lines.iter().any(|l| MCP_ROOT_KEY.is_match(l)) {
+    if !plugin && lines.iter().any(|l| MCP_ROOT_KEY.is_match(l)) {
         return Err(pick(
             "이 파일이 mcp_servers를 [mcp_servers.이름] 꼴이 아닌 방식으로 적고 있어 고치지 않아요.",
             "This file writes mcp_servers in a form other than [mcp_servers.name], so kcal won't edit it.",

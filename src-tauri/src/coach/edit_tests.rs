@@ -315,3 +315,15 @@ fn project_section_refuses_other_ways_of_defining_mcp_servers() {
         );
     }
 }
+
+#[test]
+fn plugins_key_inside_other_table_is_not_a_plugin_root() {
+    // `[features]` 아래 `plugins = true`는 plugin 표가 아니다: 기존 on/off·켜기를 막으면 안 된다.
+    let text = "[features]\nplugins = true\n\n[plugins.\"pdf@m\"]\nenabled = true\n";
+    let section = "plugins.\"pdf@m\"";
+    assert!(set_toml_enabled(text, section, false).is_ok());
+    assert!(enable_toml_section("[features]\nplugins = true\n", section).is_ok());
+    // 루트의 점 키와 `[plugins]` 표는 그대로 거부한다.
+    assert!(set_toml_enabled("plugins.x.enabled = true\n[a]\n", section, false).is_err());
+    assert!(enable_toml_section("[a]\nb = 1\n[plugins]\nx = 1\n", section).is_err());
+}
