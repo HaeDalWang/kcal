@@ -38,7 +38,8 @@ fn parse(text: &str) -> Option<Vec<Connector>> {
             let status = match status {
                 "✓ Connected" | "✔ Connected" => "connected",
                 "✗ Failed to connect" | "✘ Failed to connect" => "failed",
-                "⚠ Needs authentication" => "auth",
+                // `!`: Claude Code 2.1.332 on Windows (seen on local lines, 2026-11-27).
+                "⚠ Needs authentication" | "! Needs authentication" => "auth",
                 _ => return None,
             };
             let url = reqwest::Url::parse(endpoint).ok()?;
@@ -188,6 +189,18 @@ mod tests {
         assert!(
             all.iter()
                 .all(|s| s.file.is_none() && s.plan("{}", false).is_err() && s.tokens.is_none())
+        );
+    }
+
+    #[test]
+    fn reads_bang_needs_authentication() {
+        let text = "Checking MCP server health…\nclaude.ai Drive: https://example.com - ! Needs authentication\nplugin:x:y: npx y - ! Needs authentication";
+        assert_eq!(
+            parse(text).unwrap(),
+            vec![Connector {
+                name: "claude.ai Drive".into(),
+                status: "auth"
+            }]
         );
     }
 

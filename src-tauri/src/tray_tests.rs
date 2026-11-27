@@ -293,3 +293,18 @@ fn icon_cache_key_tracks_mode_and_number_but_skips_identical_displays() {
     assert_eq!(percent_title(&key(TrayIcon::Icon)), None);
     assert_eq!(percent_title(&icon_key(TrayIcon::Percent, None)), None);
 }
+
+// Windows 1920×1080·125% 재현(2026-11-27, 논리 px): 작업 영역 높이 816, 개요 471px로 top 338·bottom 809.
+#[test]
+fn growing_popover_above_taskbar_keeps_its_bottom() {
+    let area = (0.0, 0.0, 1920.0, 816.0);
+    assert_eq!(refit_top(338.0, 471.0, 668.0, area), 141.0);
+    assert_eq!(refit_top(141.0, 668.0, 471.0, area), 338.0);
+}
+
+#[test]
+fn growing_popover_under_top_edge_keeps_its_top_and_stays_inside() {
+    let area = (0.0, 40.0, 1920.0, 776.0);
+    assert_eq!(refit_top(40.0, 400.0, 600.0, area), 40.0);
+    assert_eq!(refit_top(500.0, 300.0, 900.0, area), 40.0);
+}

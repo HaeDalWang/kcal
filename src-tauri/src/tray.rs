@@ -81,8 +81,21 @@ fn popover_position(icon: Area, window: (f64, f64), area: Area) -> (f64, f64) {
 /// 프론트엔드가 재서 보내는 팝오버 높이(논리 px)의 허용 범위.
 const HEIGHT_RANGE: std::ops::RangeInclusive<f64> = 100.0..=800.0;
 
-/// 팝오버 높이를 내용에 맞춘다(폭은 그대로). 위치는 다음에 열 때 `toggle_popover`가 다시 잡는다.
-// ponytail: 열려 있는 동안 높이가 바뀌면 위에 붙는 배치(Windows 작업표시줄 위)는 아래쪽이 움직인다. 필요하면 resize 뒤 재배치.
+/// 높이가 바뀐 팝오버의 새 top(물리 px). 작업 영역 위에 붙어 있으면(아이콘 아래 배치) top을,
+/// 아니면(작업 표시줄 위 배치) bottom을 고정하고, 작업 영역 안으로 자른다.
+#[cfg(any(not(target_os = "macos"), test))]
+fn refit_top(top: f64, old_height: f64, new_height: f64, area: Area) -> f64 {
+    let (_, ay, _, ah) = area;
+    let y = if (top - ay).abs() <= 1.0 {
+        top
+    } else {
+        top + old_height - new_height
+    };
+    y.min(ay + ah - new_height).max(ay)
+}
+
+/// 팝오버 높이를 내용에 맞춘다(폭은 그대로). Windows는 열린 채 높이가 바뀌어도 화면 밖으로 안 나가게 다시 놓는다.
+// ponytail: 내용이 작업 영역보다 높으면 아래가 잘린다(body overflow hidden). 작은 화면 보고가 오면 내부 스크롤.
 #[tauri::command]
 pub fn fit_popover_height<R: Runtime>(
     window: WebviewWindow<R>,
@@ -109,8 +122,26 @@ pub fn fit_popover_height<R: Runtime>(
 
 fn resize<R: Runtime>(window: &WebviewWindow<R>, height: f64) -> tauri::Result<()> {
     let scale = window.scale_factor()?;
-    let width = window.outer_size()?.width as f64 / scale;
-    window.set_size(LogicalSize::new(width, height))
+    let outer = window.outer_size()?;
+    let width = outer.width as f64 / scale;
+    #[cfg(not(target_os = "macos"))]
+    let before = (window.outer_position()?, window.inner_size()?.height as f64);
+    window.set_size(LogicalSize::new(width, height))?;
+    // macOS는 메뉴 막대 아래에 붙어 아래로만 자라므로 그대로 둔다.
+    #[cfg(not(target_os = "macos"))]
+    if let Some(monitor) = window.current_monitor()? {
+        let (position, inner_height) = before;
+        let old_height = outer.height as f64;
+        let new_height = old_height + height * scale - inner_height;
+        let y = refit_top(
+            position.y as f64,
+            old_height,
+            new_height,
+            work_area(&monitor),
+        );
+        window.set_position(tauri::PhysicalPosition::new(position.x, y.round() as i32))?;
+    }
+    Ok(())
 }
 
 /// 대시보드 창의 탭(docs/decisions/0017 "화면 자리"). TS 짝은 `ipc.ts`의 `DashboardTab`.
