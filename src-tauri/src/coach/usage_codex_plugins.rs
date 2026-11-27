@@ -80,17 +80,18 @@ pub(super) fn line_uses(line: &[u8], home: &Path, since: f64) -> Vec<(Key, Optio
 }
 
 fn plugin_ids(code: Vec<String>, home: &Path) -> HashSet<String> {
-    let root = paths::codex_root(home)
-        .join("plugins/cache")
-        .to_string_lossy()
-        .replace('\\', "/")
-        + "/";
+    // 홈과 명령을 같은 규칙으로 맞춘다: Windows `\\?\C:\…`의 `\\`도 명령 쪽처럼 `/` 하나가 된다.
+    let root = slashes(
+        &paths::codex_root(home)
+            .join("plugins/cache")
+            .to_string_lossy(),
+    ) + "/";
     let mut plugins = HashSet::new();
     for code in code {
         if !READ.is_match(&code) {
             continue;
         }
-        let normalized = code.replace("\\\\", "/").replace('\\', "/");
+        let normalized = slashes(&code);
         for rest in normalized.split(&root).skip(1) {
             if let Some(c) = SKILL
                 .captures(rest)
@@ -101,4 +102,29 @@ fn plugin_ids(code: Vec<String>, home: &Path) -> HashSet<String> {
         }
     }
     plugins
+}
+
+/// 경로 구분자를 `/`로: JSON·JS 문자열 안의 `\\`와 평문 `\`를 모두 한 칸으로 줄인다.
+fn slashes(text: &str) -> String {
+    text.replace("\\\\", "/").replace('\\', "/")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn verbatim_windows_home_matches_plain_and_json_escaped_reads() {
+        // Windows 테스트 홈은 canonicalize로 `\\?\C:\…`가 된다(2026-11-27 CI에서 직접 호출만 놓침).
+        let home = Path::new(r"\\?\C:\T\x");
+        let skill = home.join(".codex/plugins/cache/m/p/1/skills/web/SKILL.md");
+        let plain = format!("cat '{}'", skill.display());
+        let escaped = serde_json::json!({ "cmd": plain }).to_string();
+        for code in [plain, escaped] {
+            assert_eq!(
+                plugin_ids(vec![code], home),
+                HashSet::from(["p@m".to_owned()])
+            );
+        }
+    }
 }
