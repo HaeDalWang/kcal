@@ -21,7 +21,7 @@ use time::OffsetDateTime;
 
 use crate::error::AppError;
 use crate::i18n::pick;
-use crate::settings::{Settings, SettingsState};
+use crate::settings::{Settings, SettingsState, TrayIcon};
 use crate::usage::{Agent, UsageSnapshot, UsageState};
 
 const POPOVER: &str = "popover";
@@ -41,8 +41,13 @@ const FIRST_RUN_TRIES: u32 = 10;
 /// macOS는 template(검정 + alpha)이라야 라이트·다크에 자동으로 맞는다.
 const ICON_IS_TEMPLATE: bool = cfg!(target_os = "macos");
 
-/// 마지막으로 그린 아이콘의 열쇠. 같으면 `set_icon`을 건너뛴다. 바깥 `None` = 아직 안 그림, 안쪽 `None` = 불꽃.
-type IconKey = Option<Vec<(Agent, Option<u32>)>>;
+/// 모드·막대 픽셀·숫자로 마지막 표시를 비교한다. `IconState.last`의 None은 아직 안 그림.
+#[derive(Debug, PartialEq, Eq)]
+enum IconKey {
+    Bars(Option<Vec<(Agent, Option<u32>)>>),
+    Percent(Option<u8>),
+    Icon,
+}
 
 #[derive(Default)]
 struct IconState {
@@ -559,7 +564,7 @@ pub fn refresh<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-/// 값이 바뀔 때마다 부른다. 아이콘은 막대(`bars`), tooltip은 한 줄 요약.
+/// 값이나 설정이 바뀔 때마다 부른다. tooltip은 한 줄 요약.
 pub fn update<R: Runtime>(app: &AppHandle<R>, snapshot: &UsageSnapshot) {
     let Some(tray) = app.tray_by_id(TRAY_ID) else {
         return;
@@ -567,20 +572,53 @@ pub fn update<R: Runtime>(app: &AppHandle<R>, snapshot: &UsageSnapshot) {
     let settings = app.state::<SettingsState>().get().unwrap_or_default();
     let now = OffsetDateTime::now_utc();
     let _ = tray.set_tooltip(Some(tray_tooltip(snapshot, &settings, now)));
-    set_bars_icon(app, &tray, bars(snapshot, &settings, now));
+    set_tray_icon(
+        app,
+        &tray,
+        bars(snapshot, &settings, now),
+        settings.tray_icon,
+    );
+}
+
+/// 값이 있는 에이전트 중 최소 남은 % 하나. 표시 범위로 자르고 반올림한다.
+fn lowest_percent(bars: &[(Agent, Option<f64>)]) -> Option<u8> {
+    bars.iter()
+        .filter_map(|&(_, value)| value.filter(|p| p.is_finite()))
+        .min_by(f64::total_cmp)
+        .map(|p| p.clamp(0.0, 100.0).round() as u8)
+}
+
+fn icon_key(mode: TrayIcon, bars: Option<&[(Agent, Option<f64>)]>) -> IconKey {
+    match mode {
+        TrayIcon::Bars => IconKey::Bars(bars.map(|bars| {
+            let fills: Vec<_> = bars.iter().map(|&(_, p)| p).collect();
+            bars.iter()
+                .map(|&(a, _)| a)
+                .zip(icon::quantize(&fills, &icon::SPEC))
+                .collect()
+        })),
+        TrayIcon::Percent => IconKey::Percent(bars.and_then(lowest_percent)),
+        TrayIcon::Icon => IconKey::Icon,
+    }
+}
+
+#[cfg(any(target_os = "macos", test))]
+fn percent_title(key: &IconKey) -> Option<String> {
+    match key {
+        IconKey::Percent(Some(number)) => Some(format!("{number}%")),
+        _ => None,
+    }
 }
 
 /// 그려야 할 이미지가 마지막과 같으면 건너뛴다. 실패하면 로그만 남기고 다음 갱신 때 다시 시도한다.
-fn set_bars_icon<R: Runtime>(
+fn set_tray_icon<R: Runtime>(
     app: &AppHandle<R>,
     tray: &tauri::tray::TrayIcon<R>,
     bars: Option<Vec<(Agent, Option<f64>)>>,
+    mode: TrayIcon,
 ) {
     let fills: Vec<Option<f64>> = bars.iter().flatten().map(|&(_, percent)| percent).collect();
-    let key: IconKey = bars.as_ref().map(|bars| {
-        let px = icon::quantize(&fills, &icon::SPEC);
-        bars.iter().map(|&(agent, _)| agent).zip(px).collect()
-    });
+    let key = icon_key(mode, bars.as_deref());
     let state = app.state::<IconState>();
     let Ok(mut last) = state.last.lock() else {
         return;
@@ -588,15 +626,26 @@ fn set_bars_icon<R: Runtime>(
     if last.as_ref() == Some(&key) {
         return;
     }
-    let image = match &bars {
-        Some(bars) => {
+    let image = match (&key, &bars) {
+        (IconKey::Bars(Some(_)), Some(bars)) => {
             let colors: Vec<_> = bars.iter().map(|&(a, _)| icon::agent_rgb(a)).collect();
             let (rgba, w, h) = icon::render(&fills, &colors, &icon::SPEC);
             Ok(Some(Image::new_owned(rgba, w, h)))
         }
-        None => flame_icon(app),
+        #[cfg(not(target_os = "macos"))]
+        (IconKey::Percent(Some(number)), _) => {
+            let (rgba, w, h) = icon::render_number(*number);
+            Ok(Some(Image::new_owned(rgba, w, h)))
+        }
+        _ => flame_icon(app),
     };
-    match image.and_then(|image| tray.set_icon_with_as_template(image, ICON_IS_TEMPLATE)) {
+    let result = image.and_then(|image| {
+        tray.set_icon_with_as_template(image, ICON_IS_TEMPLATE)?;
+        #[cfg(target_os = "macos")]
+        tray.set_title(percent_title(&key))?;
+        Ok(())
+    });
+    match result {
         Ok(()) => *last = Some(key),
         Err(error) => eprintln!("tray icon: {error}"),
     }

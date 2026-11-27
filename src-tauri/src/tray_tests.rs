@@ -252,3 +252,44 @@ fn tooltip_and_errors_follow_english_ui() {
     });
     assert_eq!(error["message"], "Something went wrong inside kcal.");
 }
+
+#[test]
+fn percent_uses_lowest_enabled_value_and_rounds_without_hiding_zero_or_100() {
+    let values = bars(&snapshot(), &enabled(&Agent::ALL), NOW).unwrap();
+    assert_eq!(lowest_percent(&values), Some(5));
+    let values = bars(&snapshot(), &enabled(&[Agent::Claude, Agent::Kiro]), NOW).unwrap();
+    assert_eq!(lowest_percent(&values), Some(70));
+    assert_eq!(lowest_percent(&[(Agent::Kiro, None)]), None);
+    assert_eq!(lowest_percent(&[(Agent::Claude, Some(61.6))]), Some(62));
+    assert_eq!(lowest_percent(&[(Agent::Claude, Some(0.0))]), Some(0));
+    assert_eq!(lowest_percent(&[(Agent::Claude, Some(100.0))]), Some(100));
+}
+
+#[test]
+fn icon_cache_key_tracks_mode_and_number_but_skips_identical_displays() {
+    let values = [(Agent::Claude, Some(62.0))];
+    let key = |mode| icon_key(mode, Some(&values));
+    assert_ne!(key(TrayIcon::Bars), key(TrayIcon::Percent));
+    assert_ne!(key(TrayIcon::Percent), key(TrayIcon::Icon));
+    assert_ne!(key(TrayIcon::Bars), key(TrayIcon::Icon));
+    assert_eq!(key(TrayIcon::Percent), key(TrayIcon::Percent));
+    assert_eq!(
+        key(TrayIcon::Percent),
+        icon_key(TrayIcon::Percent, Some(&[(Agent::Codex, Some(62.1))]))
+    );
+    assert_ne!(
+        key(TrayIcon::Percent),
+        icon_key(TrayIcon::Percent, Some(&[(Agent::Claude, Some(63.0))]))
+    );
+    assert_ne!(
+        icon_key(TrayIcon::Bars, None),
+        icon_key(TrayIcon::Icon, None)
+    );
+    assert_eq!(
+        percent_title(&key(TrayIcon::Percent)).as_deref(),
+        Some("62%")
+    );
+    assert_eq!(percent_title(&key(TrayIcon::Bars)), None);
+    assert_eq!(percent_title(&key(TrayIcon::Icon)), None);
+    assert_eq!(percent_title(&icon_key(TrayIcon::Percent, None)), None);
+}

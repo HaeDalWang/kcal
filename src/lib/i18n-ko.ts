@@ -719,6 +719,9 @@ export const ko = {
     hidden: (count: string) => `숨긴 카드 ${count}개`,
   },
   settings: {
+    trayIcon: "메뉴바 아이콘",
+    trayIconOptions: { bars: "막대", percent: "남은 % 숫자", icon: "아이콘만" },
+    trayIconHint: "숫자는 가장 적게 남은 에이전트 하나를 보입니다.",
     autostart: "로그인 시 시작",
     autostartPathHint: "경로가 저장돼요. 옮기면 자동 시작이 끊겨요.",
     title: "설정",

@@ -40,11 +40,22 @@ pub enum Language {
     En,
 }
 
+/// 메뉴바 아이콘 선택(0012). TS 짝은 `ipc.ts`의 `TrayIcon`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TrayIcon {
+    #[default]
+    Bars,
+    Percent,
+    Icon,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     /// 팝오버(탭·개요)·트레이 값에 표시하고 조회하는 에이전트. `Agent::ALL` 순서, 1개 이상.
     pub enabled_agents: Vec<Agent>,
+    pub tray_icon: TrayIcon,
     /// 조절 가능한 값(주기·시간 초과·탐색 범위 등). 0007.
     pub tuning: Tuning,
     /// tuning 필드별 범위·기본값(`Tuning::spec`). 설정 화면이 쓴다. 저장하지 않는다.
@@ -64,6 +75,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             enabled_agents: Agent::ALL.to_vec(),
+            tray_icon: TrayIcon::default(),
             tuning: Tuning::default(),
             tuning_spec: Tuning::spec(),
             reason: None,
@@ -170,6 +182,15 @@ fn load(path: &Path) -> Settings {
         .and_then(|file| file.get("tuning").map(Tuning::from_json))
         .unwrap_or_default();
     let (language, resolved_language) = languages(file.as_ref());
+    let tray_icon =
+        file.as_ref()
+            .and_then(|f| f.get("trayIcon"))
+            .map_or_else(TrayIcon::default, |value| {
+                serde_json::from_value(value.clone()).unwrap_or_else(|error| {
+                    eprintln!("settings trayIcon: {error}; using bars");
+                    TrayIcon::default()
+                })
+            });
     let base = match parsed {
         Ok((enabled_agents, seen_agents)) => Settings {
             enabled_agents,
@@ -179,6 +200,7 @@ fn load(path: &Path) -> Settings {
         Err(why) => broken(why),
     };
     Settings {
+        tray_icon,
         tuning,
         language,
         resolved_language,
@@ -259,6 +281,7 @@ fn save(path: &Path, settings: &Settings) -> std::io::Result<()> {
     let ids: Vec<&str> = settings.enabled_agents.iter().map(|a| a.id()).collect();
     let json = serde_json::to_string_pretty(&serde_json::json!({
         "enabledAgents": ids,
+        "trayIcon": settings.tray_icon,
         "seenAgents": settings.seen_agents.iter().map(|a| a.id()).collect::<Vec<_>>(),
         "tuning": settings.tuning,
         "language": settings.language,
@@ -343,12 +366,13 @@ impl SettingsState {
     }
 
     /// 검증 → 파일 저장 → state 갱신. 잠금은 저장이 끝난 뒤에만 잡는다.
-    /// `tuning`·`language`가 `None`이면 지금 값을 그대로 둔다.
+    /// `tuning`·`language`·`tray_icon`이 `None`이면 지금 값을 그대로 둔다.
     fn set(
         &self,
         ids: &[String],
         tuning: Option<Tuning>,
         language: Option<Language>,
+        tray_icon: Option<TrayIcon>,
     ) -> Result<Settings, AppError> {
         let enabled_agents = validate_agents(ids).map_err(AppError::InvalidInput)?;
         let now = self.get()?;
@@ -363,6 +387,7 @@ impl SettingsState {
             enabled_agents,
             tuning,
             language: language.unwrap_or(now.language),
+            tray_icon: tray_icon.unwrap_or(now.tray_icon),
             resolved_language: now.resolved_language,
             seen_agents: now.seen_agents,
             ..Settings::default()
@@ -412,8 +437,9 @@ pub fn set_settings<R: Runtime>(
     enabled_agents: Vec<String>,
     tuning: Option<Tuning>,
     language: Option<Language>,
+    tray_icon: Option<TrayIcon>,
 ) -> Result<Settings, AppError> {
-    let next = state.set(&enabled_agents, tuning, language)?;
+    let next = state.set(&enabled_agents, tuning, language, tray_icon)?;
     crate::tray::refresh(&app);
     if app.emit(SETTINGS_UPDATED_EVENT, &next).is_err() {
         eprintln!("kcal: {SETTINGS_UPDATED_EVENT} event 전송 실패");
@@ -454,6 +480,55 @@ mod tests {
     }
 
     #[test]
+    fn tray_icon_defaults_round_trips_and_rejects_unknown_command_values() {
+        assert_eq!(Settings::default().tray_icon, TrayIcon::Bars);
+        for (mode, value) in [
+            (TrayIcon::Bars, "bars"),
+            (TrayIcon::Percent, "percent"),
+            (TrayIcon::Icon, "icon"),
+        ] {
+            assert_eq!(serde_json::to_value(mode).unwrap(), value);
+            assert_eq!(
+                serde_json::from_value::<TrayIcon>(serde_json::json!(value)).unwrap(),
+                mode
+            );
+            let path = temp_file(value);
+            let state = SettingsState::load(path.clone());
+            let saved = state.set(&ids(&["codex"]), None, None, Some(mode)).unwrap();
+            assert_eq!(saved.tray_icon, mode);
+            assert_eq!(load(&path), saved);
+            state.set(&ids(&["claude"]), None, None, None).unwrap();
+            assert_eq!(load(&path).tray_icon, mode);
+            let _ = std::fs::remove_dir_all(path.parent().unwrap());
+        }
+        assert!(serde_json::from_value::<TrayIcon>(serde_json::json!("other")).is_err());
+    }
+
+    #[test]
+    fn invalid_saved_tray_icon_falls_back_without_dropping_other_settings() {
+        let path = temp_file("unknown-tray-icon");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        for value in [
+            serde_json::json!("future"),
+            serde_json::json!(42),
+            serde_json::Value::Null,
+        ] {
+            let file = serde_json::json!({"enabledAgents":["codex"], "trayIcon":value,
+                "language":"en", "tuning":{"apiIntervalSecs":120}});
+            std::fs::write(&path, file.to_string()).unwrap();
+            let loaded = load(&path);
+            assert_eq!(loaded.tray_icon, TrayIcon::Bars);
+            assert_eq!(loaded.enabled_agents, [Agent::Codex]);
+            assert_eq!(loaded.language, Language::En);
+            assert_eq!(loaded.tuning.api_interval_secs, 120);
+            assert_eq!(loaded.reason, None);
+        }
+        std::fs::write(&path, r#"{"enabledAgents":["claude"]}"#).unwrap();
+        assert_eq!(load(&path).tray_icon, TrayIcon::Bars);
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
+    #[test]
     fn rejects_empty_agent_list() {
         assert!(validate_agents(&[]).is_err());
     }
@@ -483,7 +558,7 @@ mod tests {
         let state = SettingsState::load(path.clone());
         assert!(state.is_first_run());
         // 저장해도 이번 실행의 값은 그대로다(팝오버를 한 번만 열기 위해).
-        state.set(&ids(&["claude"]), None, None).unwrap();
+        state.set(&ids(&["claude"]), None, None, None).unwrap();
         assert!(state.is_first_run());
         assert!(!SettingsState::load(path.clone()).is_first_run());
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
@@ -517,7 +592,7 @@ mod tests {
         );
         // 파일이 있으면 사용자가 고른 목록이 그대로다.
         let state = SettingsState::load(path.clone());
-        state.set(&ids(&["kiro"]), None, None).unwrap();
+        state.set(&ids(&["kiro"]), None, None, None).unwrap();
         assert_eq!(
             load_first_run(&path, Some(&home), empty_path).enabled_agents,
             [Agent::Kiro]
@@ -532,7 +607,7 @@ mod tests {
         assert_eq!(later.enabled_agents, [Agent::Claude, Agent::Codex]);
         assert_eq!(later.seen_agents, [Agent::Claude, Agent::Codex]);
         let saved = SettingsState::with(path.clone(), later);
-        saved.set(&ids(&["claude"]), None, None).unwrap();
+        saved.set(&ids(&["claude"]), None, None, None).unwrap();
         assert_eq!(
             load_first_run(&path, Some(&home), empty_path).enabled_agents,
             [Agent::Claude]
@@ -577,12 +652,12 @@ mod tests {
     fn saved_settings_load_back_and_clear_reason() {
         let path = temp_file("roundtrip");
         let state = SettingsState::load(path.clone());
-        let saved = state.set(&ids(&["codex"]), None, None).unwrap();
+        let saved = state.set(&ids(&["codex"]), None, None, None).unwrap();
         assert_eq!(saved.enabled_agents, [Agent::Codex]);
         assert_eq!(load(&path), saved);
         assert!(!path.with_extension("json.tmp").exists());
         assert!(matches!(
-            state.set(&[], None, None),
+            state.set(&[], None, None, None),
             Err(AppError::InvalidInput(_))
         ));
         assert_eq!(state.get().unwrap(), saved);
@@ -618,12 +693,12 @@ mod tests {
         let path = temp_file("language");
         let state = SettingsState::load(path.clone());
         state
-            .set(&ids(&["claude"]), None, Some(Language::Ko))
+            .set(&ids(&["claude"]), None, Some(Language::Ko), None)
             .unwrap();
         assert_eq!(load(&path).effective_language(), Lang::Ko);
         state.set_resolved(Lang::En).unwrap();
         state
-            .set(&ids(&["claude"]), None, Some(Language::Auto))
+            .set(&ids(&["claude"]), None, Some(Language::Auto), None)
             .unwrap();
         let loaded = load(&path);
         assert_eq!(loaded.language, Language::Auto);
@@ -667,16 +742,18 @@ mod tests {
             ..Tuning::default()
         };
         state
-            .set(&ids(&["claude"]), Some(faster.clone()), None)
+            .set(&ids(&["claude"]), Some(faster.clone()), None, None)
             .unwrap();
         let bad = Tuning {
             bytes_per_token: 0,
             ..Tuning::default()
         };
-        let error = state.set(&ids(&["claude"]), Some(bad), None).unwrap_err();
+        let error = state
+            .set(&ids(&["claude"]), Some(bad), None, None)
+            .unwrap_err();
         assert!(matches!(error, AppError::InvalidInput(m) if m.contains("bytesPerToken")));
         // tuning을 생략한 저장은 지금 값을 유지하고, 파일에서도 그대로 읽힌다.
-        state.set(&ids(&["codex"]), None, None).unwrap();
+        state.set(&ids(&["codex"]), None, None, None).unwrap();
         assert_eq!(state.tuning(), faster);
         assert_eq!(load(&path).tuning, faster);
     }
@@ -686,12 +763,12 @@ mod tests {
         let path = temp_file("save-fail");
         let state = SettingsState::load(path.clone());
         state
-            .set(&ids(&["claude"]), None, Some(Language::Ko))
+            .set(&ids(&["claude"]), None, Some(Language::Ko), None)
             .unwrap();
         // 임시 파일 자리가 폴더라 저장이 실패한다.
         std::fs::create_dir_all(path.with_extension("json.tmp")).unwrap();
         let error = state
-            .set(&ids(&["codex"]), None, Some(Language::En))
+            .set(&ids(&["codex"]), None, Some(Language::En), None)
             .unwrap_err();
         assert!(matches!(error, AppError::Internal));
         let now = state.get().unwrap();
