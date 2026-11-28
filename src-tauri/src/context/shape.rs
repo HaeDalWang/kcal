@@ -79,6 +79,8 @@ pub struct ShapeSummary {
     /// `defer_loading: true` 자리표시 도구(이름·짧은 설명만 보내고 스키마는 검색할 때).
     pub deferred_tools: usize,
     pub deferred_bytes: u64,
+    /// 지연 로딩 도구만 보낸 MCP 서버 이름(`mcp`에 없는 것). 서버 스킬(`server:skill`)을 서버로 묶는 데 쓴다.
+    pub deferred_mcp: Vec<String>,
     /// shape를 보낸 세션의 작업 폴더(transcript `cwd`). 전역 모드에서 출처를 밝히는 데 쓴다.
     pub cwd: Option<String>,
     /// 같은 세션의 마지막 `api-request` 줄 `params.model`.
@@ -263,6 +265,12 @@ pub fn summarise(row: &Value) -> ShapeSummary {
         if tool.get("defer_loading") == Some(&Value::Bool(true)) {
             summary.deferred_tools += 1;
             summary.deferred_bytes += bytes;
+            let name = tool.get("name").and_then(Value::as_str).unwrap_or("");
+            if let Some(server) = mcp_server(name)
+                && !summary.deferred_mcp.iter().any(|s| s == server)
+            {
+                summary.deferred_mcp.push(server.to_owned());
+            }
             continue;
         }
         let name = tool.get("name").and_then(Value::as_str).unwrap_or("");
@@ -284,6 +292,9 @@ pub fn summarise(row: &Value) -> ShapeSummary {
         }
     }
     summary.mcp.sort_by_key(|s| std::cmp::Reverse(s.bytes));
+    summary
+        .deferred_mcp
+        .retain(|d| !summary.mcp.iter().any(|s| &s.server == d));
     summary
 }
 
@@ -492,6 +503,7 @@ mod tests {
             {"name": "mcp__my_server__fetch", "input_schema": {}},
             {"name": "mcp__other__x", "description": "longer description"},
             {"name": "mcp__lazy__y", "defer_loading": true},
+            {"name": "mcp__other__z", "defer_loading": true},
         ]);
         let row: Value = serde_json::from_str(&shape_line("가나", tools.clone())).unwrap();
         let summary = summarise(&row);
@@ -519,8 +531,10 @@ mod tests {
         );
         assert_eq!(
             (summary.deferred_tools, summary.deferred_bytes),
-            (1, bytes(4))
+            (2, bytes(4) + bytes(5))
         );
+        // 도구를 바로 보낸 서버(`other`)는 지연 목록에 다시 넣지 않는다.
+        assert_eq!(summary.deferred_mcp, ["lazy"]);
     }
 
     #[test]

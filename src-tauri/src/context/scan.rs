@@ -348,6 +348,7 @@ fn is_rule_path(path: &str) -> bool {
 fn apply_startup_attachments(
     startup: shape::StartupAttachments,
     plugin_ids: &[String],
+    mcp_servers: &[&str],
     items: &mut Vec<ContextItem>,
 ) {
     let drop_startup = |items: &mut Vec<ContextItem>, kinds: &[ContextKind]| {
@@ -372,20 +373,21 @@ fn apply_startup_attachments(
         drop_startup(items, &[ContextKind::Skills, ContextKind::Plugins]);
         let (mut rest_skills, mut rest_bytes) = (listing.skills, listing.bytes);
         // 켠 플러그인의 스킬은 플러그인 id로 묶는다(코칭이 `<id> (스킬 N개)` 이름으로 찾는다, 0014).
+        // MCP 서버가 내준 스킬(2.1.332, `server:skill`)은 그 서버로 묶는다. 접두사는 도구 이름의 서버 이름과 같다(실측 2026-11-28).
         for (prefix, skills, bytes) in listing.by_prefix {
-            let Some(id) = plugin_ids
+            let item = if let Some(id) = plugin_ids
                 .iter()
                 .find(|id| id.split('@').next() == Some(prefix.as_str()))
-            else {
+            {
+                ContextItem::measured(ContextKind::Plugins, skills_name(id, skills), bytes)
+            } else if mcp_servers.contains(&prefix.as_str()) {
+                ContextItem::measured(ContextKind::Mcp, skills_name(&prefix, skills), bytes)
+            } else {
                 continue;
             };
             rest_skills = rest_skills.saturating_sub(skills);
             rest_bytes = rest_bytes.saturating_sub(bytes);
-            items.push(ContextItem::measured(
-                ContextKind::Plugins,
-                skills_name(id, skills),
-                bytes,
-            ));
+            items.push(item);
         }
         let noun = plural(rest_skills, "skill", "skills");
         items.push(ContextItem::measured(
@@ -501,7 +503,13 @@ pub fn claude(
             }
             // 다른 프로젝트 세션의 지시 파일·스킬은 이 작업 폴더 것이 아니라 설정 파일 어림을 그대로 둔다.
             if is_same_workspace {
-                apply_startup_attachments(sent.startup, &plugin_ids, &mut items);
+                let servers: Vec<&str> = sent
+                    .mcp
+                    .iter()
+                    .map(|s| s.server.as_str())
+                    .chain(sent.deferred_mcp.iter().map(String::as_str))
+                    .collect();
+                apply_startup_attachments(sent.startup, &plugin_ids, &servers, &mut items);
             }
             model = sent.model;
             let blocks = sent.system_blocks;

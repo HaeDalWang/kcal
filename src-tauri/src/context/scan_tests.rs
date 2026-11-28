@@ -113,16 +113,17 @@ fn claude_groups_startup_attachments_like_context_command() {
             attach(serde_json::json!({"type": "instructions", "files": [
                 {"path": "/h/.claude/CLAUDE.md", "type": "User", "content": "12345678"},
                 {"path": "/h/.claude/rules/r.md", "type": "User", "content": "1234"}]})),
-            attach(serde_json::json!({"type": "skill_listing", "skillCount": 3,
-                "names": ["mine", "tools:a", "anthropic-skills:pdf"],
-                "content": "- mine: x\n- tools:a: y\n- anthropic-skills:pdf: z"})),
+            attach(serde_json::json!({"type": "skill_listing", "skillCount": 4,
+                "names": ["mine", "tools:a", "anthropic-skills:pdf", "ctx:docs"],
+                "content": "- mine: x\n- tools:a: y\n- anthropic-skills:pdf: z\n- ctx:docs: w"})),
             attach(serde_json::json!({"type": "agent_listing_delta", "addedTypes": ["Explore", "mine"],
                 "addedLines": ["built in", "12345678"], "builtInTypes": ["Explore"], "builtInPluginTypes": []})),
             attach(serde_json::json!({"type": "mcp_instructions_delta", "addedNames": ["docs"], "addedBlocks": ["12345678"]})),
             // 두 번째 첨부(세션 중간)는 무시한다.
             attach(serde_json::json!({"type": "mcp_instructions_delta", "addedNames": ["late"], "addedBlocks": ["x"]})),
             line(serde_json::json!({"type": "api-request-shape", "shape": {"system": [{"text": "1234"}],
-                "tools": [{"name": "Bash"}, {"name": "ToolSearch", "defer_loading": true}]}})),
+                "tools": [{"name": "Bash"}, {"name": "ToolSearch", "defer_loading": true},
+                    {"name": "mcp__ctx__q", "defer_loading": true}]}})),
             line(serde_json::json!({"type": "api-request", "params": {"model": "claude-opus-5-5"}})),
         ]
         .join("\n");
@@ -148,6 +149,11 @@ fn claude_groups_startup_attachments_like_context_command() {
     );
     assert_eq!(find(&got, "tools@market (스킬 1개)").tokens, Some(3));
     assert_eq!(find(&got, "스킬 목록 (스킬 2개)").kind, ContextKind::Skills);
+    // 지연 로딩 도구만 있는 MCP 서버의 스킬도 그 서버 항목으로(2.1.332 `server:skill`).
+    assert_eq!(
+        kind_of("ctx (스킬 1개)"),
+        (ContextKind::Mcp, ContextSource::Measured)
+    );
     assert_eq!(find(&got, "에이전트 목록 (1개)").tokens, Some(2));
     assert_eq!(
         kind_of("docs"),
@@ -155,7 +161,7 @@ fn claude_groups_startup_attachments_like_context_command() {
     );
     assert!(got.items.iter().all(|i| i.name != "late"));
     assert_eq!(
-        find(&got, "지연 로딩 도구 목록 (1개)").loading,
+        find(&got, "지연 로딩 도구 목록 (2개)").loading,
         Loading::Deferred
     );
     assert_eq!(find(&got, "내장 도구 (1개)").kind, ContextKind::Tools);
