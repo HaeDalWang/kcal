@@ -64,3 +64,12 @@
 - Codex가 오래된 rollout을 `.jsonl.zst`로 압축한다 → zstd 읽기가 필요하다(ctxmeter 측정 구멍).
 - 다른 플랜·모델의 환율, 주간 환율 — 데이터가 더 쌓인 뒤.
 - 정기 검진 알림: ctxmeter에서 macOS 알림이 안 떴다(권한 추정). Tauri notification plugin으로 확인.
+
+## 범위 밖으로 정한 것 (2026-11-28, 사용자 결정)
+
+Claude Code 2.1.307~332 신기능과 vault 자료에서 나온 후보 4건을 넣지 않는다.
+
+- 보안 설정 안내(`permissions.blockWritesOutsideWorkingDirectories`, `permissions.denyInsteadOfPrompting`, `PreSkillShellCommand` hook): 사용량·비용 진단 범위 밖이다.
+- MCP 서버 스킬의 "버전 고정 안 됨" 표시: URL 서버는 판정할 수 없고 패키지 서버는 추정이다. 크기 세기(0005)로 충분하다.
+- vault "사용자 미검토" 개수 표시: 배포 앱에 개인 vault 전용 기능을 넣지 않는다.
+- "규칙은 늘 넣고 사실은 포인터로" 진단: "MEMORY 2차 점검은 만들지 않는다" 결정을 유지한다.

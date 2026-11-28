@@ -29,11 +29,7 @@
 
 ## 결정이 필요한 것
 
-- **Claude Code 2.1.307~332 신기능·11/27 vault 자료에서 나온 후보 중 범위 결정이 필요한 것** (2026-11-27 정리, 0003 범위와 맞는지 먼저 정한다)
-  - 보안 설정 안내 묶음: `permissions.blockWritesOutsideWorkingDirectories`(2.1.314), `permissions.denyInsteadOfPrompting`(2.1.319), `PreSkillShellCommand` hook(2.1.332). 사용량 진단 범위 밖일 수 있다.
-  - MCP 서버가 내주는 스킬(`server:skill`, 2.1.332)을 카탈로그 대상에 넣을지. 서버가 내용을 바꿔도 사용자는 모른다(context7은 서버 URL에 버전 없음, shadcn `@latest`, rea는 6.7.0 고정 — 2026-11-27 확인).
-  - vault "사용자 미검토" 누적 개수·최고령 표시(vault lint 규칙: 10건 초과 또는 2주). kcal이 vault를 읽게 되므로 범위 결정.
-  - "규칙은 늘 넣고 사실은 포인터로" 진단(세컨드브레인 자료, vault에서 보류). "MEMORY 2차 점검은 만들지 않는다" 결정과 충돌하므로, 하려면 그 결정을 다시 연다.
+- 없음 (2026-11-28 범위 결정 4건은 0003에 기록)
 
 ## 데이터가 쌓여야 하는 것
 
