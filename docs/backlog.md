@@ -8,8 +8,7 @@
 
 ## 진행 중
 
-- [ ] **다음: 프로젝트 단위 켜기의 마지막 조각 — Kiro MCP 명령·JSON 안내**(2026-11-24 결정, 아래 "프로젝트 단위로 켜기"). 미구현(`coach/scope*.rs`에 Kiro 없음, 2026-11-27 확인). Antigravity는 실사용자 기록이 생길 때까지 보류.
-- [ ] 미릴리스(v0.1.5 뒤 main): 한도 문구 "주간"·"N일 N시간 후"(`a7dc47d`), 메뉴바 아이콘 모양 고르기(`3e8ea82`), Codex 플러그인 프로젝트에서만 켜기(`f93737f`·`d4bc061`). 릴리스는 사람이 요청할 때.
+- [ ] 미릴리스(v0.1.5 뒤 main): 한도 문구 "주간"·"N일 N시간 후"(`a7dc47d`), 메뉴바 아이콘 모양 고르기(`3e8ea82`), Codex 플러그인 프로젝트에서만 켜기(`f93737f`·`d4bc061`), Codex 환율 주간 창 섞임 고침(`e11058a`), Kiro MCP 사용 횟수·끄기 제안·프로젝트 이동 안내(`bd1d17c`). 릴리스는 사람이 요청할 때.
 
 ## 사람이 확인할 것 (실기·실계정)
 
@@ -23,52 +22,12 @@
 - [ ] Claude Code `/usage`와 겹침 다시 긋기(사용자 요구 조사, 2026-11-19). CHANGELOG(2.1.327 기준)에서 `/usage`는 경고마다 출처를 밝힌 한 줄 고침을 내고 `f`로 적용하며, 같은 고침이 `/doctor`에도 나온다(확인됨). 0017·0022는 `/doctor` 기준으로 범위를 그었으므로 `/usage` 고침과 진단하기 카드가 겹치는지는 모름. 확인: 같은 날 `/usage`를 열어 진단하기 카드와 나란히 비교한다. 겹치는 것은 "이미 있는 점검은 안내만"(0017)으로 돌린다.
 - [ ] CLAUDE.md 줄이기(0018 작업 A): Opus 없는 플랜의 오류 모양은 모름. Windows 실행 미확인.
 - [ ] `paths` 없는 rules 옮기기(0018 작업 B): 실제 Claude 실행 1회 통과(2026-11-22, 5.3초, 모르는 키 0): 응답 방식 규칙 → 유지, `src/components` 규칙 → `paths`, 릴리스 절차 → 스킬 `cut-release`. 세 제안 모두 내용에 맞았다. 표본 1회라 다른 규칙 모양에서의 품질은 모름. 실제 실행 테스트는 한도 문을 거치지 않으니 남은 한도를 먼저 보고 돌린다: `cd src-tauri && cargo test --lib real_claude_proposes_where_rules_belong -- --ignored --nocapture`. 약점: 스킬로 옮기기 되돌리기 중 SKILL.md 지우기만 실패하면 기록 줄 없이 두 파일이 남고(뒤 되돌리기는 거절하고 수동 명령을 안내), 규칙이 심볼릭 링크면 링크가 끊긴다.
-- [ ] 빈 환경 화면: 2026-11-17 빈 HOME 실제 창에서 기록 부족 문구, "estimate only", 빈 날 목표 숨김·단수/복수, Diagnose 제목 한 줄(폭 900), 영어 화면 한글 0, 빨간 글씨 0을 확인했다. Checks 탭 Claude Code 미설치 문구에 실행·설치 안내를 더했다. 2026-11-18 미리보기에서 팝오버 라이트(영어·한국어·빈 상태), 대시보드 한국어 라이트, 진단하기 제목 880·760·640 폭(두 언어·두 모드)도 확인했다: 겹침·잘림·언어 섞임·콘솔 오류 0. 라이트 회색 글씨 대비는 카드 위 4.93:1, 회색 바탕 위 4.52:1로 AA 통과(계산). 실제 창이 아니라 미리보기다. 한도를 못 읽은 에이전트는 링·숫자 대신 "—"와 "한도 못 읽음"을 보인다(2026-11-18, 테스트). `context/scan.rs` "2.1.300 이상 필요"는 이 Mac 기록에서 요청 모양 줄이 남은 가장 낮은 버전이 2.1.301이라 그대로 둔다(그보다 오래된 기록은 없어 하한은 추정).
+- [ ] 빈 환경 화면을 **실제 창**에서 보기(2026-11-18까지는 미리보기로만 팝오버 라이트·대시보드 한국어·진단하기 880/760/640 폭 확인: 겹침·잘림·언어 섞임·콘솔 오류 0, 회색 글씨 대비 AA). 실제 창으로 본 것은 2026-11-17 빈 HOME 한 번뿐이다.
 - [ ] 실제 앱 눈 확인: 줄인 트레이 에이전트 탭의 실제 높이(미리보기 약 335px, 0023), 라이트 모드 대시보드의 선택 날 칸(회색 상자)이 무거운지.
+- [ ] Kiro MCP 안내(`bd1d17c`)를 실제 앱에서 보기: 진단하기 Kiro 탭의 사용 횟수 줄·JSON 복사·되돌리기 안내. 이 Mac은 최근 30일 Kiro 세션이 7,327개(대부분 kiro-run 작업자)라 `diagnoseUsageFiles` 기본 1,000개로는 약 일주일만 읽혀 `partial` → 제안이 안 뜬다(확인됨, 2026-11-28 실측). 보려면 설정에서 이 값을 올린다. 붙여 넣은 JSON으로 Kiro `/tools`에 서버가 실제로 뜨는지도 본다(추정: 작업 공간 항목이 통째로 대체하므로 뜬다).
 - [ ] 추가 사용량(`extra_usage`)이 켜진 Claude 계정의 실제 응답 모양(0027 ③, 2026-11-19 구현은 CodexBar 소스 기준).
 
 ## 결정이 필요한 것
-
-- [ ] **에이전트 선택에 따라 바뀌는 화면 + 에이전트 N개 대비 구조.** 범위는 [0027](decisions/0027-agent-descriptor-and-picker.md).
-  - 진행(2026-11-19): ① 설명표 완료 f3618d8·1b19f04, ② 대시보드 고르기 완료 5f1c7a7. ③ 창 `group`(+ 모델별 한도) 완료 e27b824. 남음: ④ Antigravity(별도 결정).
-  - ④ Antigravity 읽기 조사(2026-11-27, 이 Mac 설치본, 읽기만): 기록은 `~/Library/Application Support/Antigravity/User/globalStorage/state.vscdb`(SQLite `ItemTable`)의 `antigravityUnifiedStateSync.*` 키. 세션 요약 `trajectorySummaries`·한도 후보 `userStatus`·`modelCredits`는 base64 protobuf라 스키마 없이는 필드 뜻을 모름(확인됨: 키 존재. 모름: 세션별 모델·토큰, 남은 %·초기화 시각). 이 Mac DB는 2026-05-21 이후 안 바뀜(확인됨) → 지금 값 검증 불가. MCP·rules·skills 위치는 공식 문서에 있음(사용자 `~/.gemini/config/{mcp_config.json,rules,skills}`, 작업 공간 `.agents/…`, 문서 antigravity.google/docs/{mcp,rules,skills}). 결론: 실제로 쓰는 사용자 기록이 생길 때까지 보류.
-  - 요청: 지금 지원하는 에이전트 3개(Claude·Codex·Kiro) 중 무엇을 고르느냐에 따라 화면·대시보드가 그 에이전트에 맞게 바뀌어야 한다. 나중에 유명한 에이전트를 더 붙이므로 3개 고정이 아니라 N개를 전제로 디자인·데이터 화면을 짠다.
-  - 지금 상태(코드로 확인):
-    - 대시보드 사용량 탭은 고르는 칸이 없다. 켠 에이전트(`enabledAgents`)를 전부 한 페이지에 쌓는다: 링(`DailyActivity`, 동심원) → 처방 효과(`HealthCompare`) → 에이전트별 상세 카드(`AgentPanels`, `dashboard.tsx:36`). 팝오버만 에이전트 탭이 있다.
-    - 목록 고정: TS `Agent` 유니언·`AGENTS`(`src/lib/ipc.ts:9`·`:12`), Rust `Agent::ALL: [Agent; 3]`(`src-tauri/src/usage/mod.rs:29`), 이름 `AGENT_LABEL`(`usage-popover.tsx:22`), 색 `--agent-claude/codex/kiro` 3개(`index.css`, `docs/design.md` "새 색은 결정 기록 없이 더하지 않는다").
-    - 이름으로 갈라 그리는 곳: 단위·낱말 `agent === "kiro"`(크레딧·질문: `daily-activity.tsx:55`·`:260`, `agent-metrics.tsx:48`, `rate-line.tsx:239`, `health-compare.tsx:42`), Codex 전용 칸 `agent === "codex"`(`dashboard.tsx:66`, `agent-metrics.tsx:71`, `behavior-section.tsx:156`), 특정 에이전트 값을 따로 넘김(`kiroUsage` `dashboard.tsx:175`, `claudeUsage` `checks-tab.tsx:97`). 환율 IPC 타입도 에이전트마다 고정 필드(`RateSnapshot`의 `codex`·`kiro`·`claude`, `ipc.ts:236`).
-  - 고려할 것(설계 전 초안):
-    - **화면은 에이전트 이름이 아니라 "가진 데이터"로 칸을 고른다.** 에이전트마다 있는 것이 다르다: 한도 모양(Claude·Codex 5시간·주간 % 창 / Kiro 월 크레딧), 세는 단위(요청 / 질문), 환율·창 구성·한 턴 몫·점검 카드 유무. 이것을 에이전트 설명표 한 곳(이름·색·아이콘·한도 모양·낱말·있는 기능)에 적고, 칸은 "이 기능이 있으면 그린다"로 바꾼다. 목표: 새 에이전트 = 설명표 한 줄 + Rust 수집 모듈, 화면 파일은 안 건드림.
-    - **공통 칸과 전용 칸을 나눈다.** 공통(모든 에이전트가 채울 수 있는 것): 남은 %·초기화 시각, 오늘 쓴 양 ÷ 하루 몫, 시간대 요청 수, 시작 컨텍스트 합계. 전용: Codex 창 구성·상위 세션, Kiro 모델별 한 턴 몫, Claude 점검 카드. 대시보드 "전체"는 공통 칸만, "에이전트별"은 공통 + 그 에이전트 전용 칸.
-    - **선택 상태는 하나로 흐르게.** 팝오버 탭 → `openDashboard(tab, agent?)`로 그 에이전트 대시보드, 대시보드에서 고른 값은 `?agent=`/event로(지금 `?tab=` 방식과 같게). 점검 탭 알림 점의 "개요 = 전체, 에이전트 탭 = 그 에이전트"(0017 "알림 개수") 규칙을 대시보드 고르기에도 그대로 쓴다.
-    - **데이터 모양도 N개로.** IPC는 에이전트마다 고정 필드(`RateSnapshot.codex/kiro/claude`) 대신 `agents: [{ agent, … }]` 목록 + 기능별 선택 필드로. Rust·TS 짝과 fixture를 같은 작업에서 바꾼다(AGENTS.md IPC 규칙).
-    - **다음 에이전트 하나로 틀을 검증한다.** 설명표 칸은 상상한 N개가 아니라 실제 4번째 후보 하나를 넣어 보며 정한다. 그 전에 일반화하면 맞지 않는 칸을 만든다(YAGNI).
-  - 걱정되는 것:
-    - **"전체"에서 단위가 안 맞는다(확인됨, 코드).** Claude·Codex는 5시간 창 %, Kiro는 월 크레딧이라 지금도 링 단위가 갈린다(`daily-activity.tsx:55`). 새 에이전트는 또 다른 모양(요청 수 한도, 달러, 한도 없음)일 수 있다. "전체"에서 무엇을 나란히 보여 줄지(남은 % 하나로 맞출지, 한도 없는 에이전트는 어떻게 그릴지)를 먼저 정해야 한다.
-    - **N개에서 화면이 깨진다(추정, 4개 넣은 미리보기로 확인).** 동심원 링은 4개를 넘으면 못 읽는다. 팝오버 탭 줄(폭 310)은 5개쯤에서 넘친다. 메뉴바 막대 아이콘(0012, `tray.rs` `bars`가 켠 에이전트마다 막대 하나)은 막대가 가늘어져 안 보인다. 브랜드색 3개(`index.css`)는 늘릴 때마다 라이트·다크 대비를 다시 봐야 하고 결정 기록이 필요하다(`docs/design.md`).
-    - **유휴 CPU·조회 비용이 에이전트 수만큼 는다(확인됨, 코드).** 한도 조회는 에이전트마다 타이머가 있다(`usage/schedule.rs`, `Agent::ALL` 크기 배열). 새 설치 기본값이 "모두 켬"(`Settings::default` = `Agent::ALL`)이라 설치 안 한 에이전트도 조회한다. (정정 2026-11-21: 첫 실행은 이미 찾은 에이전트만 켠다, `settings.rs` `first_run_agents`. `Settings::default`는 첫 실행 경로가 아니다.)
-    - **설정 파일 호환(확인됨, `settings.rs` `validate_agents`).** 알 수 없는 id가 하나라도 있으면 목록 전체를 버리고 "모두 표시"로 돌아간다. 새 에이전트를 넣은 버전에서 옛 버전으로 내리면 사용자가 꺼 둔 설정이 사라진다. 결정(2026-11-21): 모르는 id는 건너뛰고 나머지를 살린다(`settings.rs` `load`, 2026-11-21. IPC 저장은 계속 거절). 새로 설치된·안 본 에이전트를 켜는 기존 동작(`seen_agents`)은 유지.
-    - **tuning이 에이전트별 필드로 늘어난다(확인됨).** `kiroIntervalSecs`·`codexSessionsToSearch`·`claudeLogFiles`·`kiroDailyCredits` 같은 평평한 필드라, 에이전트가 늘면 설정 패널이 길어진다. 에이전트별로 묶어 접을지 정한다(0007).
-    - **공통 칸이 "같은 뜻"인지(모름).** "요청"·"시작 컨텍스트"를 에이전트마다 재는 방법이 다르다(실측 / 바이트 ÷ 4 추정, 0005). 같은 줄에 나란히 놓으면 비교되는 것처럼 보인다. 칸마다 실측·추정 표시를 어떻게 할지 정한다.
-    - **바꾸는 범위가 넓다(확인됨).** 이름 분기·고정 필드가 프론트 10곳 넘게, Rust `Agent::ALL` 17곳에 있다. 한 번에 다 바꾸면 화면 회귀를 놓치기 쉽다. 순서 초안: ① 설명표 + 이름 분기 걷기(화면 그대로, 테스트로 확인) → ② 대시보드 고르기 → ③ N개 레이아웃(링·탭·아이콘) → ④ 4번째 에이전트.
-  - 시작 전: 구조 변경이라 결정 기록(`docs/decisions/`)을 먼저 쓴다. UI는 `docs/design.md`를 따른다.
-  - 2026-11-19 사용자 결정: ① 대시보드에서 하나 고르기(팝오버 탭 → 그 에이전트 대시보드) ② 4번째 후보 Antigravity(처음엔 Gemini CLI였으나 Google 공식 문서상 2026-06-18부터 Gemini CLI는 개인·AI Pro·Ultra 계정을 받지 않고 Antigravity로 옮겨 감, 2026-11-19 확인 developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals). 기록 형식·한도 API는 모름 → 읽기 조사 먼저.
-  - 정할 것: ① "선택"이 설정의 켠 에이전트인지, 대시보드에서 하나를 고르는 것인지(둘 다인지) ② 다음에 붙일 에이전트 후보(정해지면 설명표 칸을 그 에이전트 기준으로 검증) ③ 팝오버도 같은 방식으로 바꿀지.
-- [ ] **프로젝트 단위로 켜기 — 상황을 보여주고 잊지 않게 돕기.** 초안, 범위 안 정함.
-  - 2026-11-21 사용자 결정: v0.1.4 게시 다음 큰 기능. 순서 Kiro MCP → Codex 플러그인. 0022에 갱신 절로 붙인다.
-    - Kiro MCP: 끄기 제안 + 프로젝트에서만 켜기(Codex MCP와 같은 기준). 근거: `messages.jsonl` `tool_call`의 `_meta.kiro.serverName`(확인됨, 이 Mac 1,074건), 프로젝트 = `session.json` `workspacePaths` 첫 값. 쓰기는 칸 하나만 덮기(프로젝트 `{"disabled": false}`, 사용자 `"disabled": true`). 사용자 항목 전체 복사는 `env` 비밀값이 프로젝트 파일로 가므로 하지 않는다. **선행 확인(사람):** 작업 공간에 `{disabled:false}`만 두고 Kiro `/tools`로 서버가 켜지나. 안 되면 명령·JSON 안내만.
-      - 2026-11-22 확인(kiro-cli 3.5.0 `mcp status`, 사용자 파일은 안 건드리고 임시 작업 공간에 `{"playwright":{"disabled":true}}`만 둠): 작업 공간 항목이 사용자 항목을 **칸 단위가 아니라 통째로 대체**한다(Command `npx` → 빈 값). 따라서 `{disabled:false}`만 쓰면 command가 없는 서버가 된다 → "칸 하나만 덮기"는 안 된다(확인됨, CLI 설정 보기 기준. 대화 `/tools`도 같은 로더인지는 추정). 남은 길: 사용자 항목 전체 복사(`env` 비밀값이 프로젝트 파일로 감, 위에서 뺀 방식) 또는 명령·JSON 안내만. 2026-11-24 사용자 결정: **명령·JSON 안내만**(kcal은 Kiro 파일을 쓰지 않는다, `env` 비밀값이 프로젝트 파일로 가지 않게).
-    - Codex 플러그인: 프로젝트에서만 켜기만, 끄기 제안 없음. 플러그인 `SKILL.md`를 읽은 `exec` 호출을 사용으로 센다(확인됨, 플러그인 MCP 호출 매칭은 모름). 프로젝트 `.codex/config.toml` `plugins.<id>.enabled`가 덮는지는 추정(확인 = 신뢰한 저장소에서 키 두고 스킬 목록). 2026-11-22: `codex debug prompt-input`(0.171.0)은 `-c plugins."…".enabled=`로 사용자 수준에서 바꿔도 스킬 목록이 그대로라 이 방법으로는 판정 못 한다. 실제 세션(`codex exec`에서 스킬 목록 묻기, 한도 씀)으로 확인해야 한다.
-      - 2026-11-25 사용자 결정: 임시 신뢰 저장소에서 실제 `codex exec` 1~2회로 확인 허락. 덮으면 적기까지, 안 덮으면 명령 안내만.
-      - 2026-11-27 확인됨(`codex exec` 0.171.0, `--trust`로 신뢰한 임시 저장소, 끝나고 사용자 config 원복): 프로젝트 `.codex/config.toml` `[plugins."<id>"] enabled`가 사용자 값을 양방향으로 덮는다(사용자 켬 `browser` → 프로젝트 false → 스킬 빠짐, 사용자 끔 `pdf` → 프로젝트 true → `pdf:pdf` 실림). `-c projects."…".trust_level`로는 신뢰가 안 걸려 프로젝트 층이 통째로 안 읽힌다("Untrusted project-local configuration is disabled"). → 적기까지 구현·머지함(`f93737f`, 0022 갱신 절, 미릴리스).
-  - 문제: 플러그인·스킬을 프로젝트마다 켤 수 있다는 것 자체를 모르거나, 알아도 매번 사용자 전체로 켜 두고 프로젝트별로 옮기는 걸 잊는다. 그래서 한 프로젝트에서만 쓰는 것이 모든 세션의 기본 컨텍스트에 실린다.
-  - kcal이 할 일: 새 저장소를 만들지 않는다. 기억은 Claude Code 내장(`claude plugin enable --scope project|local` → `.claude/settings.json`·`settings.local.json` `enabledPlugins`)이 맡는다. kcal은 ① **상황 보기**: 플러그인·스킬마다 "켠 범위(사용자/프로젝트) × 실제로 쓴 프로젝트(최근 N일)" 한 장, ② **알려주기**: "사용자 전체로 켜져 있는데 A·B 프로젝트에서만 썼다" → "사용자에서 끄고 A·B에서만 켜기" 제안, ③ **대신 적기**: 0014 적용·되돌리기로 프로젝트 파일에 쓴다.
-  - "원할 때 주입": 스킬은 `skillOverrides` `user-invocable-only`(부를 때만 본문, 0017 사실표 E), 플러그인은 세션 중 켜고 끄면 캐시가 깨지므로(0017 사실표 D) 세션 시작 전 프로젝트 파일로.
-  - 겹치는 것: 진단하기 개선의 구멍 5(스킬 단위)·6(작업 폴더 하나만 봄)과 같은 재료(프로젝트별 사용 기록)를 쓴다. 구멍 1(사용 기록 근거)은 0022로 풀려 ①상황 보기와 ②·③ 중 Claude 플러그인 "프로젝트에서만 켜기"(1~3곳에서만, 3번 이상 쓴 것, `.claude/settings.local.json`에 쓰고 한 번에 되돌리기)는 구현됐다. 스킬 단위(0022)와 Codex MCP 서버 "프로젝트에서만 켜기"(2026-11-19, 0022 "Codex MCP", `.codex/config.toml`, 신뢰한 프로젝트만)도 구현됐다. Claude MCP는 명령 안내로 구현됐다(2026-11-19, 0022, user 설정은 쓰지 않음). Codex 플러그인도 구현됐다(2026-11-27, `f93737f`). 남음: Kiro(명령·JSON 안내).
-  - 기존 코드(확인됨): `enabledPlugins` 읽기 `context/scan.rs:179`, 고치기 `coach/edit.rs:206`(지금은 이미 적힌 플러그인만, 사용자 settings 기준).
-  - 확인할 것: (추정) 프로젝트 `enabledPlugins: false`가 사용자 `true`를 덮는다. 한 프로젝트에서 `claude plugin disable <id> --scope local` 뒤 새 세션 `/context`로 확인. (추정) 세션 기록 `cwd`로 프로젝트별 사용 집계가 된다. `~/.claude/projects/*/*.jsonl`의 `cwd`로 확인. (확인됨 2026-11-19, 소스) Codex는 신뢰한 프로젝트의 `.codex/config.toml`이 사용자 설정 위에 키 단위로 겹친다(실제 세션 확인은 남음). (모름) Kiro의 프로젝트 단위 켜기. Codex `plugins._default.enabled`는 읽지 않고 있고, Kiro는 사실표 확인이 필요하다.
-  - 시작 전: 결정 기록(0017 E에 붙일지 새로 쓸지)과 진단하기 개선과의 순서를 정한다.
-  - 2026-11-19 사용자 결정: 0017 E에 붙이고, 진단하기 5 다음에 한다.
 
 - **Claude Code 2.1.307~332 신기능·11/27 vault 자료에서 나온 후보 중 범위 결정이 필요한 것** (2026-11-27 정리, 0003 범위와 맞는지 먼저 정한다)
   - 보안 설정 안내 묶음: `permissions.blockWritesOutsideWorkingDirectories`(2.1.314), `permissions.denyInsteadOfPrompting`(2.1.319), `PreSkillShellCommand` hook(2.1.332). 사용량 진단 범위 밖일 수 있다.
@@ -79,7 +38,9 @@
 ## 데이터가 쌓여야 하는 것
 
 - [ ] Claude 환율: 2026-11-21 최근 `advanced.claudeRateDays`일(기본 7일, 3~90일) 창만 회귀하도록 변경(0006). 11-17 플랜 업그레이드 전후 혼합을 줄인다. 플랜·한도 변경 후 N일 동안 다시 모으며, 신뢰도가 안정되는지 재확인한다.
-- [ ] Codex 환율이 측정 시점에 따라 크게 달랐다(창 40개에서 캐시 1%p ≈ 742K, 창 27개에서 ≈ 1.9M). 원인은 디스크의 rollout 집합 변화이고 어느 쪽이 실제에 가까운지는 모름. 2026-11-18: Codex가 열흘쯤 지난 rollout을 `.jsonl.zst`로 압축해 kcal이 건너뛰고 있었다. 이제 풀어 읽는다(0026, 창 17→103개). 값이 안정되는지 며칠 뒤 다시 잰다. 2026-11-22 재측정(`codex_parity_on_real_rollouts`, rollout 184개·창 109개): 검증 R² 0.873, 1%p ≈ 캐시 입력 1.41M(fold 1.14M~1.53M)·비캐시 입력 38K·출력 3.5K. 11-18 0026 직후 값은 기록이 없어 비교 못 함 → 다음 측정과 이 값을 비교한다. 창이 더 쌓이면 재확인하고, 3층에서 이 값을 쓸 때 오차를 표기한다.
+- [ ] 2026-11-28 재측정(실제 기록, `cargo test --lib -- --ignored --nocapture codex_parity_on_real_rollouts claude_parity_on_real_logs`, exit 0):
+  - Claude: 창 89개 중 21개 사용, 검증 R² 0.714 → Estimated, 1%p ≈ 비캐시 입력 990K·출력 14.4K.
+  - Codex: 처음엔 창 149개·R² −0.44(Unreliable). 원인 확인됨: 8월 옛 rollout은 주간 한도가 `primary`(`window_minutes` 10080)에 있어 5시간 회귀에 섞였다. 창 길이로 고르게 고침(`fix/codex-rate-unreliable` `e11058a`) → 창 143개·R² 0.636(RangeOnly, 1%p 단일값은 아직 안 냄). 월별 R² 9월 −0.33 / 10월 0.73 / 11월 0.97이라 남은 오차는 9월 데이터 쪽(원인 모름, 플랜·모델 변화 추정). 최근 N일 창만 쓰는 방식(Claude `claudeRateDays`처럼)은 제안만 해 둠. 다시 잴 때 비교 기준은 이 값.
 - [ ] 3층: Claude %p(5시간 창 20개 이상 쌓인 뒤), 항목 단위 A/B 검증.
 
 ## 알려진 한계 (고칠 계획 없음, 바뀌면 다시 본다)
@@ -115,7 +76,6 @@
 - [ ] 코칭 경로·권한, 6층 검진.
 - [ ] 실제 rollout `payload.cwd` 형태(`\\?\C:\…`인지). `fsutil::is_inside`가 앞머리를 떼는 것은 단위 테스트만(`bad67dc`).
 - [ ] 릴리스 Windows `.sha256`을 LF로 쓰게 고침(2026-11-25, v0.1.4·v0.1.5 파일은 CRLF라 macOS `shasum -c`가 실패, 해시 자체는 일치 확인). 다음 릴리스에서 `shasum -a 256 -c kcal-windows-x64-setup.exe.sha256`이 통과하는지 본다.
-- [ ] Windows 개발 PC에서 `pnpm check`가 `installer:test`(`sh install.test.sh`)에서 멈춘다: cmd PATH에 `sh` 없음. CI는 통과. 2026-11-27 CONTRIBUTING에 Git Bash에서 돌리라고 적었다. Git Bash에서 통과 확인(2026-11-27 `8deb5e7`, exit 0).
 - [ ] Windows 진단하기 적용·Undo 실기(미리보기는 2026-11-25 확인). `get_checks` 경로·id의 `\\?\` 앞머리가 화면에 보이는지도 함께 본다. 2026-11-27 `17ff298`: IPC에는 여전히 남고(`A2-claude-rules-paths:\\?\C:\…`, `file`·`folder`), 대시보드·팝오버 본문에는 안 보였다. 숨긴 카드는 펼칠 수 없어 안을 못 봤다.
 - [ ] **claude.ai 커넥터 `! Needs authentication`(2026-11-27, Windows, Claude Code 2.1.332).** 로컬 `plugin:` 줄에서 `⚠` 대신 `!`가 나왔다(확인됨). `coach/connectors.rs` `parse`가 `!`도 인증 필요로 읽게 고쳤다(2026-11-27, 단위 테스트). 다른 모르는 상태(예: `- Not configured`, claude.ai 줄에서 나오는지는 모름)는 지금처럼 결과 전체를 버린다(0031 "엄격히"). 남은 확인: 커넥터 하나를 인증 해제한 뒤 `claude mcp list`에서 claude.ai 줄도 `!`인지, kcal에 커넥터 행이 남는지.
 - [ ] **팝오버가 화면 아래로 잘린다(2026-11-27, Windows, 사용자 보고 + dev 앱 재현, 1920×1080·125%).** 열 때 개요 높이로 top이 잡히고(top 338, bottom 809, 쓸 수 있는 높이 816, 논리 px) 열린 채 Claude 탭(668)·세션 펼침(740)으로 자라면 bottom이 1007·1078로 나갔다(확인됨, MCP 측정). 2026-11-27 고침: `tray.rs` `resize`가 Windows에서 높이를 바꾼 뒤 다시 놓는다(작업 영역 위에 붙어 있으면 top, 아니면 bottom 고정, 작업 영역 안으로 자름, `refit_top` 단위 테스트). macOS로는 Windows 경로를 컴파일하지 못해(교차 빌드에 `llvm-rc` 없음) CI가 첫 컴파일 확인이다. 2026-11-27 `8deb5e7` Windows 실제 앱 확인: 탭 바꾸기·세션 펼치고 접기에서 bottom이 작업 영역 끝(816)에 고정되고 접으면 줄어든다. **새로 남음: 높이가 바뀔 때마다 폭이 약 14px씩 커져 오른쪽 화면 밖으로 나간다**(`resize`가 outer 폭을 읽어 inner로 씀, 0.1.0부터, `docs/platform/windows-log.md` 2026-11-27). 2026-11-27 고침: 폭을 `inner_size()`로 읽는다. 남은 확인: Windows 실제 앱에서 높이를 여러 번 바꿔도 폭 310 유지. x는 작업 영역 안으로 자르지 않는다(폭이 안 자라면 넘칠 일 없음, 추정). 내용이 작업 영역보다 높으면 아래가 잘린다(`ponytail:`).
@@ -123,6 +83,9 @@
 
 ## 나중에
 
+- **4번째 에이전트 Antigravity(0027 ④) — 보류, 실제로 쓰는 사용자 기록이 생길 때.** ①설명표 ②대시보드 고르기 ③창 `group`은 끝났다(0027, 2026-11-19).
+  - 읽기 조사(2026-11-21·27, 이 Mac): 기록은 `~/Library/Application Support/Antigravity/User/globalStorage/state.vscdb`(`antigravityUnifiedStateSync.*`, base64 protobuf, 스키마 모름)와 `~/.gemini/antigravity/conversations/*.pb`. 남은 쿼터 API·로컬 파일은 공식 문서에 없다(Settings 화면만). 이 Mac DB는 2026-05-21 뒤 안 바뀌어 검증 불가. 붙인다면 "세션 수만" 지원이 한계(추정). MCP·rules·skills 위치는 문서에 있음(`~/.gemini/config/{mcp_config.json,rules,skills}`, 작업 공간 `.agents/…`).
+  - 붙일 때 다시 볼 것(2026-11-19 초안의 걱정): "전체"에서 한도 단위가 갈림(% 창 / 월 크레딧 / 한도 없음), 동심원 링 4개 이상·팝오버 탭 줄(폭 310)·메뉴바 막대가 좁아짐, 브랜드색 추가는 결정 기록(`docs/design.md`), 에이전트별 tuning 필드 묶기(0007), 공통 칸의 실측/추정 표시(0005), 한도 조회 타이머가 에이전트 수만큼 는다(`usage/schedule.rs`).
 - 6층 정기 검진 2차: 주 1회 검진·알림(notification plugin·capability 결정 기록 필요). 1차(대시보드 처방 효과)는 0016.
 - 3b 폴더 선택 측정: 사용자가 폴더를 고르면 그 폴더 기준으로 측정(dialog plugin + capability → 결정 기록).
 - `CLAUDE_CONFIG_DIR`·`CODEX_HOME` 재지정 읽기(사용자 요구 조사, 2026-11-19). 0005 "옮기지 않은 것"에서 "요청이 있을 때"로 미룬 것이다. 외부 요청 근거: CodexBar#81 여러 계정(👍28, 댓글 32), openai/codex#4432(👍134, open). 인접 도구 8곳 넘게 같은 요청이 반복된다(조사 보고, 개별 대조는 안 함). kcal 사용자 요청은 아직 없다. 하게 되면 0005를 고치는 결정 기록이 필요하다. README에 "지원 안 함"을 적었다(2026-11-21). 하게 되면 Finder에서 연 앱은 셸 환경 변수를 못 물려받으므로 설정 칸에 경로를 넣는 방식(추정, 확인 = release 앱에서 `std::env::var` 값 로그).
@@ -154,13 +117,7 @@
   - 안내만: 고장 난 설정 파일·안 맞는 hook matcher는 `/status`(2.1.327), API 연결은 `claude doctor`(2.1.331)로 안내. 알려진 한계 "hook 점검은 최근 세션 폴더만"의 보완.
   - Code Mode(2.1.323) 켬 여부를 측정 조건으로 표시. 11/19 1회 A/B에서 켬 +19%(추정, 표본 1).
   - 카탈로그·프로젝트 단위: 플러그인 `engines`(2.1.323)·`optionalDependencies`(2.1.331)로 "이 Claude Code 버전에서 동작하나" 판정.
-  - 모델 단가표 Fable 5.2($8/$40, 캐시 읽기 $0.20/Mtok, 2.1.321 기본 모델): 코드에 `fable`은 이미 있다(`coach/checks/models.rs` 등, 확인됨). 단가 대조만 남음.
   - 사용자 패턴(`/insights` 검토 항목에 붙임): 확신도·근거 요구 빈도(Agent Harness 영상), 계속 손보는 프로젝트 수 = repo별 한 달 커밋한 날 5일 이상(Ronacher 영상, 1편 주장이라 기준은 측정 후 정함).
   - 판정 설계 참고: 카드 보고를 "파일·줄 → 출처 → 위험 → 경계 → 영향"으로, 파싱 실패는 통과가 아니라 unknown(AI-Infra-Guard). 0014 백업 대상을 비밀값·도구·신원으로 나누기(treg).
   - 확인만: easel(2.1.330) 차트가 대시보드와 겹치는지. 용도가 달라(세션 안 산출물 vs 상시 메뉴바) 둘 다 둔다(추정).
   - 뺀 것: `/tasks` 확장, `/tui classic`, `mcp_tool` hook onFailure, 이메일 전송 확인 — 사용량·비용 진단과 연결 없음(추정).
-
-## 조사 기록 (2026-11-21, 읽기만)
-
-- Kiro 프로젝트별 켜기: MCP는 된다. 작업 공간 `.kiro/settings/mcp.json`이 사용자 `~/.kiro/settings/mcp.json`과 합쳐지고, 같은 이름이면 작업 공간이 이긴다. agent 설정 `mcpServers`가 그 위다. 서버마다 `disabled`가 있다(확인됨: kiro.dev/docs/mcp/configuration). 전역 서버를 작업 공간에서 같은 이름 + `disabled: true`로 끌 수 있다는 것은 추정(확인: 그렇게 두고 `/tools`). 스킬·powers의 작업 공간 단위 끄기는 문서에 없다. Kiro 세션 기록에서 MCP 사용을 셀 수 있는지는 모름 → "프로젝트에서만 켜기" Kiro는 이 확인 뒤.
-- Antigravity(0027 ④): 로컬 기록은 `~/.gemini/antigravity/conversations/*.pb`(공개 안 된 protobuf)이고, 남은 쿼터를 주는 API·로컬 파일은 공식 문서에서 못 찾았다(쿼터는 작업량 기준 5시간 갱신, Settings 화면에서만, antigravity.google/docs/plans). 한도 표시 근거가 없어 4번째 에이전트로 붙이기는 이르다(추정). 붙인다면 세션 수만 보이는 "기록만" 지원이 한계다.
