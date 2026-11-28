@@ -365,6 +365,9 @@ export const en: Messages = {
     namesIn: (kind, names) => `${kind} (${names})`,
     moreNames: (count) => `+${count} more`,
     moveToProjects: "Turn on only where used",
+    kiroMcpCloseFirst: "Close all Kiro sessions before following these steps",
+    kiroMcpGuideNote:
+      "kcal does not edit files. Fill in <enter manually> in the JSON yourself. Workspace files may be committed to the repository. Check project settings before disabling the user setting.",
     mcpCloseFirst: "Close all Claude Code sessions before running these commands",
     mcpGuideNote:
       "Run each command in order. Fill in <enter manually> before running. kcal does not edit the settings.",
@@ -373,8 +376,8 @@ export const en: Messages = {
       "These files change together. Backups are made next to the originals first, and one Undo restores them all.",
     moveNoteCodex:
       "These files change together. The project’s .codex/config.toml may be committed to that repository (Codex has no project config file that stays out of version control). Codex only reads this file for projects you trust. Backups are made next to the originals first, and one Undo restores them all.",
-    legendCodexMove:
-      " Suggested = an MCP server with no use in your Codex logs, or an MCP server or plugin used in only some projects.",
+    legendMove: (agent, plugins) =>
+      ` Suggested = an MCP server with no use in your ${agent} logs, or an MCP server${plugins ? " or plugin" : ""} used in only some projects.`,
     skipped: (names) => `Skipped (folder is gone): ${names}`,
     newFile: "new file",
     confirmMove: "Confirm and move",

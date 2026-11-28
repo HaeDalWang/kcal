@@ -74,10 +74,10 @@ pub struct CoachSwitch {
     pub tokens: Option<u64>,
     /// 측정에서 본 로딩 시점. 측정에 없으면 `None`.
     pub loading: Option<Loading>,
-    /// 끄기 제안 대상: 켜져 있고, 시작 때 실리고, 토큰을 알고, Claude는 최근 N일 0회(Codex·Kiro는 제안 안 함, 0014·0022).
+    /// 끄기 제안 대상: 켜져 있고, 시작 때 실리고, 토큰을 알고, 최근 N일 0회(0014·0022).
     /// 목록은 제안 먼저 토큰 큰 순.
     pub is_proposed: bool,
-    /// 최근 N일 사용 횟수(Claude·Codex). 모르면 `None`(Kiro).
+    /// 최근 N일 사용 횟수(Claude·Codex·Kiro). 모르면 `None`.
     pub usage: Option<SwitchUsage>,
     /// 지금 켠 범위(Claude 플러그인만).
     pub scope: Option<SwitchScope>,
@@ -269,7 +269,11 @@ fn codex(
     plugins.chain(servers).collect()
 }
 
-fn kiro(home: &Path, context: Option<&AgentContext>) -> Vec<CoachSwitch> {
+fn kiro(
+    home: &Path,
+    context: Option<&AgentContext>,
+    usage: Option<&UsageIndex>,
+) -> Vec<CoachSwitch> {
     let file = paths::kiro_root(home).join("settings").join("mcp.json");
     let Some(mcp) = fsutil::read_json(&file) else {
         return Vec::new();
@@ -277,7 +281,11 @@ fn kiro(home: &Path, context: Option<&AgentContext>) -> Vec<CoachSwitch> {
     scan::kiro_mcp_states(&mcp)
         .into_iter()
         .map(|(name, on)| {
-            let switch = base(Agent::Kiro, SwitchKind::Mcp, &name, on);
+            let mut switch = base(Agent::Kiro, SwitchKind::Mcp, &name, on);
+            if let Some(index) = usage.and_then(|u| u.kiro.as_deref()) {
+                switch.usage = Some(index.for_server(&name));
+                switch = super::mcp_guide::attach_kiro(switch, home, &mcp);
+            }
             let switch = file_switch(switch, SwitchFormat::Json, &file, Field::JsonServerDisabled);
             with_cost(switch, measured(context, ContextKind::Mcp, &name))
         })
@@ -373,7 +381,7 @@ pub fn list(
     let mut all: Vec<CoachSwitch> = [
         claude(home, context(Agent::Claude), usage, tuning),
         codex(home, context(Agent::Codex), usage),
-        kiro(home, context(Agent::Kiro)),
+        kiro(home, context(Agent::Kiro), usage),
     ]
     .into_iter()
     .flatten()
@@ -384,7 +392,7 @@ pub fn list(
     for switch in &mut all {
         // 사용 기록이 있으면 최근 N일 0회이고, 기록을 다 봤고, 세션이 `min_sessions`(tuning `diagnoseMinSessions`)개 이상일 때만
         // (0017 "E는 사용 기록 근거가 있을 때만"). 기록이 없거나 적으면 "안 쓴다"가 아니라 "모른다".
-        // Codex 플러그인은 읽기 사용만 알아 끄기를 제안하지 않는다. Kiro는 사용 기록이 없다(0022).
+        // Codex 플러그인은 읽기 사용만 알아 끄기를 제안하지 않는다. Kiro MCP도 같은 끄기 기준을 쓴다(0022).
         let is_unused = match &switch.usage {
             Some(u) => u.total == 0 && !u.is_partial && u.sessions >= u.min_sessions,
             None => false,
@@ -526,7 +534,7 @@ mod tests {
             .filter(|s| s.is_proposed)
             .map(|s| s.target.as_str())
             .collect();
-        // Codex·Kiro는 사용 기록이 없어 큰 것도 제안하지 않는다(0022). Claude는 기록이 없을 때만 토큰으로 본다.
+        // 이 fixture의 Codex·Kiro는 사용 근거가 없어 제안하지 않는다(0022).
         assert_eq!(proposed, ["claude/plugin:cp@m"]);
         let off = all
             .iter()
@@ -779,4 +787,5 @@ mod tests {
         );
     }
     include!("switches_codex_tests.rs");
+    include!("switches_kiro_tests.rs");
 }

@@ -160,3 +160,21 @@
 | Codex 플러그인에는 끄기 제안을 하지 않는다                                                                                                                                                                                                                     | 사용자 결정(2026-11-21: 켜기만). 0회는 SKILL.md 밖의 사용을 배제하는 근거가 아니다             |
 
 한계: section 없는 설치 플러그인은 집계·제안 목록 밖이다. 사용은 도구 입력에서 확인할 수 있는 SKILL.md 읽기만 센다. 스킬이 이미 로드되었거나 동적 경로·다른 읽기 구문을 쓰면 놓칠 수 있다. 명령을 실행하거나 코드를 해석하지 않는 구문 기반 집계이므로 읽기 구문을 인용만 한 입력은 과다 집계될 수 있다. 실제 실행 성공·스킬 내용의 사용 여부·CLI override는 확인하지 않는다. 실제 데이터 검증 모름(2026-11-27): 이 Mac의 최근 30일 rollout에는 플러그인 SKILL.md를 읽는 도구 호출이 없어 실데이터에서 집계·제안이 나오는지는 fixture로만 확인했다. `[features]` 같은 다른 표 아래의 `plugins = …` 키는 plugin 표로 보지 않는다(루트 점 키·`[plugins]` 표만 거부).
+
+## 갱신 2026-11-28: Kiro MCP 사용 기록·프로젝트에서만 켜기 안내
+
+조율자가 확인한 사실: Kiro `messages.jsonl`의 `payload.type = "tool_call"`, `payload._meta.kiro.serverName`에 서버 이름이 있다(이 Mac 1,074건, 2026-11-21). 프로젝트는 같은 세션 폴더 `session.json`의 `workspacePaths[0]`이다. Kiro 작업 공간 `.kiro/settings/mcp.json`의 같은 이름 서버는 사용자 항목을 통째로 대체한다(kiro-cli 3.5.0 `mcp status`, 2026-11-22). `disabled: false`만 복사하면 command가 사라진다. 이 작업에서는 전역 설정을 수정하는 실험을 반복하지 않는다.
+
+- 사용자 결정(2026-11-21/24): Codex MCP와 같은 끄기·범위 제안 기준을 쓰되, 범위 이동은 명령·JSON 안내만 한다. kcal은 이 이동을 위해 사용자·작업 공간 파일을 쓰지 않는다. 기존 0014의 사용자 `disabled` 수동 켜기·끄기, 백업·적용·되돌리기는 유지한다.
+- `usage_kiro.rs`는 기존 `message_files` 탐색을 재사용한다. 최근 `diagnoseUsageDays`일 파일을 최근 순으로 `diagnoseUsageFiles`개, `diagnoseUsageMaxMib`까지 읽는다. 수정 시각은 탐색 필터이고 실제 줄 timestamp로 기간을 판정한다. tool_call 하나를 1회로 세며 `toolCallId`(없으면 줄 id)로 중복 제거한다. 서버 이름은 정확 일치, 프로젝트는 첫 workspace 경로 그대로다. `.git` 루트를 찾지 않는다.
+- 깨진 JSON·읽기 오류·줄 크기 상한·유효하지 않은 timestamp·`session.json`/`workspacePaths` 없음·파일/바이트 상한은 partial로 처리한다. `workspacePaths: []`(작업 공간 없이 연 `_global` 세션)는 홈에서 시작한 세션으로 센다: 그 서버의 범위 제안만 막고 기록 전체를 partial로 만들지 않는다(2026-11-28 리뷰 수정). partial 또는 최소 세션 미달은 끄기·범위 제안을 막는다. 끄기 조건은 켜짐, startup, 토큰 > 0, 0회, 전체 기록, 세션 ≥ `diagnoseMinSessions`다. 새 tuning 키는 없다.
+- `scope::proposal()`의 1~3곳, `scopeMinUses`(기본 3회), 홈 제외, 사라진 폴더 건너뛰기 조건을 재사용한다. `McpScopeGuide`와 기존 복사 패널을 재사용하며 Kiro 전용 닫기·직접 입력·커밋 가능성 문구만 추가한다. Claude/Codex 문구와 동작은 바꾸지 않는다.
+- 프로젝트마다 사용자 서버 항목 전체를 `masked()`로 가리고 `disabled: false`로 만든 JSON을 안내한다. 기존 다른 서버는 유지하게 안내하며 같은 이름 서버가 한 프로젝트에라도 있으면 전체 안내를 생략한다. 프로젝트를 먼저 확인한 뒤 사용자 `disabled: true`를 넣고, 되돌릴 때는 사용자 disabled 삭제/false 후 프로젝트 항목만 삭제한다. Rust scope 적용 경로도 Kiro는 거부한다.
+- 비밀값 가림(Claude MCP와 공용 `mcp_guide::masked`, 2026-11-28 리뷰 뒤 넓힘): `env`·`headers`·`auth`의 모든 값, 이름에 token·secret·password·apikey·authorization·credential·bearer가 든 키(`-`/`_`·대소문자 무시, 예 `accessToken`·`clientSecret`), `args`에서 그런 이름의 플래그 다음 값(`--api-key X`, `--header X`)·`--token=X`의 값·`Bearer `/`Authorization:`이 든 값, 문자열의 query string. 이 꼴 밖에 섞인 비밀(예: 위치 인자 하나에 토큰만)은 못 가린다. 비용: 비밀 아닌 값도 다시 입력할 수 있다. 작업 공간 파일은 저장소에 커밋될 수 있으므로 직접 채운 값의 저장 여부는 사용자가 판단한다.
+- Ruling: JSON 붙여넣기 안내를 쓴다 — 이 세션의 `kiro-cli mcp add --help`에는 명령이 존재하지만 임의 필드 전체 JSON 입력이 없고 가린 값은 직접 입력해야 한다 — 비용: 사용자가 파일을 수동 편집한다.
+- Ruling: 기존 작업 공간 JSON을 읽거나 검증할 수 없는 경우도 안내를 생략한다 — 같은 이름 항목이 없다는 근거가 부족하다 — 비용: 파일 복구 전 안내가 없다.
+- Ruling: ID 중복 제거 범위는 세션 파일이다 — 서로 다른 세션의 로컬 ID 충돌을 피한다 — 비용: 복제된 세션 파일은 중복 집계될 수 있다.
+
+검증 명령과 결과는 `/tmp/kiro-mcp-scope.ledger.md`에 기록한다. 임시 HOME 테스트는 집계·중복·기간·partial·상한, Kiro 끄기 조건, JSON 필드 보존·비밀 가림·POSIX/Windows 인용·기존 항목 충돌·scope 쓰기 거부를 검증한다. 실제 HOME 읽기 전용 ignored 테스트는 서버별 횟수·프로젝트 수·제안 근거를 출력하며 프로젝트는 폴더 이름만 남긴다. 실제 Windows 실행·Kiro 재시작 후 수동 JSON 적용은 이 작업의 검증에 포함하지 않는다.
+
+이 세션의 확인됨: 실제 HOME 기본 상한 실측은 1,000세션, partial=true이고 설정 서버 4개(context7/exa/playwright/aws-mcp)의 읽은 범위 내 호출은 0회다. 전체 기록의 미사용 근거가 아니므로 제안하지 않는다. Kiro JSON은 설명문과 별도 복사 항목으로 표시해 복사 결과가 유효한 JSON이 되게 했다. 프론트엔드 테스트 289개·build는 통과했다. 전체 게이트는 통과하지 못했다(**확인됨**): 수정 범위 밖의 기존 `docs/HOW-IT-WORKS.html` format 오류와 sandbox의 로컬 socket listen 거부로 기존 Rust HTTP 테스트 7개가 실패했다. dev 서버도 같은 EPERM으로 실행되지 않아 라이트·다크 실화면 검증은 남았다. 허용 범위 밖의 `coach-list.tsx` 공통 범례는 Kiro 근거가 있을 때도 Codex용 범례를 고르므로 별도 수정이 필요하다.

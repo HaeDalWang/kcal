@@ -582,6 +582,22 @@ export const DASHBOARD_SWITCHES: CoachSwitch[] = [
       ],
     },
   }),
+  sw("kiro/mcp:docs", "docs", 500, {
+    isProposed: false,
+    usage: usage([["kcal", 8]]),
+    scopeMove: { projects: [{ name: "kcal", path: "/Users/me/work/kcal" }], skipped: [] },
+    scopeGuide: {
+      commands: [
+        `이 JSON을 '/Users/me/work/kcal/.kiro/settings/mcp.json'에 붙여 넣어요. 다른 항목은 유지해요.`,
+        `{"mcpServers":{"docs":{"command":"node","args":["docs.js"],"env":{"TOKEN":"<직접 입력>"},"disabled":false}}}`,
+        `프로젝트 설정 확인 후 '~/.kiro/settings/mcp.json'의 mcpServers["docs"]에 "disabled": true를 넣어요.`,
+      ],
+      undoCommands: [
+        `사용자 mcpServers["docs"]의 disabled를 지우거나 false로 바꿔요.`,
+        `프로젝트 mcpServers에서 "docs" 항목만 삭제해요.`,
+      ],
+    },
+  }),
   // 스킬 단위(0022 "스킬 단위"): 안 쓴 개인 스킬(제안), 숨겨 둔 프로젝트 스킬(다시 보이기), 사용자가 직접 정한 값(버튼 없음).
   sw("claude/skill:slides-helper", "slides-helper", null, {
     kind: "skill",

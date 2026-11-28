@@ -826,3 +826,58 @@ it("renders MCP guide commands and close-first line without invoking preview or 
   expect(within(panel).getAllByRole("button", { name: ko.coach.copyCommand })).toHaveLength(4);
   expect(invoke.mock.calls.some(([cmd]) => /preview|apply/.test(String(cmd)))).toBe(false);
 });
+
+it("renders Kiro JSON guide and session count without invoking preview or apply", () => {
+  const invoke = vi.fn();
+  mockIPC(invoke);
+  const commands = [
+    "Paste into .kiro/settings/mcp.json",
+    '{"mcpServers":{"docs":{"command":"node","disabled":false}}}',
+    'Set user "disabled": true',
+  ];
+  render(
+    <CoachPanel
+      agent="kiro"
+      switches={[
+        sw("kiro/mcp:docs", {
+          format: "json",
+          isProposed: false,
+          usage: usage([["kcal", 3]]),
+          scopeMove: { projects: [{ name: "kcal", path: "/work/kcal" }], skipped: [] },
+          scopeGuide: { commands, undoCommands: ["Enable user then remove project entry"] },
+        }),
+      ]}
+      log={[]}
+      onChanged={vi.fn()}
+      onShowEffect={vi.fn()}
+    />,
+  );
+  expect(screen.getByText(ko.coach.basis(30, 24))).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: `docs ${ko.coach.moveToProjects}` }));
+  const panel = screen.getByRole("group", { name: ko.coach.moveTitle("docs") });
+  expect(within(panel).getByText(ko.coach.kiroMcpCloseFirst)).toBeTruthy();
+  expect(within(panel).getByText(ko.coach.kiroMcpGuideNote)).toBeTruthy();
+  for (const command of commands) expect(within(panel).getByText(command)).toBeTruthy();
+  expect(within(panel).getAllByRole("button", { name: ko.coach.copyCommand })).toHaveLength(1);
+  expect(invoke.mock.calls.some(([cmd]) => /preview|apply/.test(String(cmd)))).toBe(false);
+});
+
+it("shows Kiro session count when zero-use evidence is insufficient", () => {
+  mockIPC(vi.fn());
+  render(
+    <CoachPanel
+      agent="kiro"
+      switches={[
+        sw("kiro/mcp:docs", {
+          format: "json",
+          isProposed: false,
+          usage: { ...usage([]), sessions: 2 },
+        }),
+      ]}
+      log={[]}
+      onChanged={vi.fn()}
+      onShowEffect={vi.fn()}
+    />,
+  );
+  expect(screen.getByTitle(ko.coach.fewSessions(30, 2, "Kiro"))).toBeTruthy();
+});

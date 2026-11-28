@@ -25,12 +25,13 @@ export type CoachSwitch = {
   loading: Loading | null;
   /** 끄기 제안 대상(켜져 있고, 시작 때 실리고, 토큰을 알고, 사용 기록이 있으면 최근 N일 0회). 목록은 제안 먼저 토큰 큰 순. */
   isProposed: boolean;
-  /** 최근 N일 사용 횟수(Claude만). 모르면 null(Codex·Kiro). */
+  /** 최근 N일 사용 횟수(Claude·Codex·Kiro). 모르면 null. */
   usage: SwitchUsage | null;
   /** 지금 켠 범위(Claude 플러그인만). */
   scope: SwitchScope | null;
   /** "프로젝트에서만 켜기" 제안(Claude 플러그인). */
   scopeMove: ScopeMove | null;
+  /** Claude·Kiro MCP의 수동 안내. Kiro는 파일 쓰기 없이 JSON만 복사한다. */
   scopeGuide?: McpScopeGuide;
   /** 끄면 함께 꺼지는 것(플러그인 폴더의 이름들). MCP 스위치·폴더를 못 읽으면 null. */
   contents: PluginContents | null;
@@ -80,7 +81,7 @@ export type SwitchUsage = {
   projectCount: number;
   /** 기록을 일부만 봤다(0회여도 근거가 아니다). */
   isPartial: boolean;
-  /** 기간 안에 읽은 Claude 세션 수(하위 에이전트 기록 제외). */
+  /** 기간 안에 읽은 해당 에이전트 세션 수(하위 에이전트 기록 제외). */
   sessions: number;
   /** 0회를 근거로 보려면 필요한 최소 세션 수(tuning `diagnoseMinSessions`). */
   minSessions: number;

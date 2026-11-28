@@ -233,15 +233,31 @@ function McpGuidePanel({ target, onCancel }: { target: CoachSwitch; onCancel: ()
       className="flex min-w-0 flex-col gap-1.5 border-t px-5 py-2.5 outline-none"
     >
       <h2 className="text-[13px] font-medium">{t.coach.moveTitle(target.name)}</h2>
-      <p className="text-xs">{t.coach.mcpCloseFirst}</p>
-      <p className="text-[10px] text-muted-foreground">{t.coach.mcpGuideNote}</p>
-      {guide?.commands.map((command) => (
-        <CopyCommand key={command} command={command} wrap />
-      ))}
+      <p className="text-xs">
+        {target.agent === "kiro" ? t.coach.kiroMcpCloseFirst : t.coach.mcpCloseFirst}
+      </p>
+      <p className="text-[10px] text-muted-foreground">
+        {target.agent === "kiro" ? t.coach.kiroMcpGuideNote : t.coach.mcpGuideNote}
+      </p>
+      {guide?.commands.map((command, index) =>
+        target.agent === "kiro" && !command.startsWith("{") ? (
+          <p key={`${index}-${command}`} className="text-xs whitespace-pre-line">
+            {command}
+          </p>
+        ) : (
+          <CopyCommand key={`${index}-${command}`} command={command} wrap />
+        ),
+      )}
       <h3 className="pt-1.5 text-[13px] font-medium">{t.coach.undo}</h3>
-      {guide?.undoCommands.map((command) => (
-        <CopyCommand key={command} command={command} wrap />
-      ))}
+      {guide?.undoCommands.map((command) =>
+        target.agent === "kiro" ? (
+          <p key={command} className="text-xs whitespace-pre-line">
+            {command}
+          </p>
+        ) : (
+          <CopyCommand key={command} command={command} wrap />
+        ),
+      )}
       <div className="flex justify-end">
         <Button size="xs" variant="ghost" onClick={onCancel}>
           {t.coach.close}

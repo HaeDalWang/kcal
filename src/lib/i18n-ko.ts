@@ -365,6 +365,9 @@ export const ko = {
     namesIn: (kind: string, names: string) => `${kind}(${names})`,
     moreNames: (count: number) => `외 ${count}개`,
     moveToProjects: "프로젝트에서만 켜기",
+    kiroMcpCloseFirst: "Kiro를 모두 닫고 실행해요",
+    kiroMcpGuideNote:
+      "kcal은 파일을 바꾸지 않아요. JSON 속 <직접 입력>은 직접 채워요. 작업 공간 파일은 저장소에 커밋될 수 있어요. 프로젝트 설정을 먼저 확인하고 사용자 설정을 꺼요.",
     mcpCloseFirst: "Claude Code를 모두 닫고 실행하세요",
     mcpGuideNote:
       "위에서부터 한 줄씩 실행하세요. <직접 입력>은 실행 전에 채우세요. kcal은 설정을 고치지 않아요.",
@@ -373,8 +376,8 @@ export const ko = {
       "아래 파일을 한 번에 바꿔요. 바꾸기 전에 원본 옆에 백업을 만들고, 되돌리기 한 번으로 모두 되돌려요.",
     moveNoteCodex:
       "아래 파일을 한 번에 바꿔요. 프로젝트의 .codex/config.toml은 그 저장소에 커밋될 수 있어요(Codex에는 커밋되지 않는 프로젝트 설정 파일이 없어요). Codex는 신뢰한 프로젝트의 이 파일만 읽어요. 바꾸기 전에 원본 옆에 백업을 만들고, 되돌리기 한 번으로 모두 되돌려요.",
-    legendCodexMove:
-      " 제안 = Codex 기록에서 안 쓴 MCP 서버, 또는 일부 프로젝트에서만 쓴 MCP 서버·플러그인이에요.",
+    legendMove: (agent: string, plugins: boolean) =>
+      ` 제안 = ${agent} 기록에서 안 쓴 MCP 서버, 또는 일부 프로젝트에서만 쓴 MCP 서버${plugins ? "·플러그인" : ""}이에요.`,
     skipped: (names: string) => `폴더가 없어져 건너뛰어요: ${names}`,
     newFile: "새 파일",
     confirmMove: "확인하고 옮기기",

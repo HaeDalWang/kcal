@@ -400,7 +400,13 @@ function Summary({
   const legendId = `${agent}-diagnose-legend`;
   const legend = hasFeature(agent, "usageEvidence")
     ? t.coach.legendTokens + t.coach.legendClaude + t.coach.evidenceSource
-    : t.coach.legendTokens + (basis ? t.coach.legendCodexMove : "");
+    : t.coach.legendTokens +
+      (basis
+        ? t.coach.legendMove(
+            AGENT_LABEL[agent],
+            switches.some((s) => s.kind === "plugin"),
+          )
+        : "");
   return (
     <div className="flex flex-col gap-1 px-5 pt-2.5 pb-2">
       <div className="flex items-start gap-2">

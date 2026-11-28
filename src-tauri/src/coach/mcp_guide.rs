@@ -1,4 +1,8 @@
 //! Claude user MCP의 명령 안내만 만든다. 설정 파일은 쓰지 않는다(0022).
+#[path = "mcp_guide_kiro.rs"]
+mod kiro;
+pub(crate) use kiro::attach as attach_kiro;
+
 use serde::Serialize;
 use serde_json::Value;
 
@@ -28,31 +32,65 @@ fn quote(value: &str, windows: bool) -> String {
     format!("'{escaped}'")
 }
 
-fn masked(value: &Value, secret: bool) -> Value {
+/// 이름에 이 낱말이 들어간 키·플래그의 값은 비밀값으로 본다(대소문자·`-`/`_` 무시).
+const SECRET_WORDS: [&str; 7] = [
+    "token",
+    "secret",
+    "password",
+    "apikey",
+    "authorization",
+    "credential",
+    "bearer",
+];
+
+fn is_secret_name(name: &str) -> bool {
+    let name: String = name
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect::<String>()
+        .to_ascii_lowercase();
+    matches!(name.as_str(), "env" | "headers" | "header" | "auth")
+        || SECRET_WORDS.iter().any(|w| name.contains(w))
+}
+
+pub(super) fn masked(value: &Value, secret: bool) -> Value {
     let placeholder = pick("<직접 입력>", "<enter manually>");
     match value {
         Value::Object(fields) => Value::Object(
             fields
                 .iter()
-                .map(|(key, value)| {
-                    let is_secret = secret
-                        || matches!(
-                            key.to_ascii_lowercase().as_str(),
-                            "env"
-                                | "headers"
-                                | "token"
-                                | "apikey"
-                                | "api_key"
-                                | "secret"
-                                | "client_secret"
-                                | "password"
-                                | "authorization"
-                        );
-                    (key.clone(), masked(value, is_secret))
+                .map(|(key, value)| (key.clone(), masked(value, secret || is_secret_name(key))))
+                .collect(),
+        ),
+        // `args`: `--api-key X`의 X, `--token=X`의 X, `Bearer …`·`Authorization: …`가 든 값을 가린다.
+        Value::Array(values) => Value::Array(
+            values
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    let after_flag = i > 0
+                        && values[i - 1]
+                            .as_str()
+                            .is_some_and(|f| f.starts_with('-') && is_secret_name(f));
+                    match v.as_str() {
+                        Some(text) if !secret && !after_flag => {
+                            let lower = text.to_ascii_lowercase();
+                            if lower.contains("bearer ") || lower.contains("authorization:") {
+                                Value::String(placeholder.into())
+                            } else if let Some((flag, _)) = text
+                                .split_once('=')
+                                .filter(|(f, _)| f.starts_with('-') && is_secret_name(f))
+                            {
+                                Value::String(format!("{flag}={placeholder}"))
+                            } else {
+                                masked(v, false)
+                            }
+                        }
+                        _ => masked(v, secret || after_flag),
+                    }
                 })
                 .collect(),
         ),
-        Value::Array(values) => Value::Array(values.iter().map(|v| masked(v, secret)).collect()),
         _ if secret => Value::String(placeholder.into()),
         Value::String(text) => Value::String(match text.split_once('?') {
             Some((base, _)) => format!("{base}?{placeholder}"),
@@ -263,6 +301,25 @@ mod tests {
             for secret in ["env-secret", "header-secret", "query-secret"] {
                 assert!(!command.contains(secret));
             }
+        }
+    }
+
+    #[test]
+    fn masks_secret_args_flags_and_bearer_values() {
+        let input = json!({"command":"npx","args":["mcp-remote","https://h/sse","--header","Authorization: Bearer sk-1","--api-key","sk-2","--token=sk-3","Bearer sk-4","--port","8080"],"accessToken":"sk-5","clientSecret":"sk-6"});
+        let out = masked(&input, false).to_string();
+        for secret in ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5", "sk-6"] {
+            assert!(!out.contains(secret), "{secret} in {out}");
+        }
+        for kept in [
+            "mcp-remote",
+            "https://h/sse",
+            "--api-key",
+            "--token=",
+            "8080",
+            "npx",
+        ] {
+            assert!(out.contains(kept), "{kept} missing in {out}");
         }
     }
 

@@ -308,6 +308,12 @@ fn plan_project(project: &Path, id: &str) -> Result<Option<Planned>, AppError> {
 
 /// 프로젝트 파일들(이미 켜져 있는 곳은 빼고) + 마지막에 사용자 설정.
 fn plan(switch: &CoachSwitch) -> Result<(Vec<Planned>, &ScopeMove), AppError> {
+    if switch.agent == Agent::Kiro {
+        return Err(refuse(pick(
+            "Kiro는 JSON 안내에 따라 직접 옮겨요.",
+            "Move Kiro servers manually using the JSON guide.",
+        )));
+    }
     let moving = switch.scope_move.as_ref().ok_or_else(|| {
         refuse(pick(
             "이 항목은 프로젝트에서만 켜기 대상이 아닙니다.",

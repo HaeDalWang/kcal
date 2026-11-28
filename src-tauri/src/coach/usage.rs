@@ -33,6 +33,8 @@ const MIB: u64 = 1024 * 1024;
 
 #[path = "usage_codex.rs"]
 mod codex;
+#[path = "usage_kiro.rs"]
+mod usage_kiro;
 pub(super) use codex::server_key as codex_server_key;
 
 static USE_MARK: LazyLock<Regex> =
@@ -80,6 +82,7 @@ pub struct UsageIndex {
     pub projects: BTreeSet<PathBuf>,
     /// Codex rollout에서 센 MCP·플러그인 사용(0022 Codex 갱신). 같은 구조를 따로 쓴다(세션 수·프로젝트가 에이전트마다 다르다).
     pub codex: Option<Box<UsageIndex>>,
+    pub kiro: Option<Box<UsageIndex>>,
 }
 
 /// 스위치 하나의 사용 횟수. TS 짝은 `ipc.ts` `SwitchUsage`.
@@ -494,6 +497,7 @@ pub fn read(home: &Path, tuning: &Tuning, now: f64) -> UsageIndex {
         scope_min_uses: tuning.scope_min_uses,
         is_partial: files.len() > limit,
         codex: Some(Box::new(codex::read(home, tuning, now))),
+        kiro: Some(Box::new(usage_kiro::read(home, tuning, now))),
         ..UsageIndex::default()
     };
     let bare = BareNames::load(home);
