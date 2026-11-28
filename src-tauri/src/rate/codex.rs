@@ -25,6 +25,9 @@ const TOKEN_COUNT_MARK: &[u8] = br#""token_count""#;
 const PREFIX_CHARS: usize = 400;
 /// 변수 순서: 비캐시 입력, 캐시 입력, 출력.
 pub(super) const VARIABLES: usize = 3;
+/// Codex 프로토콜의 창 길이(사용자 조절 값이 아님).
+const FIVE_HOUR_MINUTES: f64 = 300.0;
+const SEVEN_DAY_MINUTES: f64 = 10080.0;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Event {
@@ -121,6 +124,18 @@ fn total_key(total: Option<&Value>) -> String {
         .join(",")
 }
 
+/// 길이가 없는 구형 기록만 슬롯 이름으로 판정한다. 명시된 다른 길이(월간 등)는 섞지 않는다.
+fn limit_by_minutes<'a>(limits: &'a Value, minutes: f64, fallback: &str) -> Option<&'a Value> {
+    ["primary", "secondary"].into_iter().find_map(|key| {
+        let entry = limits.get(key).filter(|v| v.is_object())?;
+        let matches = match entry.get("window_minutes") {
+            None => key == fallback,
+            Some(value) => value.as_f64() == Some(minutes),
+        };
+        matches.then_some(entry)
+    })
+}
+
 /// `token_count` 이벤트 하나. info·rate_limits가 없거나 `limit_id`가 `codex`가 아니면 `None`.
 fn event(row: &Value, file: &str) -> Option<Event> {
     if row.get("type")?.as_str()? != "event_msg" {
@@ -135,14 +150,17 @@ fn event(row: &Value, file: &str) -> Option<Event> {
         return None;
     }
     let limits = limits?;
-    let primary = limits.get("primary");
-    if limits.get("limit_id").and_then(Value::as_str) != Some("codex") || !truthy(primary) {
+    if limits.get("limit_id").and_then(Value::as_str) != Some("codex")
+        || !(truthy(limits.get("primary")) || truthy(limits.get("secondary")))
+    {
         return None;
     }
     let tsr = row.get("timestamp")?.as_str()?;
     let ts = OffsetDateTime::parse(tsr, &Rfc3339).ok()?;
     let last = info?.get("last_token_usage");
-    let secondary = limits.get("secondary");
+    // 프로토콜 창 길이. primary가 주간뿐이어도 토큰 기록은 유지한다.
+    let primary = limit_by_minutes(limits, FIVE_HOUR_MINUTES, "primary");
+    let secondary = limit_by_minutes(limits, SEVEN_DAY_MINUTES, "secondary");
     Some(Event {
         ts: ts.unix_timestamp_nanos() as f64 / 1e9,
         tsr: tsr.to_owned(),
@@ -151,8 +169,12 @@ fn event(row: &Value, file: &str) -> Option<Event> {
         cached: number(last, "cached_input_tokens"),
         output: number(last, "output_tokens"),
         total_key: total_key(info?.get("total_token_usage")),
-        used_percent: primary?.get("used_percent").and_then(Value::as_f64),
-        resets_at: primary?.get("resets_at").and_then(Value::as_f64),
+        used_percent: primary
+            .and_then(|p| p.get("used_percent"))
+            .and_then(Value::as_f64),
+        resets_at: primary
+            .and_then(|p| p.get("resets_at"))
+            .and_then(Value::as_f64),
         weekly_used_percent: secondary
             .and_then(|s| s.get("used_percent"))
             .and_then(Value::as_f64),
