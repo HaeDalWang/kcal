@@ -417,3 +417,73 @@ fn events_reads_each_rollout_once_after_parallel_warm() {
     let counts = PARSE_COUNTS.lock().unwrap();
     assert!(files.iter().all(|f| counts.get(f) == Some(&1)));
 }
+
+#[path = "codex_diagnostics.rs"]
+mod diagnostics;
+
+#[test]
+fn separates_weekly_primary_from_five_hour_regression_in_a_temporary_home() {
+    let home = TempDir::new("rate-codex-window-duration");
+    let mut weekly: Value = serde_json::from_str(&token_line(
+        "2026-08-17T01:00:00Z",
+        10,
+        10,
+        "codex",
+        68.0,
+        1_787_299_562,
+    ))
+    .unwrap();
+    weekly["payload"]["rate_limits"]["primary"]["window_minutes"] = json!(10080);
+    home.write(".codex/sessions/rollout-weekly.jsonl", &weekly.to_string());
+    let mut swapped = weekly.clone();
+    swapped["timestamp"] = json!("2026-08-26T01:00:00Z");
+    swapped["payload"]["rate_limits"]["secondary"] = json!({
+        "used_percent": 5, "window_minutes": 300, "resets_at": 1_787_710_000
+    });
+    home.write(
+        ".codex/sessions/rollout-swapped.jsonl",
+        &swapped.to_string(),
+    );
+    let weekly = read_events(&home.path().join(".codex/sessions/rollout-weekly.jsonl"));
+    assert_eq!(weekly.len(), 1);
+    assert_eq!((weekly[0].input, weekly[0].output), (10.0, 2.0));
+    assert_eq!((weekly[0].used_percent, weekly[0].resets_at), (None, None));
+    assert_eq!(weekly[0].weekly_used_percent, Some(68.0));
+    assert_eq!(weekly[0].weekly_resets_at, Some(1_787_299_562.0));
+    let swapped = read_events(&home.path().join(".codex/sessions/rollout-swapped.jsonl"));
+    assert_eq!(swapped[0].used_percent, Some(5.0));
+    assert_eq!(swapped[0].resets_at, Some(1_787_710_000.0));
+    assert_eq!(swapped[0].weekly_used_percent, Some(68.0));
+    let (windows, _) = assign_windows(&[weekly, swapped].concat(), 600.0);
+    assert_eq!(windows.len(), 1);
+    assert_eq!(window_row(&windows[0]), (vec![9.0, 1.0, 2.0], 5.0));
+}
+
+#[test]
+fn uses_slot_defaults_only_when_window_duration_is_absent() {
+    let mut row: Value = serde_json::from_str(&token_line(
+        "2026-11-04T01:00:00Z",
+        10,
+        10,
+        "codex",
+        5.0,
+        1_800_000_000,
+    ))
+    .unwrap();
+    for duration in [json!(43200), json!(null), json!("300"), json!(0)] {
+        row["payload"]["rate_limits"]["primary"]["window_minutes"] = duration;
+        let event = event(&row, "").unwrap();
+        assert_eq!(event.used_percent, None);
+        assert_eq!(event.weekly_used_percent, None);
+        assert_eq!(event.input, 10.0);
+    }
+    row["payload"]["rate_limits"]["primary"]
+        .as_object_mut()
+        .unwrap()
+        .remove("window_minutes");
+    row["payload"]["rate_limits"]["secondary"] =
+        json!({"used_percent": 17, "resets_at": 1_800_100_000});
+    let event = event(&row, "").unwrap();
+    assert_eq!(event.used_percent, Some(5.0));
+    assert_eq!(event.weekly_used_percent, Some(17.0));
+}
