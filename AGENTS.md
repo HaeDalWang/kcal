@@ -47,7 +47,7 @@ Tauri 2 + React + TypeScript 데스크톱 앱 템플릿 (macOS, Windows).
 ## IPC 규칙
 
 - 모든 command는 Rust 쪽에서 입력을 검증하고 `Result<T, E>`(직렬화 가능한 오류 타입)를 반환한다.
-- 프론트엔드는 `invoke`를 직접 흩뿌리지 않고 `src/lib/ipc.ts`의 타입이 명시된 래퍼만 호출한다.
+- 프론트엔드는 `invoke`를 직접 흩뿌리지 않고 `src/lib/ipc*.ts`(`ipc.ts`·`ipc-checks.ts`·`ipc-coach.ts`)의 타입이 명시된 래퍼만 호출한다.
 - Rust 타입과 TS 타입이 짝을 이루도록 같은 이름을 쓰고, 계약 변경 시 양쪽과 테스트를 같은 작업에서 고친다.
 
 ## 보안 원칙
