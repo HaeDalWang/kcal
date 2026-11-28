@@ -677,3 +677,118 @@ fn fresh_home_usage_explains_each_agent() {
     );
     let _ = std::fs::remove_dir_all(home);
 }
+
+#[test]
+fn claude_login_end_takes_precedence_over_access_expiry() {
+    let now = datetime!(2026-11-28 12:00 UTC);
+    let ms = now.unix_timestamp() * 1000;
+    for access in [ms - 1, ms + 1000] {
+        let creds = format!(
+            r#"{{"claudeAiOauth":{{"accessToken":"fixture","expiresAt":{access},"refreshTokenExpiresAt":{ms}}}}}"#
+        );
+        let Err(Fail(reason, kind)) = claude_token(&creds, now) else {
+            panic!()
+        };
+        assert_eq!(kind, ReasonKind::Setup);
+        assert_eq!(
+            reason,
+            "Claude 로그인 기간이 끝났어요. 터미널에서 claude를 실행해 /login으로 다시 로그인한 뒤 새로고침하세요."
+        );
+        let reason = crate::i18n::with_lang(crate::i18n::Lang::En, || {
+            claude_token(&creds, now).unwrap_err().0
+        });
+        assert_eq!(
+            reason,
+            "Your Claude login period has ended. Run claude in a terminal, sign in again with /login, then press Refresh."
+        );
+    }
+    let later = ms + 1000;
+    let creds = format!(
+        r#"{{"claudeAiOauth":{{"accessToken":"fixture","expiresAt":{ms},"refreshTokenExpiresAt":{later}}}}}"#
+    );
+    assert_eq!(
+        claude_token(&creds, now).unwrap_err().0,
+        login_expired(&CLAUDE)
+    );
+    let valid = r#"{"claudeAiOauth":{"accessToken":"fixture"}}"#;
+    assert_eq!(claude_token(valid, now).unwrap().1, None);
+    let valid = format!(
+        r#"{{"claudeAiOauth":{{"accessToken":"fixture","refreshTokenExpiresAt":{later}}}}}"#
+    );
+    assert_eq!(
+        claude_token(&valid, now)
+            .unwrap()
+            .1
+            .unwrap()
+            .unix_timestamp_nanos()
+            / 1_000_000,
+        i128::from(later)
+    );
+}
+
+#[test]
+fn claude_login_warning_only_inside_enabled_window() {
+    let now = datetime!(2026-11-28 12:00 UTC);
+    for (at, days, shown) in [
+        (None, 3, false),
+        (Some(now), 3, false),
+        (Some(now - time::Duration::seconds(1)), 3, false),
+        (Some(now + time::Duration::days(3)), 3, true),
+        (
+            Some(now + time::Duration::days(3) + time::Duration::seconds(1)),
+            3,
+            false,
+        ),
+        (Some(now + time::Duration::hours(1)), 3, true),
+        (Some(now + time::Duration::hours(1)), 0, false),
+    ] {
+        let extras = Extras {
+            login_expires_at: login_warning(at, now, days),
+            ..Extras::default()
+        };
+        assert_eq!(extras.login_expires_at.is_some(), shown);
+        let json = serde_json::to_value(extras).unwrap();
+        assert_eq!(json.get("loginExpiresAt").is_some(), shown);
+        if shown {
+            assert!(json["loginExpiresAt"].as_str().unwrap().ends_with('Z'));
+        }
+    }
+}
+
+#[test]
+fn claude_http_401_and_403_offer_relogin_without_changing_codex() {
+    let now = datetime!(2026-11-28 12:00 UTC);
+    for service in [&CLAUDE, &CODEX] {
+        for status in ["HTTP/1.1 401 Unauthorized", "HTTP/1.1 403 Forbidden"] {
+            let url = serve_once(status, "");
+            let ctx = Context::new(PathBuf::new());
+            for lang in [crate::i18n::Lang::Ko, crate::i18n::Lang::En] {
+                // HTTP 한 번씩 응답하므로 언어별 서버를 둔다.
+                let url = if lang == crate::i18n::Lang::Ko {
+                    url.clone()
+                } else {
+                    serve_once(status, "")
+                };
+                crate::i18n::with_lang(lang, || {
+                    let Err(Fail(reason, kind)) = tauri::async_runtime::block_on(get_json(
+                        &ctx,
+                        service,
+                        &url,
+                        HeaderMap::new(),
+                        now,
+                        Duration::from_secs(2),
+                    )) else {
+                        panic!()
+                    };
+                    assert_eq!(kind, ReasonKind::Setup);
+                    let expected = if service.name == "Claude" {
+                        claude_login_rejected()
+                    } else {
+                        login_expired(&CODEX)
+                    };
+                    assert_eq!(reason, expected);
+                });
+            }
+        }
+    }
+}

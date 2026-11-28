@@ -52,6 +52,17 @@ const saveButton = () => {
 };
 
 describe("SettingsView", () => {
+  it("renders login warning days and saves zero to turn warnings off", async () => {
+    const calls = mockSave((args) => ({ ...settingsWith(), ...args }));
+    render(<SettingsView settings={settingsWith()} onSaved={() => {}} onBack={() => {}} />);
+    openTuning();
+    const control = input(/로그인 만료 미리 알림/);
+    expect(control.value).toBe("3");
+    fireEvent.change(control, { target: { value: "0" } });
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(calls[0]?.tuning?.loginWarnDays).toBe(0));
+  });
+
   it("renders three tray icon options and immediately saves the selected trayIcon", async () => {
     const onSaved = vi.fn();
     const calls = mockSave((args) => ({ ...settingsWith(), ...args }));

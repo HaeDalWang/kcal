@@ -41,6 +41,7 @@
     "kiroSessionsToSearch": 50,
     "kiroTimeoutSecs": 30,
     "largeContextTokens": 130000,
+    "loginWarnDays": 3,
     "lowPercent": 20,
     "marathonRequests": 150,
     "maxBackoffSecs": 3600,
@@ -209,6 +210,13 @@
       "key": "barDays",
       "max": 90.0,
       "min": 1.0
+    },
+    {
+      "default": 3.0,
+      "isInteger": true,
+      "key": "loginWarnDays",
+      "max": 30.0,
+      "min": 0.0
     },
     {
       "default": 50.0,

@@ -60,3 +60,38 @@
 - macOS에서 Keychain을 처음 읽을 때 허용 창이 뜨는가 — 모름, 첫 실행에서 확인.
 - 메뉴바 아이콘이 Control Center allow-list 때문에 숨는 문제(ctxmeter `develop/execution/08`)가 kcal identifier에서도 생기는가 — 모름.
 - 탭 아이콘(14px)에서 머리글자 C·X·K가 작아 잘 안 보인다. 구분은 이름 글자가 한다.
+
+## 갱신 2026-11-28: Claude 로그인 만료
+
+코디네이터가 이 Mac에서 확인한 사실: Claude Code 2.1.318 credentials의
+`claudeAiOauth.refreshTokenExpiresAt`(epoch milliseconds)는 `claude auth status --json`의
+`loginExpiresAt`과 같다. `expiresAt`은 더 짧은 access token 수명이다. kcal은 기존 credentials만
+읽고 `claude auth status` 실행이나 token 갱신을 하지 않는다. 종료 필드가 없으면 모르는 값으로
+두어 기존 동작을 유지한다.
+
+- refresh token 종료가 먼저다: KO "Claude 로그인 기간이 끝났어요. 터미널에서 claude를 실행해 /login으로 다시 로그인한 뒤 새로고침하세요."
+  EN "Your Claude login period has ended. Run claude in a terminal, sign in again with /login, then press Refresh."
+- refresh token이 아직 유효하고 access token만 끝났으면 기존 `login_expired(&CLAUDE)` 안내다:
+  KO "Claude Code 로그인이 만료됐어요. claude를 한 번 실행한 뒤 새로고침하세요."
+  EN "Your Claude Code login expired. Run claude once, then press Refresh."
+- Claude API 401/403은 KO "Claude가 로그인 정보를 받아 주지 않았어요. claude를 한 번 실행한 뒤 새로고침하세요. 그래도 같으면 claude에서 /login으로 다시 로그인하세요."
+  EN "Claude didn't accept the saved login. Run claude once, then press Refresh. If it still fails, sign in again with /login in claude."
+  Codex의 401/403 안내는 유지한다.
+
+`loginWarnDays`(`login_warn_days`, 기본 3일, 정수 0–30, 0은 끔) 이내이며 미래인 종료 시각만
+Claude API reading의 `Extras.login_expires_at` / `AgentUsage.loginExpiresAt`으로 보낸다.
+시각은 기존처럼 RFC 3339이며 모르면 키를 생략한다. log fallback에는 넣지 않는다.
+Popover의 기존 `ExtraLines`에 초기화권과 같은 스타일로 한 줄을 더한다:
+KO "Claude 로그인 {n}일 후 만료 · claude에서 /login", n=0은 "Claude 로그인 오늘 만료 · claude에서 /login".
+EN "Claude login ends in {n} days · /login in claude", 1은 "1 day", 0은 "Claude login ends today · /login in claude".
+남은 일수는 24시간 단위를 내림한다. 기존 `now`를 사용하므로 수신·포커스·Popover 렌더 시점에
+계산하며 별도 타이머는 없다. 열린 화면에서 시간이 흘러도 실시간으로 내려가지 않는다.
+Codex/Kiro, log fallback, tray bars/alerts의 `windows`는 유지한다.
+
+Ruling: `Service.rejected: Option<fn() -> String>`으로 Claude 거절 문구만 교체한다 — 공유 HTTP 경로와 Codex 동작을 보존한다 — 잘못되면 서비스 안내가 바뀌므로 두 서비스의 401/403을 테스트한다.
+
+Ruling: 경고 설정은 기존 `limits` 섹션에 둔다 — 한도 조회와 관련된 사용자 설정이다 — 잘못되면 설정 위치만 조정한다.
+
+Ruling: Popover는 만료 시각이 지났거나 잘못된 값이면 경고 줄을 숨긴다 — 사전 경고를 지난 날짜로 표시하지 않는다 — 다음 조회 전에는 경고 줄이 없어지며 재로그인 안내는 조회 오류가 맡는다.
+
+Ruling: 종료 시각은 signed integer milliseconds와 유효한 `OffsetDateTime`만 받는다 — credentials의 epoch-ms 계약을 따르고 잘못된 날짜를 UI에 보내지 않는다 — 공급자가 문자열·소수 형식으로 바꾸면 종료 시각은 모르는 값이 된다.

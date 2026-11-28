@@ -25,6 +25,7 @@ export const DEFAULT_TUNING: Tuning = {
   lowPercent: 20,
   recentBars: 8,
   barDays: 7,
+  loginWarnDays: 3,
   claudeLogFiles: 50,
   topSessions: 3,
   marathonRequests: 150,

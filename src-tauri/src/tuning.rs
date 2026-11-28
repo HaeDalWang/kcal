@@ -40,6 +40,7 @@ const LOW_PERCENT_RANGE: RangeInclusive<u64> = 1..=99;
 const REFRESH_MIN_GAP_SECS_RANGE: RangeInclusive<u64> = 5..=10 * MINUTE;
 const METRICS_TTL_SECS_RANGE: RangeInclusive<u64> = MINUTE..=DAY_SECS;
 const RECENT_BARS_RANGE: RangeInclusive<usize> = 1..=48;
+const LOGIN_WARN_DAYS_RANGE: RangeInclusive<u64> = 0..=30;
 const BAR_DAYS_RANGE: RangeInclusive<u64> = 1..=90;
 const CLAUDE_LOG_FILES_RANGE: RangeInclusive<usize> = 1..=1000;
 const TOP_SESSIONS_RANGE: RangeInclusive<usize> = 1..=20;
@@ -210,6 +211,7 @@ pub struct Tuning {
     pub recent_bars: usize,
     /// 막대 그래프가 보는 최근 기간(일). Kiro는 이 수만큼 하루(24시간) 막대를 그린다.
     pub bar_days: u64,
+    pub login_warn_days: u64,
     /// 최근 5시간 요청을 셀 때 여는 Claude 대화 기록(`~/.claude/projects/**/*.jsonl`) 수. 최근에 바뀐 순.
     pub claude_log_files: usize,
     /// 행동 패턴(docs/decisions/0013): 한도를 많이 쓴 Codex 세션을 이 수만큼 보여 준다.
@@ -273,6 +275,7 @@ impl Default for Tuning {
             low_percent: 20,
             recent_bars: 8,
             bar_days: 7,
+            login_warn_days: 3,
             claude_log_files: 50,
             top_sessions: 3,
             marathon_requests: 150,
@@ -345,7 +348,7 @@ impl Tuning {
 
     /// 필드마다 (spec, 범위 안인가). `spec.default`에는 `self`의 값이 들어간다(`spec()`은 기본값으로 부른다).
     /// 검증과 화면용 spec이 이 표 하나를 쓴다. `good_r2 < range_r2`이면 두 필드 모두 범위 밖이다.
-    fn fields(&self) -> [(TuningFieldSpec, bool); 46] {
+    fn fields(&self) -> [(TuningFieldSpec, bool); 47] {
         let a = &self.advanced;
         let r2_order = a.good_r2 >= a.range_r2;
         let (good_r2, good_ok) = field("advanced.goodR2", a.good_r2, &R2_RANGE);
@@ -441,6 +444,11 @@ impl Tuning {
             field("lowPercent", self.low_percent, &LOW_PERCENT_RANGE),
             field("recentBars", self.recent_bars, &RECENT_BARS_RANGE),
             field("barDays", self.bar_days, &BAR_DAYS_RANGE),
+            field(
+                "loginWarnDays",
+                self.login_warn_days,
+                &LOGIN_WARN_DAYS_RANGE,
+            ),
             field(
                 "claudeLogFiles",
                 self.claude_log_files,

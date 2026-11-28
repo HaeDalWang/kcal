@@ -12,6 +12,7 @@ import {
   type LimitWindow,
   type UsageSnapshot,
 } from "@/lib/ipc";
+import { setLanguage } from "@/lib/i18n";
 import { ratesStore } from "@/lib/snapshot-store";
 import { extrasUsage } from "@/test/preview/extras-usage";
 import rateFixture from "@/test/fixtures/ipc/rate-snapshot.json";
@@ -502,5 +503,60 @@ describe("remainingPercent", () => {
     expect(isLow(20, 20)).toBe(true);
     expect(isLow(21, 20)).toBe(false);
     expect(isLow(40, 50)).toBe(true);
+  });
+});
+
+describe("Claude login expiry warning", () => {
+  it.each([
+    ["ko", 2.5, "Claude 로그인 2일 후 만료 · claude에서 /login"],
+    ["ko", 0.5, "Claude 로그인 오늘 만료 · claude에서 /login"],
+    ["en", 2.5, "Claude login ends in 2 days · /login in claude"],
+    ["en", 1.5, "Claude login ends in 1 day · /login in claude"],
+    ["en", 0.5, "Claude login ends today · /login in claude"],
+  ] as const)("shows %s warning with %s days left", async (lang, days, line) => {
+    setLanguage(lang);
+    const usage = snapshot(42);
+    usage.agents[0] = {
+      ...usage.agents[0],
+      source: "api",
+      loginExpiresAt: new Date(Date.now() + days * 24 * HOUR_MS).toISOString(),
+    };
+    mockIPC((cmd) => (cmd === "get_usage" ? usage : mockCommands(cmd)), { shouldMockEvents: true });
+    render(
+      <UsagePopover
+        agents={["claude"]}
+        selected="claude"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+    expect(await screen.findByText(line)).toBeTruthy();
+  });
+
+  it.each([undefined, "expired", "log", "invalid"])("hides warning for %s", async (state) => {
+    const usage = snapshot(42);
+    usage.agents[0] = {
+      ...usage.agents[0],
+      source: state === "log" ? "log" : "api",
+      loginExpiresAt:
+        state === undefined
+          ? undefined
+          : state === "invalid"
+            ? "invalid"
+            : new Date(Date.now() + (state === "expired" ? -1 : 1) * HOUR_MS).toISOString(),
+    };
+    mockIPC((cmd) => (cmd === "get_usage" ? usage : mockCommands(cmd)), { shouldMockEvents: true });
+    render(
+      <UsagePopover
+        agents={["claude"]}
+        selected="claude"
+        onSelect={() => {}}
+        lowPercent={20}
+        onOpenDashboard={() => {}}
+      />,
+    );
+    await screen.findByText("Claude", { selector: "button span span" });
+    expect(screen.queryByText(/Claude 로그인 .*만료|Claude login ends/)).toBeNull();
   });
 });

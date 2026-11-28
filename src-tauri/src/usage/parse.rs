@@ -167,6 +167,7 @@ pub fn claude_extras(body: &Value, now: OffsetDateTime) -> Extras {
         model_windows,
         credits: claude_credits(body),
         reset_passes: None,
+        login_expires_at: None,
     }
 }
 
@@ -236,6 +237,7 @@ pub fn codex_extras(body: &Value, now: OffsetDateTime) -> Extras {
         model_windows,
         credits: None,
         reset_passes,
+        login_expires_at: None,
     }
 }
 

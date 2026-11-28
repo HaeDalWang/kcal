@@ -212,6 +212,11 @@ fn spec_covers_every_field_with_its_default_and_validated_bounds() {
 #[test]
 fn spec_uses_the_named_ranges() {
     let find = |key: &str| *Tuning::spec().iter().find(|f| f.key == key).unwrap();
+    let login = find("loginWarnDays");
+    assert_eq!(
+        (login.min, login.max, login.default, login.is_integer),
+        (0.0, 30.0, 3.0, true)
+    );
     let api = find("apiIntervalSecs");
     assert_eq!(
         (api.min, api.max, api.default, api.is_integer),

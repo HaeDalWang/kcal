@@ -58,6 +58,10 @@ export const ko = {
     modelLimit: (model: string, id: "5h" | "7d" | "month") =>
       `${model} ${id === "5h" ? "5시간" : id === "7d" ? "주간" : "월"}`,
     extraUsage: (used: string, limit: string) => `추가 사용량 ${used} / ${limit}`,
+    loginExpires: (days: number) =>
+      days === 0
+        ? "Claude 로그인 오늘 만료 · claude에서 /login"
+        : `Claude 로그인 ${days}일 후 만료 · claude에서 /login`,
     resetPasses: (count: number) => `한도 초기화권 ${count}개`,
     reset: "초기화됨",
     resetsIn: (duration: string) => `${duration} 후 초기화`,
@@ -799,6 +803,7 @@ export const ko = {
       codexRolloutsChecked: { label: "Codex 한도 기록 파일" },
       claudeLogTailBytes: { label: "Claude 기록 끝에서 읽기" },
       breakdownDays: { label: "사용 패턴 기간" },
+      loginWarnDays: { label: "로그인 만료 미리 알림", hint: "Claude 로그인 종료 전, 0이면 끔" },
       barDays: { label: "막대 그래프 기간", hint: "Kiro는 하루 막대 수" },
       claudeLogFiles: { label: "Claude 대화 기록 파일" },
       compareDays: { label: "처방 효과 비교 기간", hint: "적용 전·후 각각" },

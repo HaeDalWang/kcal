@@ -100,6 +100,7 @@ fn usage_snapshot_matches_fixture() {
                 currency: "USD".into(),
             }),
             reset_passes: None,
+            login_expires_at: None,
         },
         reason: None,
         reason_kind: None,

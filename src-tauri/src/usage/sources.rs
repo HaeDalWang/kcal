@@ -195,17 +195,20 @@ struct Service {
     name: &'static str,
     login: &'static str,
     cli: &'static str,
+    rejected: Option<fn() -> String>,
 }
 
 const CLAUDE: Service = Service {
     name: "Claude",
     login: "Claude Code",
     cli: "claude",
+    rejected: Some(claude_login_rejected),
 };
 const CODEX: Service = Service {
     name: "Codex",
     login: "Codex",
     cli: "codex",
+    rejected: None,
 };
 
 fn login_expired(service: &Service) -> String {
@@ -215,6 +218,13 @@ fn login_expired(service: &Service) -> String {
         service.login,
         service.cli
     )
+}
+
+fn claude_login_rejected() -> String {
+    pick(
+        "Claude가 로그인 정보를 받아 주지 않았어요. claude를 한 번 실행한 뒤 새로고침하세요. 그래도 같으면 claude에서 /login으로 다시 로그인하세요.",
+        "Claude didn't accept the saved login. Run claude once, then press Refresh. If it still fails, sign in again with /login in claude.",
+    ).to_owned()
 }
 
 fn cannot_reach(service: &Service) -> String {
@@ -277,7 +287,11 @@ async fn get_json(
     if !status.is_success() {
         return match status.as_u16() {
             // 다시 로그인하면 풀린다: 사용자가 할 일.
-            401 | 403 => setup(login_expired(service)),
+            401 | 403 => setup(
+                service
+                    .rejected
+                    .map_or_else(|| login_expired(service), |message| message()),
+            ),
             500..=599 => fail(service_trouble(service)),
             _ => fail(unexpected_answer(service)),
         };
@@ -309,8 +323,11 @@ fn api_reading(
 
 // ---- Claude ----
 
-/// Claude Code credentials JSON(Keychain 값 또는 파일)에서 access token만 꺼낸다.
-fn claude_token(credentials: &str, now: OffsetDateTime) -> Result<Secret, Fail> {
+/// Claude Code credentials JSON에서 access token과 알려진 로그인 종료 시각을 읽는다.
+fn claude_token(
+    credentials: &str,
+    now: OffsetDateTime,
+) -> Result<(Secret, Option<OffsetDateTime>), Fail> {
     let json: Value = serde_json::from_str(credentials).or_else(|_| {
         fail(pick(
             "Claude 인증 정보가 JSON이 아님",
@@ -332,11 +349,21 @@ fn claude_token(credentials: &str, now: OffsetDateTime) -> Result<Secret, Fail> 
         .and_then(|o| o.get("expiresAt"))
         .and_then(Value::as_f64);
     let now_ms = (now.unix_timestamp_nanos() / 1_000_000) as f64;
+    let login_expires_at = oauth
+        .and_then(|o| o.get("refreshTokenExpiresAt"))
+        .and_then(Value::as_i64)
+        .and_then(|ms| OffsetDateTime::from_unix_timestamp_nanos(i128::from(ms) * 1_000_000).ok());
+    if login_expires_at.is_some_and(|at| at <= now) {
+        return setup(pick(
+            "Claude 로그인 기간이 끝났어요. 터미널에서 claude를 실행해 /login으로 다시 로그인한 뒤 새로고침하세요.",
+            "Your Claude login period has ended. Run claude in a terminal, sign in again with /login, then press Refresh.",
+        ));
+    }
     if expires_ms.is_some_and(|at| at <= now_ms) {
         // kcal은 설계상 토큰을 갱신하지 않는다. Claude Code를 한 번 쓰면 Claude Code가 갱신한다.
         return setup(login_expired(&CLAUDE));
     }
-    Ok(Secret(token.to_owned()))
+    Ok((Secret(token.to_owned()), login_expires_at))
 }
 
 /// `security`가 "항목 없음"(errSecItemNotFound)일 때 내는 종료 코드. 이 Mac에서 직접 확인했다(findings 원장).
@@ -430,7 +457,7 @@ async fn claude(ctx: &Context, now: OffsetDateTime, tuning: &Tuning) -> Outcome 
                     ))
                 }
             })?;
-        let token = claude_token(&credentials.0, now)?;
+        let (token, login_expires_at) = claude_token(&credentials.0, now)?;
         drop(credentials);
         let mut headers = HeaderMap::new();
         headers.insert(AUTHORIZATION, bearer(&token)?);
@@ -438,7 +465,7 @@ async fn claude(ctx: &Context, now: OffsetDateTime, tuning: &Tuning) -> Outcome 
             HeaderName::from_static("anthropic-beta"),
             HeaderValue::from_static("oauth-2025-04-20"),
         );
-        api_reading(
+        let mut reading = api_reading(
             get_json(
                 ctx,
                 &CLAUDE,
@@ -451,7 +478,11 @@ async fn claude(ctx: &Context, now: OffsetDateTime, tuning: &Tuning) -> Outcome 
             now,
             parse::claude_api,
             parse::claude_extras,
-        )
+        )?;
+        if let Api::Value(value) = &mut reading {
+            value.extras.login_expires_at = login_warning(login_expires_at, now, tuning.login_warn_days);
+        }
+        Ok(reading)
     }
     .await;
     let home = ctx.home.clone();
@@ -460,6 +491,16 @@ async fn claude(ctx: &Context, now: OffsetDateTime, tuning: &Tuning) -> Outcome 
         claude_from_log(&home, now, tail_bytes)
     })
     .await
+}
+
+fn login_warning(
+    at: Option<OffsetDateTime>,
+    now: OffsetDateTime,
+    warn_days: u64,
+) -> Option<OffsetDateTime> {
+    at.filter(|at| {
+        warn_days > 0 && *at > now && *at - now <= time::Duration::days(warn_days as i64)
+    })
 }
 
 /// statusLine 기록의 마지막 rate limit 줄. 기록 파일이 없으면(대부분의 사용자) `Ok(None)`.

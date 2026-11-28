@@ -29,6 +29,7 @@ import { formatDuration, paceOf } from "@/lib/pace";
 import { contextStore, useSnapshot } from "@/lib/snapshot-store";
 
 const MINUTE_MS = 60_000;
+const DAY_MS = 24 * 60 * MINUTE_MS;
 
 const integer = numberFormat({ maximumFractionDigits: 0 });
 
@@ -239,7 +240,7 @@ export function AgentSection({ usage, now, lowPercent, onOpenDashboard }: Sectio
           />
         ))}
         <ModelWindows usage={usage} now={now} lowPercent={lowPercent} />
-        <ExtraLines usage={usage} />
+        <ExtraLines usage={usage} now={now} />
         <StatusLines usage={usage} />
       </div>
     </section>
@@ -271,9 +272,14 @@ function ModelWindows({
 }
 
 /** 추가 사용량(Claude)·초기화권(Codex) 한 줄씩. 값이 없으면 줄을 숨긴다(1절). */
-function ExtraLines({ usage }: { usage: AgentUsage }) {
+function ExtraLines({ usage, now }: { usage: AgentUsage; now: number }) {
   const { credits, resetPasses } = usage;
-  if (!credits && resetPasses === undefined) return null;
+  const loginLeft =
+    usage.agent === "claude" && usage.source === "api" && usage.loginExpiresAt
+      ? Date.parse(usage.loginExpiresAt) - now
+      : NaN;
+  const loginDays = loginLeft > 0 ? Math.floor(loginLeft / DAY_MS) : null;
+  if (!credits && resetPasses === undefined && loginDays === null) return null;
   return (
     <div className="flex flex-col gap-[4px] text-[10px] text-muted-foreground tabular-nums">
       {credits && (
@@ -285,6 +291,7 @@ function ExtraLines({ usage }: { usage: AgentUsage }) {
         </p>
       )}
       {resetPasses !== undefined && <p>{t.popover.resetPasses(resetPasses)}</p>}
+      {loginDays !== null && <p>{t.popover.loginExpires(loginDays)}</p>}
     </div>
   );
 }

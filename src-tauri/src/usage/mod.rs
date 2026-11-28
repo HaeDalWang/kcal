@@ -119,6 +119,11 @@ pub struct Extras {
     /// Codex 한도 초기화권 남은 개수.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reset_passes: Option<u32>,
+    #[serde(
+        with = "time::serde::rfc3339::option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub login_expires_at: Option<OffsetDateTime>,
 }
 
 impl LimitWindow {

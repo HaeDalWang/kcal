@@ -70,6 +70,7 @@ const FIELDS: Record<TuningKey, FieldInfo> = {
   codexRolloutsChecked: { unit: "count", section: "scan" },
   claudeLogTailBytes: { unit: "kib", section: "scan" },
   breakdownDays: { unit: "days", section: "scan" },
+  loginWarnDays: { unit: "days", section: "limits" },
   barDays: { unit: "days", section: "scan" },
   claudeLogFiles: { unit: "count", section: "scan" },
   compareDays: { unit: "days", section: "scan" },

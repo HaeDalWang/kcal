@@ -49,6 +49,7 @@ export type AgentUsage = {
   credits?: Credits;
   /** Codex 한도 초기화권 남은 개수. */
   resetPasses?: number;
+  loginExpiresAt?: string;
   reason: string | null;
   /** `reason`이 있을 때만 값이 있다. */
   reasonKind: ReasonKind | null;
@@ -507,6 +508,7 @@ export type Tuning = {
   recentBars: number;
   /** 막대 그래프가 보는 최근 기간(일). Kiro는 이 수만큼 하루 막대를 그린다. */
   barDays: number;
+  loginWarnDays: number;
   /** 최근 5시간 요청을 셀 때 여는 Claude 대화 기록 파일 수(최근에 바뀐 순). */
   claudeLogFiles: number;
   /** 한도를 많이 쓴 Codex 세션을 이 수만큼 보여 준다. */

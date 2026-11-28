@@ -68,6 +68,10 @@ export const en: Messages = {
     modelLimit: (model, id) =>
       `${model} ${id === "5h" ? "5-hour" : id === "7d" ? "weekly" : "monthly"}`,
     extraUsage: (used, limit) => `Extra usage ${used} of ${limit}`,
+    loginExpires: (days) =>
+      days === 0
+        ? "Claude login ends today · /login in claude"
+        : `Claude login ends in ${n(days, "day", "days")} · /login in claude`,
     resetPasses: (count) => `${n(count, "limit reset pass", "limit reset passes")}`,
     reset: "Just reset",
     resetsIn: (duration) => `resets in ${duration}`,
@@ -808,6 +812,10 @@ export const en: Messages = {
       codexRolloutsChecked: { label: "Codex limit log files" },
       claudeLogTailBytes: { label: "Read from the end of Claude logs" },
       breakdownDays: { label: "Usage pattern period" },
+      loginWarnDays: {
+        label: "Warn before login ends",
+        hint: "before Claude login ends; 0 turns it off",
+      },
       barDays: { label: "Bar chart period", hint: "for Kiro, the number of daily bars" },
       claudeLogFiles: { label: "Claude conversation log files" },
       compareDays: { label: "Change effect period", hint: "before and after each" },
