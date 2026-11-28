@@ -573,11 +573,13 @@ export const DASHBOARD_SWITCHES: CoachSwitch[] = [
     scopeMove: { projects: [{ name: "kcal", path: "/Users/me/work/kcal" }], skipped: [] },
     scopeGuide: {
       commands: [
-        `cd '/Users/me/work/kcal' && claude mcp add-json -s local 'context7' '{"type":"http","url":"https://example.test/mcp"}'`,
+        "cd '/Users/me/work/kcal' && claude mcp add-json -s local 'context7' -",
+        `{"type":"http","url":"https://example.test/mcp"}`,
         "claude mcp remove -s user 'context7'",
       ],
       undoCommands: [
-        `claude mcp add-json -s user 'context7' '{"type":"http","url":"https://example.test/mcp"}'`,
+        "claude mcp add-json -s user 'context7' -",
+        `{"type":"http","url":"https://example.test/mcp"}`,
         "cd '/Users/me/work/kcal' && claude mcp remove -s local 'context7'",
       ],
     },

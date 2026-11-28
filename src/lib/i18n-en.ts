@@ -370,7 +370,7 @@ export const en: Messages = {
       "kcal does not edit files. Fill in <enter manually> in the JSON yourself. Workspace files may be committed to the repository. Check project settings before disabling the user setting.",
     mcpCloseFirst: "Close all Claude Code sessions before running these commands",
     mcpGuideNote:
-      "Run each command in order. Fill in <enter manually> before running. kcal does not edit the settings.",
+      "Run each command in order. After a command ending in -, paste the JSON below it, then press Ctrl-D on a new line (Windows: Ctrl-Z, then Enter). Fill in <enter manually> before pasting. kcal does not edit the settings.",
     moveTitle: (name) => `${name}: on only where used`,
     moveNote:
       "These files change together. Backups are made next to the originals first, and one Undo restores them all.",

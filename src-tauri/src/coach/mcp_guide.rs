@@ -140,20 +140,15 @@ fn build_for_shell(
     let server = server.filter(|s| s.is_object())?;
     let name = quote(name, windows);
     let json = masked(server, false).to_string();
-    // Windows PowerShell 5.1은 native 인자 속 `"`를 지우므로 JSON은 stdin(`-`)으로 넘긴다.
-    // 5.1의 파이프는 ASCII로 보내므로 ASCII 밖 글자는 JSON `\uXXXX`로 바꾼다.
+    // JSON은 명령줄이 아니라 stdin(`-`)으로 붙여 넣게 한다(2.1.327+): 채운 비밀값이 셸 기록·`ps`에 남지 않는다.
+    // 명령 다음 줄은 `{`로 시작하는 JSON이고, 화면은 따로 복사하게 보인다.
+    // Windows 콘솔 입력은 코드 페이지에 따라 ASCII 밖 글자가 깨질 수 있어 JSON `\uXXXX`로 바꾼다.
+    let json = if windows { ascii_json(&json) } else { json };
     let add = |scope| {
-        if windows {
-            format!(
-                "{} | claude mcp add-json -s {scope} {name} -",
-                quote(&ascii_json(&json), true)
-            )
-        } else {
-            format!(
-                "claude mcp add-json -s {scope} {name} {}",
-                quote(&json, false)
-            )
-        }
+        vec![
+            format!("claude mcp add-json -s {scope} {name} -"),
+            json.clone(),
+        ]
     };
     let remove = |scope| format!("claude mcp remove -s {scope} {name}");
     let local = |path: &str, command: String| {
@@ -164,13 +159,18 @@ fn build_for_shell(
             format!("cd {path} && {command}")
         }
     };
+    let local_add = |path: &str| {
+        let mut steps = add("local");
+        steps[0] = local(path, std::mem::take(&mut steps[0]));
+        steps
+    };
     let mut commands: Vec<_> = proposal
         .projects
         .iter()
-        .map(|p| local(&p.path, add("local")))
+        .flat_map(|p| local_add(&p.path))
         .collect();
     commands.push(remove("user"));
-    let mut undo_commands = vec![add("user")];
+    let mut undo_commands = add("user");
     undo_commands.extend(
         proposal
             .projects
@@ -327,21 +327,32 @@ mod tests {
     fn adds_local_per_project_before_removing_user_and_undo_restores_user_first() {
         let guide =
             build_for_shell(Some(&json!({"command":"node"})), "docs", &proposal(), false).unwrap();
-        assert_eq!(guide.commands.len(), 3);
-        assert!(guide.commands[0].starts_with("cd '/work/a"));
-        assert!(guide.commands[1].starts_with("cd '/work/b'"));
-        assert!(
-            guide.commands[..2]
-                .iter()
-                .all(|c| c.contains("add-json -s local"))
+        // 프로젝트마다 [명령, stdin JSON] 두 줄 → remove user.
+        assert_eq!(guide.commands.len(), 5);
+        assert_eq!(
+            guide.commands[0],
+            "cd '/work/a'\"'\"'s app' && claude mcp add-json -s local 'docs' -"
         );
-        assert_eq!(guide.commands[2], "claude mcp remove -s user 'docs'");
-        assert!(guide.undo_commands[0].starts_with("claude mcp add-json -s user"));
+        assert_eq!(guide.commands[1], r#"{"command":"node"}"#);
+        assert_eq!(
+            guide.commands[2],
+            "cd '/work/b' && claude mcp add-json -s local 'docs' -"
+        );
+        assert_eq!(guide.commands[3], r#"{"command":"node"}"#);
+        assert_eq!(guide.commands[4], "claude mcp remove -s user 'docs'");
+        assert_eq!(
+            guide.undo_commands[..2],
+            [
+                "claude mcp add-json -s user 'docs' -".to_string(),
+                r#"{"command":"node"}"#.to_string()
+            ]
+        );
         assert!(
-            guide.undo_commands[1..]
+            guide.undo_commands[2..]
                 .iter()
                 .all(|c| c.contains("remove -s local"))
         );
+        assert_eq!(guide.undo_commands.len(), 4);
     }
 
     #[test]
@@ -350,16 +361,16 @@ mod tests {
     }
 
     #[test]
-    fn posix_quoting_escapes_single_quote_in_json_path_and_name() {
+    fn posix_quotes_path_and_name_and_leaves_stdin_json_unquoted() {
         let guide =
             build_for_shell(Some(&json!({"args":["it's"]})), "it's", &proposal(), false).unwrap();
-        assert!(guide.commands[0].contains("'it'\"'\"'s'"));
-        assert!(guide.commands[0].contains("it'\"'\"'s\""));
+        assert!(guide.commands[0].ends_with("add-json -s local 'it'\"'\"'s' -"));
+        assert_eq!(guide.commands[1], r#"{"args":["it's"]}"#);
         assert_eq!(quote("a'b", false), "'a'\"'\"'b'");
     }
 
     #[test]
-    fn powershell_pipes_ascii_json_through_stdin_and_stops_on_failed_location_change() {
+    fn powershell_reads_ascii_json_from_stdin_and_stops_on_failed_location_change() {
         let guide = build_for_shell(
             Some(&json!({"args":["it's", "$env:TOKEN", "한"]})),
             "a'b",
@@ -367,13 +378,20 @@ mod tests {
             true,
         )
         .unwrap();
-        assert!(
-            guide.commands[0]
-                .starts_with("Set-Location -LiteralPath '/work/a''s app' -ErrorAction Stop; '")
+        assert_eq!(
+            guide.commands[0],
+            "Set-Location -LiteralPath '/work/a''s app' -ErrorAction Stop; claude mcp add-json -s local 'a''b' -"
         );
-        assert!(guide.commands[0].ends_with("| claude mcp add-json -s local 'a''b' -"));
-        assert!(guide.commands[0].contains("it''s") && guide.commands[0].contains("\\ud55c"));
-        assert!(guide.commands[0].is_ascii());
+        assert_eq!(
+            guide.commands[1],
+            r#"{"args":["it's","$env:TOKEN","\ud55c"]}"#
+        );
+        assert!(
+            guide
+                .commands
+                .iter()
+                .all(|c| !c.contains(r#"{"args"#) || c.starts_with('{'))
+        );
         let json: Value = serde_json::from_str(&ascii_json(r#"{"a":"한😀"}"#)).unwrap();
         assert_eq!(json["a"], "한😀");
     }

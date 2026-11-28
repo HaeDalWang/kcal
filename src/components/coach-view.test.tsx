@@ -794,11 +794,13 @@ it("renders MCP guide commands and close-first line without invoking preview or 
   const invoke = vi.fn();
   mockIPC(invoke);
   const commands = [
-    "cd '/work/kcal' && claude mcp add-json -s local 'docs' '{}'",
+    "cd '/work/kcal' && claude mcp add-json -s local 'docs' -",
+    '{"command":"a"}',
     "claude mcp remove -s user 'docs'",
   ];
   const undoCommands = [
-    "claude mcp add-json -s user 'docs' '{}'",
+    "claude mcp add-json -s user 'docs' -",
+    '{"command":"b"}',
     "cd '/work/kcal' && claude mcp remove -s local 'docs'",
   ];
   render(
@@ -823,7 +825,7 @@ it("renders MCP guide commands and close-first line without invoking preview or 
   expect(panel.children[1]?.textContent).toBe(ko.coach.mcpCloseFirst);
   for (const command of [...commands, ...undoCommands])
     expect(within(panel).getByText(command)).toBeTruthy();
-  expect(within(panel).getAllByRole("button", { name: ko.coach.copyCommand })).toHaveLength(4);
+  expect(within(panel).getAllByRole("button", { name: ko.coach.copyCommand })).toHaveLength(6);
   expect(invoke.mock.calls.some(([cmd]) => /preview|apply/.test(String(cmd)))).toBe(false);
 });
 
