@@ -1,272 +1,674 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>kcal 작동 원리</title>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --paper: #f5f5f5; --ink: #2d3142; --muted: #4f5d75; --accent: #bf4520;
-    --line: rgba(45,49,66,0.25); --card: #ffffff;
-    --sans: 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
-    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
-  }
-  body { font-family: var(--sans); background: var(--paper); color: var(--ink); line-height: 1.65; padding: 2.5rem 1rem; }
-  main { max-width: 1000px; margin: 0 auto; }
-  .eyebrow { font-family: var(--mono); font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
-  h1 { font-size: 1.9rem; font-weight: 600; margin: .3rem 0 .6rem; letter-spacing: -.02em; }
-  h2 { font-size: 1.15rem; margin: 2.4rem 0 .8rem; padding-top: 1rem; border-top: 1px solid var(--line); }
-  h2 .n { font-family: var(--mono); color: var(--accent); margin-right: .4rem; }
-  p, li { font-size: .95rem; }
-  .lead { font-size: 1.05rem; max-width: 70ch; }
-  code { font-family: var(--mono); font-size: .85em; background: rgba(45,49,66,.06); padding: .05em .3em; border-radius: 3px; }
-  .pitch { background: var(--card); border-left: 3px solid var(--accent); padding: 1rem 1.2rem; margin: 1.2rem 0; border-radius: 4px; }
-  .pitch ol { padding-left: 1.2rem; }
-  .diagram { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: .5rem; }
-  .diagram svg { display: block; width: 100%; min-width: 900px; }
-  .scroll-hint { display: none; font-size: .8rem; color: var(--muted); margin-top: .4rem; }
-  @media (max-width: 700px) { .scroll-hint { display: block; } }
-  table { width: 100%; border-collapse: collapse; background: var(--card); font-size: .9rem; }
-  th, td { text-align: left; vertical-align: top; padding: .55rem .7rem; border-bottom: 1px solid var(--line); }
-  th { font-size: .8rem; color: var(--muted); font-weight: 600; background: rgba(45,49,66,.03); }
-  .tablewrap { overflow-x: auto; }
-  .muted { color: var(--muted); font-size: .85rem; }
-  pre { font-family: var(--mono); font-size: .8rem; background: #2d3142; color: #f5f5f5; padding: .7rem .9rem; border-radius: 6px; overflow-x: auto; margin: .5rem 0; line-height: 1.5; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.2rem; margin: .9rem 0; }
-  .card h3 { font-size: 1rem; margin-bottom: .3rem; }
-  .card p { margin: .4rem 0; }
-  .card .src { font-size: .78rem; color: var(--muted); }
-  .q li { margin: .35rem 0; }
-</style>
-</head>
-<body>
-<main>
-<p class="eyebrow">kcal · 작동 원리 한 장 · 2026-11-28 main 기준</p>
-<h1>kcal은 무엇을 어디서 읽고, 언제 무엇을 바꾸나</h1>
-<p class="lead">kcal은 메뉴 막대(Windows는 트레이) 앱이다. Claude Code·Codex·Kiro의 <b>남은 사용 한도</b>와, 에이전트가 첫 메시지 전에 <b>싣는 토큰(시작 컨텍스트)</b>을 보여 준다. 그리고 안 쓰는 플러그인을 사용자가 확인하면 대신 꺼 준다.</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>kcal 작동 원리</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --paper: #f5f5f5;
+        --ink: #2d3142;
+        --muted: #4f5d75;
+        --accent: #bf4520;
+        --line: rgba(45, 49, 66, 0.25);
+        --card: #ffffff;
+        --sans: "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+        --mono: ui-monospace, "SF Mono", Menlo, monospace;
+      }
+      body {
+        font-family: var(--sans);
+        background: var(--paper);
+        color: var(--ink);
+        line-height: 1.65;
+        padding: 2.5rem 1rem;
+      }
+      main {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      h1 {
+        font-size: 1.9rem;
+        font-weight: 600;
+        margin: 0.3rem 0 0.6rem;
+        letter-spacing: -0.02em;
+      }
+      h2 {
+        font-size: 1.15rem;
+        margin: 2.4rem 0 0.8rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--line);
+      }
+      h2 .n {
+        font-family: var(--mono);
+        color: var(--accent);
+        margin-right: 0.4rem;
+      }
+      p,
+      li {
+        font-size: 0.95rem;
+      }
+      .lead {
+        font-size: 1.05rem;
+        max-width: 70ch;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.85em;
+        background: rgba(45, 49, 66, 0.06);
+        padding: 0.05em 0.3em;
+        border-radius: 3px;
+      }
+      .pitch {
+        background: var(--card);
+        border-left: 3px solid var(--accent);
+        padding: 1rem 1.2rem;
+        margin: 1.2rem 0;
+        border-radius: 4px;
+      }
+      .pitch ol {
+        padding-left: 1.2rem;
+      }
+      .diagram {
+        overflow-x: auto;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.5rem;
+      }
+      .diagram svg {
+        display: block;
+        width: 100%;
+        min-width: 900px;
+      }
+      .scroll-hint {
+        display: none;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 0.4rem;
+      }
+      @media (max-width: 700px) {
+        .scroll-hint {
+          display: block;
+        }
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--card);
+        font-size: 0.9rem;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 0.55rem 0.7rem;
+        border-bottom: 1px solid var(--line);
+      }
+      th {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-weight: 600;
+        background: rgba(45, 49, 66, 0.03);
+      }
+      .tablewrap {
+        overflow-x: auto;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+      pre {
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        background: #2d3142;
+        color: #f5f5f5;
+        padding: 0.7rem 0.9rem;
+        border-radius: 6px;
+        overflow-x: auto;
+        margin: 0.5rem 0;
+        line-height: 1.5;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 1rem 1.2rem;
+        margin: 0.9rem 0;
+      }
+      .card h3 {
+        font-size: 1rem;
+        margin-bottom: 0.3rem;
+      }
+      .card p {
+        margin: 0.4rem 0;
+      }
+      .card .src {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .q li {
+        margin: 0.35rem 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">kcal · 작동 원리 한 장 · 2026-11-28 main 기준</p>
+      <h1>kcal은 무엇을 어디서 읽고, 언제 무엇을 바꾸나</h1>
+      <p class="lead">
+        kcal은 메뉴 막대(Windows는 트레이) 앱이다. Claude Code·Codex·Kiro의 <b>남은 사용 한도</b>와,
+        에이전트가 첫 메시지 전에 <b>싣는 토큰(시작 컨텍스트)</b>을 보여 준다. 그리고 안 쓰는
+        플러그인을 사용자가 확인하면 대신 꺼 준다.
+      </p>
 
-<div class="pitch">
-  <b>30초 설명 (남에게 이렇게 말하면 된다)</b>
-  <ol>
-    <li>한도는 Claude Code가 이미 저장해 둔 로그인 토큰을 <b>빌려 읽어서</b> Anthropic 사용량 주소에 5분마다 묻는다. 토큰은 저장하지도 갱신하지도 않는다.</li>
-    <li>시작 컨텍스트는 Claude Code가 남긴 세션 기록에서 <b>실제로 보낸 요청의 크기</b>를 잰다. 기록이 없는 것은 파일 크기로 추정하고 <code>~</code>를 붙인다.</li>
-    <li>끄기는 사용자가 바뀔 줄을 미리 보고 확인한 뒤에만 한다. 원본 옆에 백업을 만들고 값 하나만 바꾸며, 앱 안에서 되돌릴 수 있다.</li>
-  </ol>
-</div>
+      <div class="pitch">
+        <b>30초 설명 (남에게 이렇게 말하면 된다)</b>
+        <ol>
+          <li>
+            한도는 Claude Code가 이미 저장해 둔 로그인 토큰을 <b>빌려 읽어서</b> Anthropic 사용량
+            주소에 5분마다 묻는다. 토큰은 저장하지도 갱신하지도 않는다.
+          </li>
+          <li>
+            시작 컨텍스트는 Claude Code가 남긴 세션 기록에서 <b>실제로 보낸 요청의 크기</b>를 잰다.
+            기록이 없는 것은 파일 크기로 추정하고 <code>~</code>를 붙인다.
+          </li>
+          <li>
+            끄기는 사용자가 바뀔 줄을 미리 보고 확인한 뒤에만 한다. 원본 옆에 백업을 만들고 값
+            하나만 바꾸며, 앱 안에서 되돌릴 수 있다.
+          </li>
+        </ol>
+      </div>
 
-<h2><span class="n">1</span>구성도</h2>
-<div class="diagram" role="region" aria-label="kcal 구성도. 좁은 화면에서는 가로로 스크롤" tabindex="0">
-<svg viewBox="0 0 960 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d" font-family="'Apple SD Gothic Neo','Noto Sans KR',sans-serif">
-  <title id="t">kcal 구성도</title>
-  <desc id="d">왼쪽은 kcal이 읽는 것(키체인 로그인 토큰과 사용량 주소, 세션 기록, 에이전트 설정 파일), 가운데는 Rust 백엔드(한도 조회 타이머, 컨텍스트 측정, 환율, 진단과 끄기, 전후 비교, 공용 캐시), 오른쪽은 React 화면(메뉴 막대 아이콘, 팝오버, 대시보드 점검 탭)이다. Rust는 계산이 끝나면 이벤트로 화면에 값을 보낸다. 진단과 끄기만 설정 파일 세 개에 쓰고, 쓰기 전에 백업을 만든다.</desc>
-  <defs>
-    <marker id="a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2d3142"/></marker>
-    <marker id="r" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#bf4520"/></marker>
-  </defs>
-  <rect width="960" height="520" fill="#ffffff"/>
+      <h2><span class="n">1</span>구성도</h2>
+      <div
+        class="diagram"
+        role="region"
+        aria-label="kcal 구성도. 좁은 화면에서는 가로로 스크롤"
+        tabindex="0"
+      >
+        <svg
+          viewBox="0 0 960 520"
+          xmlns="http://www.w3.org/2000/svg"
+          role="img"
+          aria-labelledby="t d"
+          font-family="'Apple SD Gothic Neo','Noto Sans KR',sans-serif"
+        >
+          <title id="t">kcal 구성도</title>
+          <desc id="d">
+            왼쪽은 kcal이 읽는 것(키체인 로그인 토큰과 사용량 주소, 세션 기록, 에이전트 설정 파일),
+            가운데는 Rust 백엔드(한도 조회 타이머, 컨텍스트 측정, 환율, 진단과 끄기, 전후 비교, 공용
+            캐시), 오른쪽은 React 화면(메뉴 막대 아이콘, 팝오버, 대시보드 점검 탭)이다. Rust는
+            계산이 끝나면 이벤트로 화면에 값을 보낸다. 진단과 끄기만 설정 파일 세 개에 쓰고, 쓰기
+            전에 백업을 만든다.
+          </desc>
+          <defs>
+            <marker id="a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0,8 3,0 6" fill="#2d3142" />
+            </marker>
+            <marker id="r" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0,8 3,0 6" fill="#bf4520" />
+            </marker>
+          </defs>
+          <rect width="960" height="520" fill="#ffffff" />
 
-  <text x="24" y="32" font-size="12" font-weight="600" fill="#4f5d75">읽는 것 (내 Mac + 사용량 주소)</text>
-  <rect x="24" y="44" width="250" height="84" rx="6" fill="#f5f5f5" stroke="#4f5d75"/>
-  <text x="38" y="66" font-size="12.5" font-weight="600" fill="#2d3142">키체인의 Claude Code 로그인 토큰</text>
-  <text x="38" y="84" font-size="11" fill="#4f5d75">읽기만, 저장·갱신 안 함</text>
-  <text x="38" y="102" font-size="11" fill="#bf4520" font-family="ui-monospace,Menlo,monospace">→ api.anthropic.com/api/oauth/usage</text>
-  <text x="38" y="118" font-size="10.5" fill="#4f5d75">(Codex는 켰을 때 chatgpt.com, Kiro는 kiro-cli)</text>
+          <text x="24" y="32" font-size="12" font-weight="600" fill="#4f5d75">
+            읽는 것 (내 Mac + 사용량 주소)
+          </text>
+          <rect x="24" y="44" width="250" height="84" rx="6" fill="#f5f5f5" stroke="#4f5d75" />
+          <text x="38" y="66" font-size="12.5" font-weight="600" fill="#2d3142">
+            키체인의 Claude Code 로그인 토큰
+          </text>
+          <text x="38" y="84" font-size="11" fill="#4f5d75">읽기만, 저장·갱신 안 함</text>
+          <text
+            x="38"
+            y="102"
+            font-size="11"
+            fill="#bf4520"
+            font-family="ui-monospace,Menlo,monospace"
+          >
+            → api.anthropic.com/api/oauth/usage
+          </text>
+          <text x="38" y="118" font-size="10.5" fill="#4f5d75">
+            (Codex는 켰을 때 chatgpt.com, Kiro는 kiro-cli)
+          </text>
 
-  <rect x="24" y="142" width="250" height="70" rx="6" fill="#f5f5f5" stroke="#4f5d75"/>
-  <text x="38" y="164" font-size="12.5" font-weight="600" fill="#2d3142">세션 기록</text>
-  <text x="38" y="182" font-size="11" fill="#4f5d75" font-family="ui-monospace,Menlo,monospace">~/.claude/projects/**/*.jsonl</text>
-  <text x="38" y="200" font-size="11" fill="#4f5d75">숫자·이름·횟수만 꺼냄, 본문 안 남김</text>
+          <rect x="24" y="142" width="250" height="70" rx="6" fill="#f5f5f5" stroke="#4f5d75" />
+          <text x="38" y="164" font-size="12.5" font-weight="600" fill="#2d3142">세션 기록</text>
+          <text
+            x="38"
+            y="182"
+            font-size="11"
+            fill="#4f5d75"
+            font-family="ui-monospace,Menlo,monospace"
+          >
+            ~/.claude/projects/**/*.jsonl
+          </text>
+          <text x="38" y="200" font-size="11" fill="#4f5d75">
+            숫자·이름·횟수만 꺼냄, 본문 안 남김
+          </text>
 
-  <rect x="24" y="226" width="250" height="70" rx="6" fill="#f5f5f5" stroke="#4f5d75"/>
-  <text x="38" y="248" font-size="12.5" font-weight="600" fill="#2d3142">에이전트 설정·지침 파일</text>
-  <text x="38" y="266" font-size="11" fill="#4f5d75">~/.claude, ~/.codex, ~/.kiro, CLAUDE.md …</text>
-  <text x="38" y="284" font-size="11" fill="#4f5d75">크기·머리말만 보고 버림</text>
+          <rect x="24" y="226" width="250" height="70" rx="6" fill="#f5f5f5" stroke="#4f5d75" />
+          <text x="38" y="248" font-size="12.5" font-weight="600" fill="#2d3142">
+            에이전트 설정·지침 파일
+          </text>
+          <text x="38" y="266" font-size="11" fill="#4f5d75">
+            ~/.claude, ~/.codex, ~/.kiro, CLAUDE.md …
+          </text>
+          <text x="38" y="284" font-size="11" fill="#4f5d75">크기·머리말만 보고 버림</text>
 
-  <rect x="320" y="30" width="300" height="400" rx="8" fill="none" stroke="#2d3142" stroke-width="1.2"/>
-  <text x="334" y="52" font-size="13" font-weight="700" fill="#2d3142">Rust 백엔드 (src-tauri/src)</text>
-  <g font-size="11.5">
-    <rect x="336" y="64" width="268" height="44" rx="5" fill="#f5f5f5" stroke="#4f5d75"/>
-    <text x="348" y="82" font-weight="600" fill="#2d3142">usage/ — 한도 조회</text>
-    <text x="348" y="99" font-size="10.5" fill="#4f5d75">타이머 하나: 5분(Kiro 10분), 거절되면 최대 60분</text>
-    <rect x="336" y="116" width="268" height="44" rx="5" fill="#f5f5f5" stroke="#4f5d75"/>
-    <text x="348" y="134" font-weight="600" fill="#2d3142">context/ — 시작 컨텍스트 측정</text>
-    <text x="348" y="151" font-size="10.5" fill="#4f5d75">보낸 요청 크기(측정) + 파일 크기(추정 ~)</text>
-    <rect x="336" y="168" width="268" height="44" rx="5" fill="#f5f5f5" stroke="#4f5d75"/>
-    <text x="348" y="186" font-weight="600" fill="#2d3142">rate/ · metrics/ — 환율·지표</text>
-    <text x="348" y="203" font-size="10.5" fill="#4f5d75">"한도 1% = 토큰 몇 개", 요청 수, 캐시 적중률</text>
-    <rect x="336" y="220" width="268" height="44" rx="5" fill="#fff4ef" stroke="#bf4520"/>
-    <text x="348" y="238" font-weight="600" fill="#bf4520">coach/ — 진단·끄기·되돌리기</text>
-    <text x="348" y="255" font-size="10.5" fill="#4f5d75">유일하게 남의 파일에 쓰는 곳</text>
-    <rect x="336" y="272" width="268" height="44" rx="5" fill="#f5f5f5" stroke="#4f5d75"/>
-    <text x="348" y="290" font-weight="600" fill="#2d3142">health/ — 끄기 전후 비교</text>
-    <text x="348" y="307" font-size="10.5" fill="#4f5d75">끈 날 기준 전 N일 / 후 N일 같은 지표</text>
-    <rect x="336" y="324" width="268" height="44" rx="5" fill="#f5f5f5" stroke="#4f5d75"/>
-    <text x="348" y="342" font-weight="600" fill="#2d3142">cache.rs — 공용 캐시</text>
-    <text x="348" y="359" font-size="10.5" fill="#4f5d75">옛 값 먼저 주고, 뒤에서 한 번 다시 계산</text>
-  </g>
-  <text x="336" y="392" font-size="10.5" fill="#4f5d75">kcal 자기 파일: ~/Library/Application Support/</text>
-  <text x="336" y="408" font-size="10.5" fill="#4f5d75">io.github.haedalwang.kcal/ (설정, 한도 기록, 적용 기록)</text>
+          <rect
+            x="320"
+            y="30"
+            width="300"
+            height="400"
+            rx="8"
+            fill="none"
+            stroke="#2d3142"
+            stroke-width="1.2"
+          />
+          <text x="334" y="52" font-size="13" font-weight="700" fill="#2d3142">
+            Rust 백엔드 (src-tauri/src)
+          </text>
+          <g font-size="11.5">
+            <rect x="336" y="64" width="268" height="44" rx="5" fill="#f5f5f5" stroke="#4f5d75" />
+            <text x="348" y="82" font-weight="600" fill="#2d3142">usage/ — 한도 조회</text>
+            <text x="348" y="99" font-size="10.5" fill="#4f5d75">
+              타이머 하나: 5분(Kiro 10분), 거절되면 최대 60분
+            </text>
+            <rect x="336" y="116" width="268" height="44" rx="5" fill="#f5f5f5" stroke="#4f5d75" />
+            <text x="348" y="134" font-weight="600" fill="#2d3142">
+              context/ — 시작 컨텍스트 측정
+            </text>
+            <text x="348" y="151" font-size="10.5" fill="#4f5d75">
+              보낸 요청 크기(측정) + 파일 크기(추정 ~)
+            </text>
+            <rect x="336" y="168" width="268" height="44" rx="5" fill="#f5f5f5" stroke="#4f5d75" />
+            <text x="348" y="186" font-weight="600" fill="#2d3142">
+              rate/ · metrics/ — 환율·지표
+            </text>
+            <text x="348" y="203" font-size="10.5" fill="#4f5d75">
+              "한도 1% = 토큰 몇 개", 요청 수, 캐시 적중률
+            </text>
+            <rect x="336" y="220" width="268" height="44" rx="5" fill="#fff4ef" stroke="#bf4520" />
+            <text x="348" y="238" font-weight="600" fill="#bf4520">
+              coach/ — 진단·끄기·되돌리기
+            </text>
+            <text x="348" y="255" font-size="10.5" fill="#4f5d75">
+              유일하게 남의 파일에 쓰는 곳
+            </text>
+            <rect x="336" y="272" width="268" height="44" rx="5" fill="#f5f5f5" stroke="#4f5d75" />
+            <text x="348" y="290" font-weight="600" fill="#2d3142">health/ — 끄기 전후 비교</text>
+            <text x="348" y="307" font-size="10.5" fill="#4f5d75">
+              끈 날 기준 전 N일 / 후 N일 같은 지표
+            </text>
+            <rect x="336" y="324" width="268" height="44" rx="5" fill="#f5f5f5" stroke="#4f5d75" />
+            <text x="348" y="342" font-weight="600" fill="#2d3142">cache.rs — 공용 캐시</text>
+            <text x="348" y="359" font-size="10.5" fill="#4f5d75">
+              옛 값 먼저 주고, 뒤에서 한 번 다시 계산
+            </text>
+          </g>
+          <text x="336" y="392" font-size="10.5" fill="#4f5d75">
+            kcal 자기 파일: ~/Library/Application Support/
+          </text>
+          <text x="336" y="408" font-size="10.5" fill="#4f5d75">
+            io.github.haedalwang.kcal/ (설정, 한도 기록, 적용 기록)
+          </text>
 
-  <line x1="274" y1="86" x2="334" y2="86" stroke="#2d3142" marker-end="url(#a)"/>
-  <line x1="274" y1="177" x2="334" y2="140" stroke="#2d3142" marker-end="url(#a)"/>
-  <line x1="274" y1="261" x2="334" y2="146" stroke="#2d3142" marker-end="url(#a)"/>
+          <line x1="274" y1="86" x2="334" y2="86" stroke="#2d3142" marker-end="url(#a)" />
+          <line x1="274" y1="177" x2="334" y2="140" stroke="#2d3142" marker-end="url(#a)" />
+          <line x1="274" y1="261" x2="334" y2="146" stroke="#2d3142" marker-end="url(#a)" />
 
-  <rect x="670" y="30" width="266" height="300" rx="8" fill="none" stroke="#2d3142" stroke-width="1.2"/>
-  <text x="684" y="52" font-size="13" font-weight="700" fill="#2d3142">React 화면 (src/)</text>
-  <rect x="686" y="64" width="234" height="50" rx="5" fill="#f5f5f5" stroke="#4f5d75"/>
-  <text x="698" y="84" font-size="12" font-weight="600" fill="#2d3142">메뉴 막대 아이콘</text>
-  <text x="698" y="102" font-size="10.5" fill="#4f5d75">에이전트별 남은 % 막대</text>
-  <rect x="686" y="124" width="234" height="50" rx="5" fill="#f5f5f5" stroke="#4f5d75"/>
-  <text x="698" y="144" font-size="12" font-weight="600" fill="#2d3142">팝오버 (아이콘 클릭)</text>
-  <text x="698" y="162" font-size="10.5" fill="#4f5d75">한도·초기화 시각·시작 컨텍스트</text>
-  <rect x="686" y="184" width="234" height="50" rx="5" fill="#f5f5f5" stroke="#4f5d75"/>
-  <text x="698" y="204" font-size="12" font-weight="600" fill="#2d3142">대시보드 → 점검 → 진단</text>
-  <text x="698" y="222" font-size="10.5" fill="#4f5d75">끌 것 제안, 미리보기, 되돌리기</text>
-  <text x="686" y="260" font-size="10.5" fill="#4f5d75">화면은 src/lib/ipc.ts 한 곳으로만</text>
-  <text x="686" y="276" font-size="10.5" fill="#4f5d75">Rust를 부르고 이벤트를 받는다.</text>
-  <text x="686" y="292" font-size="10.5" fill="#4f5d75">화면에는 타이머가 없다.</text>
+          <rect
+            x="670"
+            y="30"
+            width="266"
+            height="300"
+            rx="8"
+            fill="none"
+            stroke="#2d3142"
+            stroke-width="1.2"
+          />
+          <text x="684" y="52" font-size="13" font-weight="700" fill="#2d3142">
+            React 화면 (src/)
+          </text>
+          <rect x="686" y="64" width="234" height="50" rx="5" fill="#f5f5f5" stroke="#4f5d75" />
+          <text x="698" y="84" font-size="12" font-weight="600" fill="#2d3142">
+            메뉴 막대 아이콘
+          </text>
+          <text x="698" y="102" font-size="10.5" fill="#4f5d75">에이전트별 남은 % 막대</text>
+          <rect x="686" y="124" width="234" height="50" rx="5" fill="#f5f5f5" stroke="#4f5d75" />
+          <text x="698" y="144" font-size="12" font-weight="600" fill="#2d3142">
+            팝오버 (아이콘 클릭)
+          </text>
+          <text x="698" y="162" font-size="10.5" fill="#4f5d75">
+            한도·초기화 시각·시작 컨텍스트
+          </text>
+          <rect x="686" y="184" width="234" height="50" rx="5" fill="#f5f5f5" stroke="#4f5d75" />
+          <text x="698" y="204" font-size="12" font-weight="600" fill="#2d3142">
+            대시보드 → 점검 → 진단
+          </text>
+          <text x="698" y="222" font-size="10.5" fill="#4f5d75">
+            끌 것 제안, 미리보기, 되돌리기
+          </text>
+          <text x="686" y="260" font-size="10.5" fill="#4f5d75">
+            화면은 src/lib/ipc.ts 한 곳으로만
+          </text>
+          <text x="686" y="276" font-size="10.5" fill="#4f5d75">
+            Rust를 부르고 이벤트를 받는다.
+          </text>
+          <text x="686" y="292" font-size="10.5" fill="#4f5d75">화면에는 타이머가 없다.</text>
 
-  <line x1="620" y1="120" x2="684" y2="120" stroke="#2d3142" marker-end="url(#a)"/>
-  <text x="624" y="112" font-size="10" fill="#4f5d75">usage-updated</text>
-  <text x="624" y="136" font-size="10" fill="#4f5d75">context-updated …</text>
-  <line x1="684" y1="214" x2="606" y2="240" stroke="#bf4520" marker-end="url(#r)"/>
-  <text x="626" y="262" font-size="10" fill="#bf4520">확인 누르면</text>
+          <line x1="620" y1="120" x2="684" y2="120" stroke="#2d3142" marker-end="url(#a)" />
+          <text x="624" y="112" font-size="10" fill="#4f5d75">usage-updated</text>
+          <text x="624" y="136" font-size="10" fill="#4f5d75">context-updated …</text>
+          <line x1="684" y1="214" x2="606" y2="240" stroke="#bf4520" marker-end="url(#r)" />
+          <text x="626" y="262" font-size="10" fill="#bf4520">확인 누르면</text>
 
-  <rect x="320" y="452" width="616" height="54" rx="8" fill="#fff4ef" stroke="#bf4520"/>
-  <text x="334" y="474" font-size="12" font-weight="600" fill="#bf4520">coach가 쓰는 파일은 세 개뿐 · 값 하나만 · 원본 옆 백업</text>
-  <text x="334" y="494" font-size="10.5" fill="#2d3142" font-family="ui-monospace,Menlo,monospace">~/.claude/settings.json   ~/.codex/config.toml   ~/.kiro/settings/mcp.json</text>
-  <line x1="470" y1="264" x2="470" y2="450" stroke="#bf4520" stroke-dasharray="4,3" marker-end="url(#r)"/>
-</svg>
-</div>
-<p class="scroll-hint">← 그림은 가로로 밀어서 본다</p>
-<p class="muted" style="margin-top:.5rem">규칙 파일 옮기기(<code>paths:</code> 머리말, 스킬로 옮기기)와 "이 프로젝트에서만 켜기"(<code>&lt;프로젝트&gt;/.claude/settings.local.json</code>)도 같은 확인·백업·되돌리기 방식으로 쓴다. 그림에서는 뺐다.</p>
+          <rect x="320" y="452" width="616" height="54" rx="8" fill="#fff4ef" stroke="#bf4520" />
+          <text x="334" y="474" font-size="12" font-weight="600" fill="#bf4520">
+            coach가 쓰는 파일은 세 개뿐 · 값 하나만 · 원본 옆 백업
+          </text>
+          <text
+            x="334"
+            y="494"
+            font-size="10.5"
+            fill="#2d3142"
+            font-family="ui-monospace,Menlo,monospace"
+          >
+            ~/.claude/settings.json ~/.codex/config.toml ~/.kiro/settings/mcp.json
+          </text>
+          <line
+            x1="470"
+            y1="264"
+            x2="470"
+            y2="450"
+            stroke="#bf4520"
+            stroke-dasharray="4,3"
+            marker-end="url(#r)"
+          />
+        </svg>
+      </div>
+      <p class="scroll-hint">← 그림은 가로로 밀어서 본다</p>
+      <p class="muted" style="margin-top: 0.5rem">
+        규칙 파일 옮기기(<code>paths:</code> 머리말, 스킬로 옮기기)와 "이 프로젝트에서만
+        켜기"(<code>&lt;프로젝트&gt;/.claude/settings.local.json</code>)도 같은 확인·백업·되돌리기
+        방식으로 쓴다. 그림에서는 뺐다.
+      </p>
 
-<h2><span class="n">2</span>왜 이렇게 만들었나</h2>
-<p class="muted">질문마다 실제 파일·명령·장면을 먼저 보여 주고 설명한다.</p>
+      <h2><span class="n">2</span>왜 이렇게 만들었나</h2>
+      <p class="muted">질문마다 실제 파일·명령·장면을 먼저 보여 주고 설명한다.</p>
 
-<div class="card">
-<h3>① 남은 한도는 어떻게 아나?</h3>
-<p>Claude Code는 로그인하면 토큰을 맥 키체인에 저장한다. kcal은 그 토큰을 이렇게 꺼낸다.</p>
-<pre>/usr/bin/security find-generic-password -s "Claude Code-credentials" …</pre>
-<p>그 토큰을 붙여 아래 주소에 "내 한도 얼마 남았어?"라고 묻는다. 5시간·주간 한도와 초기화 시각이 돌아온다.</p>
-<pre>GET https://api.anthropic.com/api/oauth/usage</pre>
-<p>토큰은 <b>읽기만</b> 하고 저장하지도, 갱신(refresh)하지도 않는다. kcal이 토큰을 갱신하면 Claude Code가 들고 있던 토큰이 무효가 돼 Claude Code가 로그아웃될 수 있기 때문이다. 토큰이 만료됐거나 요청이 실패하면 로컬 기록으로 대신 보여 주고 "N분 전 기준"이라고 표시한다.</p>
-<p class="src">근거: 결정 0003 "한도 출처", <code>usage/sources.rs</code></p>
-</div>
+      <div class="card">
+        <h3>① 남은 한도는 어떻게 아나?</h3>
+        <p>Claude Code는 로그인하면 토큰을 맥 키체인에 저장한다. kcal은 그 토큰을 이렇게 꺼낸다.</p>
+        <pre>/usr/bin/security find-generic-password -s "Claude Code-credentials" …</pre>
+        <p>
+          그 토큰을 붙여 아래 주소에 "내 한도 얼마 남았어?"라고 묻는다. 5시간·주간 한도와 초기화
+          시각이 돌아온다.
+        </p>
+        <pre>GET https://api.anthropic.com/api/oauth/usage</pre>
+        <p>
+          토큰은 <b>읽기만</b> 하고 저장하지도, 갱신(refresh)하지도 않는다. kcal이 토큰을 갱신하면
+          Claude Code가 들고 있던 토큰이 무효가 돼 Claude Code가 로그아웃될 수 있기 때문이다. 토큰이
+          만료됐거나 요청이 실패하면 로컬 기록으로 대신 보여 주고 "N분 전 기준"이라고 표시한다.
+        </p>
+        <p class="src">근거: 결정 0003 "한도 출처", <code>usage/sources.rs</code></p>
+      </div>
 
-<div class="card">
-<h3>② 왜 5분마다 묻나? 다른 데는 왜 타이머가 없나?</h3>
-<pre>규칙 : 타이머 금지         이유: 메뉴 막대에 늘 떠 있는 앱이라, 쉬는 동안 CPU·배터리를 먹으면 안 된다
+      <div class="card">
+        <h3>② 왜 5분마다 묻나? 다른 데는 왜 타이머가 없나?</h3>
+        <pre>
+규칙 : 타이머 금지         이유: 메뉴 막대에 늘 떠 있는 앱이라, 쉬는 동안 CPU·배터리를 먹으면 안 된다
 예외 : 한도 조회 타이머 하나  이유: 한도는 Anthropic 서버에만 있고, 바뀌어도 알려 주지 않는다 → 물어봐야만 안다</pre>
-<p>그래서 Rust 쪽 타이머 하나만 5분마다(Kiro는 10분) 묻는다. 나머지(시작 컨텍스트, 환율, 지표)는 내 Mac에 있는 파일이라 화면이 값을 달라고 할 때 계산하면 된다. 타이머가 필요 없다.</p>
-<pre>평소:       5분 → 5분 → 5분
+        <p>
+          그래서 Rust 쪽 타이머 하나만 5분마다(Kiro는 10분) 묻는다. 나머지(시작 컨텍스트, 환율,
+          지표)는 내 Mac에 있는 파일이라 화면이 값을 달라고 할 때 계산하면 된다. 타이머가 필요 없다.
+        </p>
+        <pre>
+평소:       5분 → 5분 → 5분
 너무 자주 물어 거절(429)되면: 서버가 "몇 초 뒤에 다시"(Retry-After)를 주면 그대로,
                               안 주면 10분 → 20분 → 40분 → 60분(최대)</pre>
-<p>화면이 값을 달라고 하면 캐시에 있던 옛 값을 먼저 주고, 오래된 값이면 뒤에서 한 번 다시 계산해 이벤트로 보낸다.</p>
-<p class="src">근거: 결정 0003 "주기 측정", <code>usage/schedule.rs</code>, <code>cache.rs</code></p>
-</div>
+        <p>
+          화면이 값을 달라고 하면 캐시에 있던 옛 값을 먼저 주고, 오래된 값이면 뒤에서 한 번 다시
+          계산해 이벤트로 보낸다.
+        </p>
+        <p class="src">
+          근거: 결정 0003 "주기 측정", <code>usage/schedule.rs</code>, <code>cache.rs</code>
+        </p>
+      </div>
 
-<div class="card">
-<h3>③ 시작 컨텍스트는 어떻게 재나? 왜 어떤 숫자에만 <code>~</code>가 붙나?</h3>
-<p>갈림길은 <b>"그 항목이 실제로 보낸 요청 안에 따로 적혀 있나"</b>다.</p>
-<div class="tablewrap"><table>
-  <tr><th>항목</th><th>어디서 재나</th><th>표시</th></tr>
-  <tr><td>시스템 프롬프트, 내장 도구, MCP 도구</td><td>보낸 요청 안에 따로 적혀 있다 → 그 크기를 잰다</td><td>측정</td></tr>
-  <tr><td>CLAUDE.md, 규칙, 스킬, 에이전트 정의</td><td>요청 안에서 구분이 안 된다 → 파일 크기를 잰다</td><td><code>~</code> 추정</td></tr>
-</table></div>
-<p>"보낸 요청"은 세션 기록 파일(<code>~/.claude/projects/…/*.jsonl</code>)에 남는 이런 줄이다. Claude Code 2.1.300부터 생겼다.</p>
-<pre>{"type":"api-request-shape", "shape": { system: [...], tools: [...] } }</pre>
-<p>둘 다 크기(바이트)를 4로 나눠 토큰으로 바꾼다. 이 줄의 크기만 보고, 같은 파일의 메시지 원문 줄(<code>api-request-blob</code>)은 열어 보지 않는다.</p>
-<p>Claude Code가 2.1.300보다 오래됐거나 아직 세션을 한 번도 안 열었으면 이 줄이 없다. 그때는 전부 파일로만 세고 합계에 "estimate only"(예상만)를 붙인다.</p>
-<p class="src">근거: 결정 0005, <code>context/shape.rs</code>, README "무엇을 측정하나"</p>
-</div>
+      <div class="card">
+        <h3>③ 시작 컨텍스트는 어떻게 재나? 왜 어떤 숫자에만 <code>~</code>가 붙나?</h3>
+        <p>갈림길은 <b>"그 항목이 실제로 보낸 요청 안에 따로 적혀 있나"</b>다.</p>
+        <div class="tablewrap">
+          <table>
+            <tr>
+              <th>항목</th>
+              <th>어디서 재나</th>
+              <th>표시</th>
+            </tr>
+            <tr>
+              <td>시스템 프롬프트, 내장 도구, MCP 도구</td>
+              <td>보낸 요청 안에 따로 적혀 있다 → 그 크기를 잰다</td>
+              <td>측정</td>
+            </tr>
+            <tr>
+              <td>CLAUDE.md, 규칙, 스킬, 에이전트 정의</td>
+              <td>요청 안에서 구분이 안 된다 → 파일 크기를 잰다</td>
+              <td><code>~</code> 추정</td>
+            </tr>
+          </table>
+        </div>
+        <p>
+          "보낸 요청"은 세션 기록 파일(<code>~/.claude/projects/…/*.jsonl</code>)에 남는 이런
+          줄이다. Claude Code 2.1.300부터 생겼다.
+        </p>
+        <pre>{"type":"api-request-shape", "shape": { system: [...], tools: [...] } }</pre>
+        <p>
+          둘 다 크기(바이트)를 4로 나눠 토큰으로 바꾼다. 이 줄의 크기만 보고, 같은 파일의 메시지
+          원문 줄(<code>api-request-blob</code>)은 열어 보지 않는다.
+        </p>
+        <p>
+          Claude Code가 2.1.300보다 오래됐거나 아직 세션을 한 번도 안 열었으면 이 줄이 없다. 그때는
+          전부 파일로만 세고 합계에 "estimate only"(예상만)를 붙인다.
+        </p>
+        <p class="src">근거: 결정 0005, <code>context/shape.rs</code>, README "무엇을 측정하나"</p>
+      </div>
 
-<div class="card">
-<h3>④ "한도 1% = 토큰 몇 개"(환율)는 어떻게 아나?</h3>
-<p>Anthropic은 이 값을 알려 주지 않는다. 그래서 kcal이 두 기록을 맞대어 추정한다.</p>
-<pre>kcal 자기 기록 limit-history.jsonl : 언제 한도가 몇 %였나 (시각과 %만)
+      <div class="card">
+        <h3>④ "한도 1% = 토큰 몇 개"(환율)는 어떻게 아나?</h3>
+        <p>Anthropic은 이 값을 알려 주지 않는다. 그래서 kcal이 두 기록을 맞대어 추정한다.</p>
+        <pre>
+kcal 자기 기록 limit-history.jsonl : 언제 한도가 몇 %였나 (시각과 %만)
 Claude Code 세션 기록             : 그 5시간 동안 토큰을 얼마나 썼나</pre>
-<p>5시간 구간이 여러 개 쌓이면 "이만큼 썼더니 몇 % 올랐다"를 여러 번 본 셈이다. 그 구간들에 가장 잘 맞는 "1%당 토큰 수"를 계산한다(음수가 나오지 않게 하는 최소제곱 계산, NNLS). 기록이 충분하지 않으면 숫자 대신 "기록 모으는 중"을 보여 준다. 추정값이라 <code>~</code>가 붙는다.</p>
-<p class="src">근거: 결정 0006, <code>rate/</code></p>
-</div>
+        <p>
+          5시간 구간이 여러 개 쌓이면 "이만큼 썼더니 몇 % 올랐다"를 여러 번 본 셈이다. 그 구간들에
+          가장 잘 맞는 "1%당 토큰 수"를 계산한다(음수가 나오지 않게 하는 최소제곱 계산, NNLS).
+          기록이 충분하지 않으면 숫자 대신 "기록 모으는 중"을 보여 준다. 추정값이라 <code>~</code>가
+          붙는다.
+        </p>
+        <p class="src">근거: 결정 0006, <code>rate/</code></p>
+      </div>
 
-<div class="card">
-<h3>⑤ 진단은 무엇을 끄라고 하나? 기준은?</h3>
-<p>최근 30일 Claude Code 세션 기록에서 에이전트가 도구를 부른 줄을 센다. 예를 들어 이런 이름이 나오면 그 MCP 서버를 한 번 쓴 것이다.</p>
-<pre>"tool_use" 이름: mcp__plugin_context7_context7__query-docs  → context7 플러그인 1회</pre>
-<p>세션이 10개 이상 있는데 <b>한 번도 안 쓴 것</b>만 끄라고 제안한다. 세션이 10개보다 적으면 "알 수 없다"고 하고 제안하지 않는다. 몇 번 안 써서 꺼도 되는지 판단할 근거가 없기 때문이다. Codex·Kiro는 kcal이 사용 횟수를 볼 수 없어서 제안하지 않는다. 대신 사용자가 직접 끌 수는 있다. 30일, 10세션은 설정에서 바꿀 수 있다.</p>
-<p class="src">근거: 결정 0022, <code>coach/usage.rs</code></p>
-</div>
+      <div class="card">
+        <h3>⑤ 진단은 무엇을 끄라고 하나? 기준은?</h3>
+        <p>
+          최근 30일 Claude Code 세션 기록에서 에이전트가 도구를 부른 줄을 센다. 예를 들어 이런
+          이름이 나오면 그 MCP 서버를 한 번 쓴 것이다.
+        </p>
+        <pre>
+"tool_use" 이름: mcp__plugin_context7_context7__query-docs  → context7 플러그인 1회</pre>
+        <p>
+          세션이 10개 이상 있는데 <b>한 번도 안 쓴 것</b>만 끄라고 제안한다. 세션이 10개보다 적으면
+          "알 수 없다"고 하고 제안하지 않는다. 몇 번 안 써서 꺼도 되는지 판단할 근거가 없기
+          때문이다. Codex·Kiro는 kcal이 사용 횟수를 볼 수 없어서 제안하지 않는다. 대신 사용자가 직접
+          끌 수는 있다. 30일, 10세션은 설정에서 바꿀 수 있다.
+        </p>
+        <p class="src">근거: 결정 0022, <code>coach/usage.rs</code></p>
+      </div>
 
-<div class="card">
-<h3>⑥ "끄기"를 누르면 실제로 무슨 일이 생기나?</h3>
-<p>예: Codex 플러그인 하나를 끈다. 먼저 바뀔 줄을 보여 준다.</p>
-<pre>~/.codex/config.toml  [plugins."some-plugin"]
+      <div class="card">
+        <h3>⑥ "끄기"를 누르면 실제로 무슨 일이 생기나?</h3>
+        <p>예: Codex 플러그인 하나를 끈다. 먼저 바뀔 줄을 보여 준다.</p>
+        <pre>
+~/.codex/config.toml  [plugins."some-plugin"]
 - enabled = true
 + enabled = false</pre>
-<p>확인을 누르면 순서대로 이렇게 한다.</p>
-<pre>1. 미리보기 때 본 파일이 지금도 그대로인지 확인 (아니면 거부)
+        <p>확인을 누르면 순서대로 이렇게 한다.</p>
+        <pre>
+1. 미리보기 때 본 파일이 지금도 그대로인지 확인 (아니면 거부)
 2. 원본 옆에 백업: config.toml.kcal-20261128T091500123Z.bak
 3. 같은 폴더 임시 파일에 쓰고 이름을 바꿔 넣기 (반쯤 쓴 파일이 안 보이게)
 4. 적용 기록 coach-log.jsonl에 한 줄: 언제·무엇·백업 위치·바꾼 뒤 파일 지문(해시)</pre>
-<p>값 하나만 바꾼다. 섹션을 만들거나 지우거나 순서를 바꾸지 않는다. 파일 모양이 예상과 다르면(같은 섹션이 두 번 등) 고치지 않고 거부한다. 에이전트는 시작할 때 설정을 읽으니, 실행 중이면 다시 시작해야 반영된다.</p>
-<p class="src">근거: 결정 0014, <code>coach/edit.rs</code>, <code>coach/mod.rs</code></p>
-</div>
+        <p>
+          값 하나만 바꾼다. 섹션을 만들거나 지우거나 순서를 바꾸지 않는다. 파일 모양이 예상과
+          다르면(같은 섹션이 두 번 등) 고치지 않고 거부한다. 에이전트는 시작할 때 설정을 읽으니,
+          실행 중이면 다시 시작해야 반영된다.
+        </p>
+        <p class="src">근거: 결정 0014, <code>coach/edit.rs</code>, <code>coach/mod.rs</code></p>
+      </div>
 
-<div class="card">
-<h3>⑦ 되돌리기가 왜 거부될 때가 있나?</h3>
-<p>이런 장면을 생각해 보자.</p>
-<pre>10:00 kcal이 플러그인 A를 끔 (백업 = 10:00 직전 파일)
+      <div class="card">
+        <h3>⑦ 되돌리기가 왜 거부될 때가 있나?</h3>
+        <p>이런 장면을 생각해 보자.</p>
+        <pre>
+10:00 kcal이 플러그인 A를 끔 (백업 = 10:00 직전 파일)
 10:30 내가 같은 파일에 플러그인 B 설정을 새로 추가
 11:00 kcal "되돌리기" → 백업을 그대로 덮으면? → 10:30에 추가한 B 설정이 사라짐</pre>
-<p>그래서 kcal은 되돌리기 전에 지금 파일의 지문이 10:00에 자기가 쓴 직후 지문과 같은지 본다. 다르면, 다른 줄이 바뀌었더라도 되돌리지 않는다. 대신 백업을 직접 되살리는 명령을 보여 준다. 사람이 보고 판단하라는 뜻이다.</p>
-<pre>cp ~/.codex/config.toml.kcal-20261128T091500123Z.bak ~/.codex/config.toml</pre>
-<p>같은 이유로 ⑥의 1번(미리보기와 적용 사이에 파일이 바뀌면 거부)이 있다. 에이전트가 실행 중에 쓴 변경을 덮지 않으려는 것이다.</p>
-<p class="src">근거: 결정 0014, <code>coach/mod.rs</code> 되돌리기</p>
-</div>
+        <p>
+          그래서 kcal은 되돌리기 전에 지금 파일의 지문이 10:00에 자기가 쓴 직후 지문과 같은지 본다.
+          다르면, 다른 줄이 바뀌었더라도 되돌리지 않는다. 대신 백업을 직접 되살리는 명령을 보여
+          준다. 사람이 보고 판단하라는 뜻이다.
+        </p>
+        <pre>cp ~/.codex/config.toml.kcal-20261128T091500123Z.bak ~/.codex/config.toml</pre>
+        <p>
+          같은 이유로 ⑥의 1번(미리보기와 적용 사이에 파일이 바뀌면 거부)이 있다. 에이전트가 실행
+          중에 쓴 변경을 덮지 않으려는 것이다.
+        </p>
+        <p class="src">근거: 결정 0014, <code>coach/mod.rs</code> 되돌리기</p>
+      </div>
 
-<div class="card">
-<h3>⑧ Claude Code의 MCP 서버는 왜 직접 못 끄나?</h3>
-<p>Claude Code의 MCP 설정은 <code>~/.claude.json</code>에 있다. 그런데 이 파일은 Claude Code가 <b>실행 중에 계속 다시 쓴다</b>. kcal이 값을 바꿔도 Claude Code가 자기가 들고 있던 내용으로 덮어 버릴 수 있다. 그래서 kcal은 이 파일에 쓰지 않고 "Claude Code에서 <code>/mcp</code>로 끄세요"라고 안내만 한다. 플러그인(<code>~/.claude/settings.json</code>의 <code>enabledPlugins</code>)은 kcal이 끌 수 있다.</p>
-<p class="src">근거: 결정 0014</p>
-</div>
+      <div class="card">
+        <h3>⑧ Claude Code의 MCP 서버는 왜 직접 못 끄나?</h3>
+        <p>
+          Claude Code의 MCP 설정은 <code>~/.claude.json</code>에 있다. 그런데 이 파일은 Claude
+          Code가 <b>실행 중에 계속 다시 쓴다</b>. kcal이 값을 바꿔도 Claude Code가 자기가 들고 있던
+          내용으로 덮어 버릴 수 있다. 그래서 kcal은 이 파일에 쓰지 않고 "Claude Code에서
+          <code>/mcp</code>로 끄세요"라고 안내만 한다.
+          플러그인(<code>~/.claude/settings.json</code>의 <code>enabledPlugins</code>)은 kcal이 끌
+          수 있다.
+        </p>
+        <p class="src">근거: 결정 0014</p>
+      </div>
 
-<div class="card">
-<h3>⑨ 내 대화 내용과 토큰은 어디로 가나?</h3>
-<pre>로그인 토큰   → api.anthropic.com 한 곳으로만 (Codex 켜면 chatgpt.com)
+      <div class="card">
+        <h3>⑨ 내 대화 내용과 토큰은 어디로 가나?</h3>
+        <pre>
+로그인 토큰   → api.anthropic.com 한 곳으로만 (Codex 켜면 chatgpt.com)
 대화 본문     → 어디에도 안 남김. 숫자·이름·횟수만 꺼냄
 kcal 서버     → 없음. 텔레메트리·자동 업데이트도 없음
 예외          → "Claude 넘기기" 버튼: 누를 때만, 지침 파일 하나를 내 Claude Code로 보냄</pre>
-<p>코드에서도 막는다. 토큰은 <code>Secret</code>이라는 타입에만 담는다. 이 타입은 화면·로그·오류 메시지로 찍으려 하면 값이 가려진다. 실패한 응답 본문도 오류 메시지에 넣지 않는다. 화면(웹뷰)은 CSP 설정으로 kcal 내부 통신만 할 수 있다. 직접 확인하는 명령: <code>git grep -nE 'https?://' -- src src-tauri/src</code></p>
-<p class="src">근거: README "개인정보와 읽는 것", <code>usage/sources.rs</code>, <code>tauri.conf.json</code></p>
-</div>
+        <p>
+          코드에서도 막는다. 토큰은 <code>Secret</code>이라는 타입에만 담는다. 이 타입은
+          화면·로그·오류 메시지로 찍으려 하면 값이 가려진다. 실패한 응답 본문도 오류 메시지에 넣지
+          않는다. 화면(웹뷰)은 CSP 설정으로 kcal 내부 통신만 할 수 있다. 직접 확인하는 명령:
+          <code>git grep -nE 'https?://' -- src src-tauri/src</code>
+        </p>
+        <p class="src">
+          근거: README "개인정보와 읽는 것", <code>usage/sources.rs</code>,
+          <code>tauri.conf.json</code>
+        </p>
+      </div>
 
-<h2><span class="n">3</span>깨지면 어디부터 보나</h2>
-<div class="tablewrap">
-<table>
-  <tr><th style="width:34%">증상</th><th>먼저 볼 곳</th></tr>
-  <tr><td>한도가 안 나오거나 "N분 전 기준"</td><td>토큰을 못 읽었거나 사용량 요청이 실패했다(만료, 거절). Claude Code에 다시 로그인해 본다. 코드는 <code>usage/sources.rs</code>(읽기·요청), <code>usage/schedule.rs</code>(간격).</td></tr>
-  <tr><td>시작 컨텍스트에 "estimate only"</td><td>측정할 <code>api-request-shape</code> 줄이 없다. Claude Code 2.1.300 이상에서 세션을 한 번 열면 생긴다. 코드는 <code>context/shape.rs</code>.</td></tr>
-  <tr><td>진단이 "알 수 없다"며 제안을 안 함</td><td>최근 30일 세션이 10개 미만이다. 정상이다. 기준은 설정, 세는 코드는 <code>coach/usage.rs</code>.</td></tr>
-  <tr><td>"끄기"가 거부됨</td><td>미리보기 뒤에 파일이 바뀌었거나 파일 모양이 예상과 다르다. 거부 이유 문장이 그대로 화면에 나온다. 코드는 <code>coach/edit.rs</code>.</td></tr>
-  <tr><td>되돌리기가 거부되고 <code>cp</code> 명령이 나옴</td><td>kcal이 쓴 뒤 그 파일이 바뀌었다(⑦). 백업과 지금 파일을 비교해 보고 <code>cp</code>를 쓸지 정한다.</td></tr>
-  <tr><td>껐는데 숫자가 그대로</td><td>에이전트를 다시 시작해야 반영된다. 시작 컨텍스트 측정값은 다음 세션의 요청에서 바뀐다.</td></tr>
-  <tr><td>환율이 계속 "기록 모으는 중"</td><td>5시간 구간 기록이 부족하다. 앱을 켜 둔 채 며칠 쓰면 쌓인다. 코드는 <code>rate/</code>.</td></tr>
-</table>
-</div>
+      <h2><span class="n">3</span>깨지면 어디부터 보나</h2>
+      <div class="tablewrap">
+        <table>
+          <tr>
+            <th style="width: 34%">증상</th>
+            <th>먼저 볼 곳</th>
+          </tr>
+          <tr>
+            <td>한도가 안 나오거나 "N분 전 기준"</td>
+            <td>
+              토큰을 못 읽었거나 사용량 요청이 실패했다(만료, 거절). Claude Code에 다시 로그인해
+              본다. 코드는 <code>usage/sources.rs</code>(읽기·요청),
+              <code>usage/schedule.rs</code>(간격).
+            </td>
+          </tr>
+          <tr>
+            <td>시작 컨텍스트에 "estimate only"</td>
+            <td>
+              측정할 <code>api-request-shape</code> 줄이 없다. Claude Code 2.1.300 이상에서 세션을
+              한 번 열면 생긴다. 코드는 <code>context/shape.rs</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>진단이 "알 수 없다"며 제안을 안 함</td>
+            <td>
+              최근 30일 세션이 10개 미만이다. 정상이다. 기준은 설정, 세는 코드는
+              <code>coach/usage.rs</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>"끄기"가 거부됨</td>
+            <td>
+              미리보기 뒤에 파일이 바뀌었거나 파일 모양이 예상과 다르다. 거부 이유 문장이 그대로
+              화면에 나온다. 코드는 <code>coach/edit.rs</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>되돌리기가 거부되고 <code>cp</code> 명령이 나옴</td>
+            <td>
+              kcal이 쓴 뒤 그 파일이 바뀌었다(⑦). 백업과 지금 파일을 비교해 보고 <code>cp</code>를
+              쓸지 정한다.
+            </td>
+          </tr>
+          <tr>
+            <td>껐는데 숫자가 그대로</td>
+            <td>
+              에이전트를 다시 시작해야 반영된다. 시작 컨텍스트 측정값은 다음 세션의 요청에서 바뀐다.
+            </td>
+          </tr>
+          <tr>
+            <td>환율이 계속 "기록 모으는 중"</td>
+            <td>
+              5시간 구간 기록이 부족하다. 앱을 켜 둔 채 며칠 쓰면 쌓인다. 코드는 <code>rate/</code>.
+            </td>
+          </tr>
+        </table>
+      </div>
 
-<h2><span class="n">4</span>스스로 설명해 보기</h2>
-<p class="muted">안 보고 말할 수 있으면 이 앱을 설명할 수 있는 상태다. 막히는 질문이 이 문서에서 고칠 곳이다.</p>
-<ol class="q" style="padding-left:1.3rem">
-  <li>kcal은 한도를 어디서 알아오나? 토큰을 왜 갱신하지 않나?</li>
-  <li>"타이머 금지" 규칙인데 한도 조회만 5분 타이머가 있는 이유는?</li>
-  <li>시작 컨텍스트 숫자 중 어떤 건 측정이고 어떤 건 <code>~</code> 추정인가? 왜 갈리나?</li>
-  <li>끄기를 눌렀을 때 파일에 생기는 일 4가지는?</li>
-  <li>되돌리기가 거부되는 장면을 예로 들어 설명하면?</li>
-  <li>Claude Code MCP는 왜 kcal이 직접 못 끄나?</li>
-</ol>
-<p class="muted" style="margin-top:1rem">출처: README.ko.md, AGENTS.md, 결정 0003·0005·0006·0014·0022, src-tauri/src(usage·context·rate·metrics·coach·health·cache·tray) 모듈 머리 주석, src/lib/ipc.ts — 2026-11-28 main 기준.</p>
-</main>
-</body>
+      <h2><span class="n">4</span>스스로 설명해 보기</h2>
+      <p class="muted">
+        안 보고 말할 수 있으면 이 앱을 설명할 수 있는 상태다. 막히는 질문이 이 문서에서 고칠 곳이다.
+      </p>
+      <ol class="q" style="padding-left: 1.3rem">
+        <li>kcal은 한도를 어디서 알아오나? 토큰을 왜 갱신하지 않나?</li>
+        <li>"타이머 금지" 규칙인데 한도 조회만 5분 타이머가 있는 이유는?</li>
+        <li>시작 컨텍스트 숫자 중 어떤 건 측정이고 어떤 건 <code>~</code> 추정인가? 왜 갈리나?</li>
+        <li>끄기를 눌렀을 때 파일에 생기는 일 4가지는?</li>
+        <li>되돌리기가 거부되는 장면을 예로 들어 설명하면?</li>
+        <li>Claude Code MCP는 왜 kcal이 직접 못 끄나?</li>
+      </ol>
+      <p class="muted" style="margin-top: 1rem">
+        출처: README.ko.md, AGENTS.md, 결정 0003·0005·0006·0014·0022,
+        src-tauri/src(usage·context·rate·metrics·coach·health·cache·tray) 모듈 머리 주석,
+        src/lib/ipc.ts — 2026-11-28 main 기준.
+      </p>
+    </main>
+  </body>
 </html>
