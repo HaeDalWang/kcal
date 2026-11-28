@@ -420,3 +420,31 @@ D(효과 없는 설정)·C(커밋 안내 두 벌)·B(두 번 실림)를 Claude C
 ### tuning
 
 - `checkAlertMin`: 기본 1, 범위 1~20, 정수(0007 규칙). 설정 패널 "화면"의 "점검 알림을 띄울 카드 수".
+
+## 갱신 2026-11-28: 서브에이전트 effort 카드
+
+### 확인한 사실
+
+- [Choose an effort level](https://code.claude.com/docs/en/sub-agents#choose-an-effort-level): agent의 `effort` 필드·호출별 인자로 깊이를 정할 수 있다. 따로 정하지 않았다면 `CLAUDE_CODE_EFFORT_LEVEL`, 부모 서브에이전트나 이번 턴의 effort, `CLAUDE_CODE_SUBAGENT_EFFORT` 순으로 적용한다. 이것들이 없고 메인과 같은 모델이면 세션의 effort를 따른다(2026-11-28 문서 확인).
+- [환경변수 표](https://code.claude.com/docs/en/env-vars): `CLAUDE_CODE_SUBAGENT_EFFORT`는 low·medium·high·xhigh·max를 받는 기본값이다. forks·forked skills·teammates에는 적용하지 않는다. 현재 문서는 2.1.315 이상으로 표기한다(intent의 changelog 기준은 2.1.316).
+- transcript의 최상위 `effort`·`attributionAgent`와 파일 경로를 읽는다. 본문을 보관하지 않고 기존 파일별 `(mtime, size)` 파싱 캐시를 공유한다. 기존 모델·사용량 출력은 바꾸지 않는다.
+
+### 결정과 이유
+
+- 카드 id는 `D-claude-subagent-effort`. 기존 `checkModelDays`와 같은 `since` 이상인 assistant 요청 중 경로에 `subagents` 디렉터리가 있는 파일만 센다. `message.id` 중복과 synthetic 응답은 기존 모델 집계처럼 뺀다.
+- xhigh·max 요청이 1건 이상이고 사용자 settings `env`에 두 effort 변수가 모두 없을 때만 제안한다. high까지 문제로 삼지 않으며 새 tuning은 추가하지 않는다. 기준을 낮추면 high 대 medium 차이까지 다룰 수 있지만 이번 범위에서는 제외한다.
+- 품질 우선으로 추천 기본값은 `high`다. `set-high`는 사용자 settings의 `env.CLAUDE_CODE_SUBAGENT_EFFORT` 한 값만 적고, keep·미리보기·백업·되돌리기는 기존 경로를 쓴다. 새 세션부터 적용되는 것으로 안내한다.
+- IPC 사실은 days·heavyRequests·subagentRequests·byEffort·agents·recommended다. byEffort는 알려진 단계별 요청 수를 깊이순으로 보낸다. effort 누락·알 수 없는 값도 전체 요청 수에는 포함하므로 단계별 합계와 전체가 다를 수 있다. agent 이름은 xhigh·max 요청에서만 모아 정렬하고 화면에는 최대 5개와 나머지 개수를 보인다.
+
+### 범위와 한계
+
+- frontmatter의 `effort`나 호출별 effort는 바꾸지 않는다. 부모·이번 턴의 effort가 우선할 수도 있어서 모든 xhigh·max 요청이 줄어든다고 보장하지 않는다. 토큰 비용 절감량을 계산하지 않는다.
+- project/local·managed settings와 실행 중인 프로세스·shell 환경변수는 조사하지 않는다. 사용자 settings만 대상으로 한다. forks·forked skills·teammates는 설정의 적용 대상이 아니며, transcript 파일 위치만으로 이들을 구분해 효과를 보장하지 않는다.
+
+### 검증
+
+- 임시 HOME의 transcript로 표시·비표시, 두 env 키, message.id 중복, 기간 밖 요청, 메인 파일 제외, 정확한 한 값 쓰기·바이트 단위 undo를 검증한다. 파싱 메모 공유·파일 변경 재읽기도 검사한다.
+- ko/en 카드 렌더링·agent 이름 표시 제한과 Rust 직렬화/TS 키 계약을 합성 fixture로 검증한다. 실제 HOME은 ignored 테스트로 읽기만 하며 xhigh·max 0건 및 카드 부재를 검사한다.
+- 서브에이전트 파일 판정은 기록 파일 바로 위 폴더 이름이 `subagents`일 때만이다(HOME 경로의 조상 폴더 이름은 보지 않는다). 모델 집계와 같은 폴더 탐색 한 번으로 함께 모은다.
+- 파싱 메모는 모든 줄을 들고 있으므로 effort·agent 이름은 서브에이전트 줄에만 상자(`Option<Box<…>>`, 한 칸 8B)로 붙인다. 실측(이 Mac, `real_claude_read_cost`): 줄당 189B → 200B, 메모 12.6MB → 13.4MB. 세 칸을 그대로 두면 16.4MB였다.
+- 전체 게이트(`pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm rust:check`)는 2026-11-28 exit 0. 실제 앱 라이트·다크 화면은 미확인.

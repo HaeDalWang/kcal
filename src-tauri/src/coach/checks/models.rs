@@ -166,10 +166,61 @@ pub struct ModelCount {
     pub requests: u64,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EffortCount {
+    pub effort: Effort,
+    pub requests: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Default)]
+pub struct SubagentEffort {
+    pub heavy_requests: u64,
+    pub subagent_requests: u64,
+    pub by_effort: Vec<EffortCount>,
+    pub agents: Vec<String>,
+}
+
+impl SubagentEffort {
+    pub(crate) fn from_requests(requests: Vec<crate::metrics::claude::Entry>) -> Self {
+        let mut summary = Self::default();
+        let mut seen = std::collections::HashSet::new();
+        let mut counts = std::collections::BTreeMap::new();
+        let mut agents = std::collections::BTreeSet::new();
+        for entry in requests {
+            if entry.model.as_deref() == Some(SYNTHETIC)
+                || entry.id.is_some_and(|id| !seen.insert(id))
+            {
+                continue;
+            }
+            summary.subagent_requests += 1;
+            let meta = entry.subagent.as_deref();
+            let Some(effort) = meta
+                .and_then(|m| m.effort.as_deref())
+                .and_then(Effort::parse)
+            else {
+                continue;
+            };
+            *counts.entry(effort).or_insert(0) += 1;
+            if effort >= Effort::Xhigh {
+                summary.heavy_requests += 1;
+                agents.extend(meta.and_then(|m| m.attribution_agent.as_deref().map(String::from)));
+            }
+        }
+        summary.by_effort = counts
+            .into_iter()
+            .map(|(effort, requests)| EffortCount { effort, requests })
+            .collect();
+        summary.agents = agents.into_iter().collect();
+        summary
+    }
+}
+
 /// 최근 Claude 기록 요약(캐시 값). 요청이 많은 순, 같으면 이름순.
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct RecentRecords {
     pub days: u64,
+    pub subagent_effort: SubagentEffort,
     /// 판정할 수 있는 모델.
     pub known: Vec<(ModelCount, Model)>,
     /// 읽지 못한 id(판정에서 뺀다).
@@ -211,6 +262,7 @@ impl RecentRecords {
         }
         Self {
             days,
+            subagent_effort: SubagentEffort::default(),
             known,
             unknown,
             workspace: None,

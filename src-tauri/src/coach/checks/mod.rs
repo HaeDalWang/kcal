@@ -99,6 +99,14 @@ pub enum CheckFacts {
         topic: String,
         evidence: Vec<String>,
     },
+    SubagentEffort {
+        days: u64,
+        heavy_requests: u64,
+        subagent_requests: u64,
+        by_effort: Vec<models::EffortCount>,
+        agents: Vec<String>,
+        recommended: Effort,
+    },
     EffortLevel {
         value: Effort,
         days: u64,
@@ -320,6 +328,7 @@ pub fn list(home: &Path, records: &RecentRecords, tuning: &Tuning) -> Vec<CoachC
     };
     let mut checks: Vec<CoachCheck> = [
         ineffective::effort_level(&input),
+        ineffective::subagent_effort(&input),
         ineffective::always_thinking(&input),
         ineffective::max_thinking_tokens(&input),
         git::git_instructions(&input),
@@ -475,8 +484,9 @@ pub fn apply(
 pub fn read_records(home: &Path, tuning: &Tuning, now: f64) -> RecentRecords {
     let days = tuning.check_model_days;
     let since = now - days as f64 * DAY_SECS;
-    let (requests, workspaces) = crate::metrics::claude::model_requests(home, since);
+    let (requests, workspaces, subagent) = crate::metrics::claude::recent_requests(home, since);
     RecentRecords {
+        subagent_effort: models::SubagentEffort::from_requests(subagent),
         workspace: shape::latest(home, None, tuning.shape_sessions_to_search)
             .and_then(|s| s.cwd)
             .map(PathBuf::from)

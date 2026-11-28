@@ -8,7 +8,7 @@
 
 ## 진행 중
 
-- [ ] 미릴리스(v0.1.5 뒤 main): 한도 문구 "주간"·"N일 N시간 후"(`a7dc47d`), 메뉴바 아이콘 모양 고르기(`3e8ea82`), Codex 플러그인 프로젝트에서만 켜기(`f93737f`·`d4bc061`), Codex 환율 주간 창 섞임 고침(`e11058a`), Kiro MCP 사용 횟수·끄기 제안·프로젝트 이동 안내(`bd1d17c`), Claude MCP 안내 JSON을 stdin으로(세션 밖 터미널 실행 흐름 미확인). 릴리스는 사람이 요청할 때.
+- [ ] 미릴리스(v0.1.5 뒤 main): 한도 문구 "주간"·"N일 N시간 후"(`a7dc47d`), 메뉴바 아이콘 모양 고르기(`3e8ea82`), Codex 플러그인 프로젝트에서만 켜기(`f93737f`·`d4bc061`), Codex 환율 주간 창 섞임 고침(`e11058a`), Kiro MCP 사용 횟수·끄기 제안·프로젝트 이동 안내(`bd1d17c`), Claude MCP 안내 JSON을 stdin으로(세션 밖 터미널 실행 흐름 미확인), 서브에이전트 effort 카드 `D-claude-subagent-effort`(실제 앱 라이트·다크 화면 미확인, 이 Mac은 xhigh 0건이라 카드 안 뜸 — `dashboard.html?tab=checks&subagent-effort` 미리보기로 본다). 릴리스는 사람이 요청할 때.
 
 ## 사람이 확인할 것 (실기·실계정)
 
@@ -108,10 +108,7 @@
 - Claude Code statusLine 출력 모드(같은 실행 파일 인자) — 필요해지면 결정.
 - 저장소 소셜 프리뷰 이미지(1280×640) 업로드와 GitHub topics 설정(macos, menu-bar, claude-code, codex, kiro, tauri). 저장소 설정에서 관리자가 한다.
 
-- **Claude Code 2.1.307~332 신기능·11/27 vault 자료에서 나온 후보** (2026-11-27 정리, 추천 순서 1→2→3)
-  1. 진단 카드 `CLAUDE_CODE_SUBAGENT_EFFORT` 미설정(2.1.316): 서브에이전트가 세션 effort를 물려받아 비싸다(추정, 확인 = 같은 작업 설정 전후 비교). `D-claude-effort-level` 옆.
-  2. `claude auth status`의 `loginExpiresAt`(2.1.318)으로 로그인 만료 임박 표시, 한도 조회 401의 원인 안내(401 원인이 만료인지는 추정, 확인 = 만료 직전 401 로그 대조).
-  3. 시작 컨텍스트에 MCP 서버 스킬(`server:skill`, 2.1.332)도 세기. 버전 고정 안 된 서버 표시. 실제 컨텍스트 크기는 모름(확인 = 새 세션 `/context` 비교).
+- **Claude Code 2.1.307~332 신기능·11/27 vault 자료에서 나온 후보** (2026-11-27 정리, 추천 순서 2→3) 2. `claude auth status`의 `loginExpiresAt`(2.1.318)으로 로그인 만료 임박 표시, 한도 조회 401의 원인 안내(401 원인이 만료인지는 추정, 확인 = 만료 직전 401 로그 대조). 3. 시작 컨텍스트에 MCP 서버 스킬(`server:skill`, 2.1.332)도 세기. 버전 고정 안 된 서버 표시. 실제 컨텍스트 크기는 모름(확인 = 새 세션 `/context` 비교).
   - 진단 카드 `CLAUDE_CODE_DISABLE_AGENT_PROGRESS_SUMMARIES`(2.1.323): 진행 요약 요청 비용. 규모는 모름.
   - 안내만: 고장 난 설정 파일·안 맞는 hook matcher는 `/status`(2.1.327), API 연결은 `claude doctor`(2.1.331)로 안내. 알려진 한계 "hook 점검은 최근 세션 폴더만"의 보완.
   - Code Mode(2.1.323) 켬 여부를 측정 조건으로 표시. 11/19 1회 A/B에서 켬 +19%(추정, 표본 1).

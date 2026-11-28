@@ -3,6 +3,8 @@ import { mockIPC } from "@tauri-apps/api/mocks";
 import { describe, expect, it } from "vitest";
 
 import { AgentChecks, type HandoffContext } from "@/components/checks-view";
+import { setLanguage } from "@/lib/i18n";
+import { checkCopy } from "@/lib/check-copy";
 import { ko } from "@/lib/i18n-ko";
 import type { AppliedSwitch, CoachCheck } from "@/lib/ipc";
 import {
@@ -11,6 +13,7 @@ import {
   CODEX_APPLIED,
   EFFORT_APPLIED,
   EFFORT_CHECK,
+  SUBAGENT_EFFORT_CHECK,
   EFFORT_PREVIEW,
   GIT_CHECK,
   LONG_APPLIED,
@@ -75,6 +78,24 @@ function handoffList(handoff: HandoffContext, onChanged: () => void = () => {}) 
 }
 
 describe("AgentChecks", () => {
+  it.each(["ko", "en"] as const)(
+    "renders the subagent effort facts and action in %s",
+    (language) => {
+      setLanguage(language);
+      mock();
+      render(list([SUBAGENT_EFFORT_CHECK]));
+      const copy = checkCopy(SUBAGENT_EFFORT_CHECK);
+      const group = openCard(copy.title);
+      expect(within(group).getByText(copy.headline)).toBeTruthy();
+      expect(within(group).getByText(copy.what)).toBeTruthy();
+      expect(within(group).getByText(copy.note!)).toBeTruthy();
+      expect(within(group).getByText(/Explore, researcher/)).toBeTruthy();
+      expect(
+        within(group).getByRole("button", { name: new RegExp(copy.actions[0].label) }),
+      ).toBeTruthy();
+      expect(group.textContent).toContain('env.CLAUDE_CODE_SUBAGENT_EFFORT: "high"');
+    },
+  );
   it("starts with every row folded and opens only the clicked row with headline, chips, diff and actions", () => {
     mock();
     render(list(THIS_MAC_CHECKS));

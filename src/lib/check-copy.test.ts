@@ -20,9 +20,12 @@ import {
 } from "@/lib/check-copy";
 import { setLanguage } from "@/lib/i18n";
 import type { CoachCheck } from "@/lib/ipc";
+import type { EffortCount } from "@/lib/ipc-checks";
+import { fixture, expectFields } from "@/test/ipc-fixture";
 import {
   CODEX_FAST_CHECK,
   EFFORT_CHECK,
+  SUBAGENT_EFFORT_CHECK,
   GIT_CHECK,
   HOOK_CHECK,
   LONG_CHECK,
@@ -42,6 +45,50 @@ describe("modelLabel", () => {
 });
 
 describe("checkCopy", () => {
+  it("matches the Rust subagent effort fixture fields and effort counts", () => {
+    const card = fixture("coach-subagent-effort") as CoachCheck;
+    if (card.facts.type !== "subagentEffort") throw new Error("fixture");
+    expectFields(
+      card.facts,
+      {
+        type: "required",
+        days: "required",
+        heavyRequests: "required",
+        subagentRequests: "required",
+        byEffort: "required",
+        agents: "required",
+        recommended: "required",
+      },
+      "CheckFacts.subagentEffort",
+    );
+    card.facts.byEffort.forEach((count) =>
+      expectFields<EffortCount>(count, { effort: "required", requests: "required" }, "EffortCount"),
+    );
+    expect(card.facts).toEqual(SUBAGENT_EFFORT_CHECK.facts);
+    expect(checkCopy(card).headline).toContain("12건 중 3건");
+  });
+
+  it("shows measured subagent effort, preserves explicit effort and limits agent names", () => {
+    const facts = SUBAGENT_EFFORT_CHECK.facts;
+    if (facts.type !== "subagentEffort") throw new Error("fixture");
+    const card = {
+      ...SUBAGENT_EFFORT_CHECK,
+      facts: { ...facts, agents: ["a", "b", "c", "d", "e", "f", "g"] },
+    };
+    const ko = checkCopy(card);
+    expect(ko.headline).toBe("최근 14일 서브에이전트 요청 12건 중 3건이 xhigh 이상이었어요.");
+    expect(ko.what).toContain("agent 파일의 effort는 그대로예요");
+    expect(ko.note).toBe("새 세션부터 적용돼요.");
+    expect(ko.mineList).toContain("xhigh 이상으로 요청한 에이전트: a, b, c, d, e 외 2개");
+    expect(ko.actions.map((a) => [a.option, a.isRecommended])).toEqual([["set-high", true]]);
+    setLanguage("en");
+    const en = checkCopy(card);
+    expect(en.headline).toBe(
+      "In the last 14 days, 3 of 12 subagent requests ran at xhigh or above.",
+    );
+    expect(en.mineList.at(-1)).toContain("a, b, c, d, e and 2 more");
+    expect(en.what).toContain("agent files stays unchanged");
+  });
   it("this Mac effort card: Opus 5.5 ignores high and runs its own xhigh, nothing moves", () => {
     const copy = checkCopy(EFFORT_CHECK);
     expect(copy.title).toBe("생각 깊이 설정 한 줄이 지금 모델에서 무시돼요");

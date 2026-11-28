@@ -135,6 +135,39 @@ function effortCopy(check: CoachCheck, f: Facts<"effortLevel">): CheckCopy {
   };
 }
 
+const MAX_SHOWN_AGENTS = 5;
+
+function subagentEffortCopy(check: CoachCheck, f: Facts<"subagentEffort">): CheckCopy {
+  const copy = t.checks.subagentEffort;
+  return {
+    title: copy.title,
+    shortTitle: copy.short,
+    headline: copy.headline(
+      f.days,
+      integer.format(f.subagentRequests),
+      integer.format(f.heavyRequests),
+    ),
+    note: copy.note,
+    what: copy.what,
+    mine: copy.mine,
+    mineList: [
+      ...f.byEffort.map((c) => `${c.effort}: ${integer.format(c.requests)}`),
+      ...(f.agents.length > 0
+        ? [
+            copy.agents(
+              f.agents.slice(0, MAX_SHOWN_AGENTS).join(", "),
+              Math.max(0, f.agents.length - MAX_SHOWN_AGENTS),
+            ),
+          ]
+        : []),
+    ],
+    who: t.checks.whoValue,
+    better: copy.better,
+    actions: actionsOf(check, { "set-high": { label: copy.action } }),
+    keepReason: null,
+  };
+}
+
 function thinkingCopy(
   check: CoachCheck,
   f: Facts<"alwaysThinking"> | Facts<"maxThinkingTokens">,
@@ -439,6 +472,8 @@ export const linesText = (before: number, after: number) =>
 export function checkCopy(check: CoachCheck): CheckCopy {
   const f = check.facts;
   switch (f.type) {
+    case "subagentEffort":
+      return subagentEffortCopy(check, f);
     case "effortLevel":
       return effortCopy(check, f);
     case "alwaysThinking":
@@ -592,6 +627,8 @@ export function checkChips(check: CoachCheck): string[] {
   const f = check.facts;
   const chips: string[] = (() => {
     switch (f.type) {
+      case "subagentEffort":
+        return [chip.days(f.days)];
       case "effortLevel":
       case "alwaysThinking":
       case "maxThinkingTokens":

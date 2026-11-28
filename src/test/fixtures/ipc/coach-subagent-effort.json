@@ -1,0 +1,56 @@
+{
+  "agent": "claude",
+  "docs": [
+    "https://code.claude.com/docs/en/sub-agents#choose-an-effort-level",
+    "https://code.claude.com/docs/en/env-vars"
+  ],
+  "facts": {
+    "agents": ["Explore", "researcher"],
+    "byEffort": [
+      {
+        "effort": "high",
+        "requests": 9
+      },
+      {
+        "effort": "xhigh",
+        "requests": 2
+      },
+      {
+        "effort": "max",
+        "requests": 1
+      }
+    ],
+    "days": 14,
+    "heavyRequests": 3,
+    "recommended": "high",
+    "subagentRequests": 12,
+    "type": "subagentEffort"
+  },
+  "file": "/synthetic/.claude/settings.json",
+  "id": "D-claude-subagent-effort",
+  "isDismissed": false,
+  "kind": "D",
+  "options": [
+    {
+      "changes": [
+        {
+          "after": "\"high\"",
+          "before": null,
+          "location": "env.CLAUDE_CODE_SUBAGENT_EFFORT"
+        }
+      ],
+      "id": "set-high",
+      "instruction": null,
+      "isRecommended": true,
+      "isWritable": true
+    },
+    {
+      "changes": [],
+      "id": "keep",
+      "instruction": null,
+      "isRecommended": false,
+      "isWritable": false
+    }
+  ],
+  "tokens": null
+}

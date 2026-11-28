@@ -463,3 +463,67 @@ fn coach_checks_match_fixture() {
         },
     );
 }
+
+#[test]
+fn subagent_effort_card_matches_fixture() {
+    use crate::coach::checks::models::{Effort, EffortCount};
+    use crate::coach::checks::{CheckFacts, CheckKind, CheckOption, CoachCheck};
+    let card = CoachCheck {
+        id: "D-claude-subagent-effort".into(),
+        kind: CheckKind::D,
+        agent: Agent::Claude,
+        file: "/synthetic/.claude/settings.json".into(),
+        docs: vec![
+            "https://code.claude.com/docs/en/sub-agents#choose-an-effort-level".into(),
+            "https://code.claude.com/docs/en/env-vars".into(),
+        ],
+        tokens: None,
+        is_dismissed: false,
+        facts: CheckFacts::SubagentEffort {
+            days: 14,
+            heavy_requests: 3,
+            subagent_requests: 12,
+            by_effort: vec![
+                EffortCount {
+                    effort: Effort::High,
+                    requests: 9,
+                },
+                EffortCount {
+                    effort: Effort::Xhigh,
+                    requests: 2,
+                },
+                EffortCount {
+                    effort: Effort::Max,
+                    requests: 1,
+                },
+            ],
+            agents: vec!["Explore".into(), "researcher".into()],
+            recommended: Effort::High,
+        },
+        options: vec![
+            CheckOption {
+                id: "set-high".into(),
+                is_recommended: true,
+                is_writable: true,
+                instruction: None,
+                changes: vec![crate::coach::edit::JsonChange {
+                    location: "env.CLAUDE_CODE_SUBAGENT_EFFORT".into(),
+                    before: None,
+                    after: Some("\"high\"".into()),
+                }],
+                log_name: "synthetic".into(),
+                ops: vec![],
+            },
+            CheckOption {
+                id: "keep".into(),
+                is_recommended: false,
+                is_writable: false,
+                instruction: None,
+                changes: vec![],
+                log_name: "synthetic".into(),
+                ops: vec![],
+            },
+        ],
+    };
+    check("coach-subagent-effort", &card);
+}

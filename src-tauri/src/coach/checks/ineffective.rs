@@ -76,6 +76,54 @@ fn check(
     }
 }
 
+/// 서브에이전트가 따로 정한 effort를 덮어쓰지 않는 기본값을 제안한다.
+pub fn subagent_effort(input: &Inputs) -> Option<CoachCheck> {
+    let summary = &input.records.subagent_effort;
+    let has_override = ["CLAUDE_CODE_SUBAGENT_EFFORT", "CLAUDE_CODE_EFFORT_LEVEL"]
+        .iter()
+        .any(|name| {
+            input
+                .settings
+                .get("env")
+                .and_then(|env| env.get(name))
+                .is_some()
+        });
+    if has_override || summary.heavy_requests == 0 {
+        return None;
+    }
+    Some(check(
+        "D-claude-subagent-effort",
+        input,
+        CheckFacts::SubagentEffort {
+            days: input.records.days,
+            heavy_requests: summary.heavy_requests,
+            subagent_requests: summary.subagent_requests,
+            by_effort: summary.by_effort.clone(),
+            agents: summary.agents.clone(),
+            recommended: Effort::High,
+        },
+        vec![
+            CheckOption::write(
+                "set-high",
+                pick(
+                    "서브에이전트 생각 깊이 기본값 설정",
+                    "Set the default thinking depth for subagents",
+                ),
+                true,
+                vec![JsonOp::Set(
+                    vec![key("env"), key("CLAUDE_CODE_SUBAGENT_EFFORT")],
+                    Value::String("high".into()),
+                )],
+            ),
+            CheckOption::keep(false),
+        ],
+        &[
+            "https://code.claude.com/docs/en/sub-agents#choose-an-effort-level",
+            "https://code.claude.com/docs/en/env-vars",
+        ],
+    ))
+}
+
 fn save_effort(model: &str, value: Effort) -> JsonOp {
     let value = serde_json::to_value(value).unwrap_or(Value::Null);
     JsonOp::Set(

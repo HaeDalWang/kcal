@@ -36,6 +36,9 @@ struct Row {
     /// 세션 작업 폴더. 최적화 점검(0018 작업 A)이 최근 작업 폴더를 모을 때만 쓴다.
     cwd: Option<String>,
     entrypoint: Option<String>,
+    effort: Option<serde_json::Value>,
+    #[serde(rename = "attributionAgent")]
+    attribution_agent: Option<serde_json::Value>,
 }
 
 #[derive(Deserialize)]
@@ -79,6 +82,14 @@ pub(crate) struct Entry {
     pub(crate) model: Option<Arc<str>>,
     pub(crate) cwd: Option<Arc<str>>,
     pub(crate) entrypoint: Option<Arc<str>>,
+    /// 서브에이전트 기록 파일(`…/subagents/*.jsonl`)의 줄에만 있다. 메모가 모든 줄을 들고 있어 한 칸(8B)으로 둔다.
+    pub(crate) subagent: Option<Box<Subagent>>,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct Subagent {
+    pub(crate) effort: Option<Arc<str>>,
+    pub(crate) attribution_agent: Option<Arc<str>>,
 }
 
 /// 같은 문자열을 하나로 모은다. 서로 다른 model·cwd·entrypoint 값만큼만 커지고 줄 수에는 안 는다.
@@ -102,7 +113,7 @@ fn contains(haystack: &[u8], needle: &[u8]) -> bool {
     haystack.windows(needle.len()).any(|w| w == needle)
 }
 
-fn entry(line: &[u8]) -> Option<Entry> {
+fn entry(line: &[u8], is_subagent_file: bool) -> Option<Entry> {
     if !contains(line, ASSISTANT_MARK)
         || !(contains(line, USAGE_MARK) || contains(line, MODEL_MARK))
     {
@@ -127,6 +138,13 @@ fn entry(line: &[u8]) -> Option<Entry> {
         model: message.model.map(intern),
         cwd: row.cwd.map(intern),
         entrypoint: row.entrypoint.map(intern),
+        subagent: is_subagent_file.then(|| {
+            let text = |v: Option<serde_json::Value>| v?.as_str().map(|s| intern(s.to_owned()));
+            Box::new(Subagent {
+                effort: text(row.effort),
+                attribution_agent: text(row.attribution_agent),
+            })
+        }),
     })
 }
 
@@ -179,7 +197,12 @@ pub(crate) fn entries(file: &Path) -> Arc<Vec<Entry>> {
     if let Ok(mut counts) = PARSE_COUNTS.lock() {
         *counts.entry(file.to_path_buf()).or_default() += 1;
     }
-    let parsed = Arc::new(read_lines(file, entry));
+    // 바로 위 폴더 이름만 본다(HOME 경로 어딘가의 `subagents` 폴더는 서브에이전트 기록이 아니다).
+    let is_subagent_file = file
+        .parent()
+        .and_then(Path::file_name)
+        .is_some_and(|n| n == "subagents");
+    let parsed = Arc::new(read_lines(file, |line| entry(line, is_subagent_file)));
     if let Some((modified, len)) = key
         && let Ok(mut map) = PARSED.lock()
     {
@@ -219,32 +242,38 @@ pub(crate) fn read_lines<T>(file: &Path, parse: impl Fn(&[u8]) -> Option<T>) -> 
 
 /// 최적화 점검: `since` 뒤에 바뀐 기록 파일의 assistant 줄 중 `since` 뒤 요청의 모델(같은 walker를 쓴다)과
 /// 그 줄들의 작업 폴더(`cwd`, 중복 없이 이름순). 폴더가 지금 있는지는 쓰는 쪽이 본다.
+#[cfg(test)]
 pub(crate) fn model_requests(home: &Path, since: f64) -> (Vec<ModelRequest>, Vec<PathBuf>) {
-    let lines: Vec<(ModelRequest, Option<String>)> = log_files(home, since, usize::MAX)
-        .iter()
-        .flat_map(|f| {
-            entries(f)
-                .iter()
-                .filter(|e| e.ts >= since)
-                .filter_map(|e| {
-                    Some((
-                        (
-                            e.ts,
-                            e.id.as_deref().map(String::from),
-                            e.model.as_deref()?.to_owned(),
-                        ),
-                        e.cwd.as_deref().map(String::from),
-                    ))
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect();
+    let (requests, workspaces, _) = recent_requests(home, since);
+    (requests, workspaces)
+}
+
+/// `model_requests`와 같은 기간의 서브에이전트 assistant 줄(세 번째 값)을 한 번의 폴더 탐색으로 낸다.
+pub(crate) fn recent_requests(
+    home: &Path,
+    since: f64,
+) -> (Vec<ModelRequest>, Vec<PathBuf>, Vec<Entry>) {
+    let mut subagent = Vec::new();
+    let mut lines: Vec<(ModelRequest, Option<String>)> = Vec::new();
+    for file in log_files(home, since, usize::MAX) {
+        for e in entries(&file).iter().filter(|e| e.ts >= since) {
+            if e.subagent.is_some() {
+                subagent.push(e.clone());
+            }
+            if let Some(model) = e.model.as_deref() {
+                lines.push((
+                    (e.ts, e.id.as_deref().map(String::from), model.to_owned()),
+                    e.cwd.as_deref().map(String::from),
+                ));
+            }
+        }
+    }
     let workspaces: std::collections::BTreeSet<PathBuf> = lines
         .iter()
         .filter_map(|(_, cwd)| cwd.as_deref().map(PathBuf::from))
         .collect();
     let requests = lines.into_iter().map(|(request, _)| request).collect();
-    (requests, workspaces.into_iter().collect())
+    (requests, workspaces.into_iter().collect(), subagent)
 }
 
 /// `root` 아래 메모 항목 중 지금 목록에 없는(지워진) 파일을 뺀다.
@@ -396,7 +425,7 @@ mod tests {
     #[test]
     fn reads_only_usage_numbers_from_assistant_lines() {
         let line = assistant("2026-11-05T01:00:00Z", "msg_1", 2, 90, 8);
-        let e = entry(line.as_bytes()).unwrap();
+        let e = entry(line.as_bytes(), false).unwrap();
         assert_eq!(
             e.ts,
             unix_secs(time::macros::datetime!(2026-11-05 01:00 UTC))
@@ -408,8 +437,8 @@ mod tests {
         let user = json!({"type": "user", "timestamp": "2026-11-05T01:00:00Z",
             "message": {"content": "\"type\":\"assistant\" \"usage\""}})
         .to_string();
-        assert!(entry(user.as_bytes()).is_none());
-        assert!(entry(br#"{"type":"assistant","usage" broken"#).is_none());
+        assert!(entry(user.as_bytes(), false).is_none());
+        assert!(entry(br#"{"type":"assistant","usage" broken"#, false).is_none());
     }
 
     #[test]
@@ -417,7 +446,7 @@ mod tests {
         let line = json!({"type": "assistant", "timestamp": "2026-11-05T01:00:00Z",
             "message": {"id": "msg_1", "model": "claude-opus-5-5", "content": []}})
         .to_string();
-        let e = entry(line.as_bytes()).unwrap();
+        let e = entry(line.as_bytes(), false).unwrap();
         assert_eq!(
             (e.id.as_deref(), e.model.as_deref()),
             (Some("msg_1"), Some("claude-opus-5-5"))
@@ -425,7 +454,7 @@ mod tests {
         let user = json!({"type": "user", "timestamp": "2026-11-05T01:00:00Z",
             "message": {"model": "x", "content": "\"type\":\"assistant\""}})
         .to_string();
-        assert!(entry(user.as_bytes()).is_none());
+        assert!(entry(user.as_bytes(), false).is_none());
     }
 
     #[test]
@@ -470,6 +499,42 @@ mod tests {
         std::fs::write(&path, format!("{line}\n{line}")).unwrap();
         assert_eq!(model_requests(home.path(), secs - DAY_SECS).0.len(), 2);
         assert_eq!(parses(&path), Some(2));
+    }
+
+    #[test]
+    fn subagent_effort_metadata_shares_the_memo_and_uses_directory_components() {
+        let home = TempDir::new("metrics-subagent-effort");
+        let ts = OffsetDateTime::now_utc().format(&Rfc3339).unwrap();
+        let line = json!({"type":"assistant", "timestamp":ts, "effort":"xhigh",
+            "attributionAgent":"Explore", "message":{"id":"one", "model":"claude-opus-5-5"}})
+        .to_string();
+        let file = home.write(".claude/projects/-w/session/subagents/a.jsonl", &line);
+        let first = entries(&file);
+        let second = entries(&file);
+        assert!(Arc::ptr_eq(&first, &second));
+        let meta = first[0].subagent.as_deref().unwrap();
+        assert_eq!(meta.effort.as_deref(), Some("xhigh"));
+        assert_eq!(meta.attribution_agent.as_deref(), Some("Explore"));
+        let malformed = json!({"type":"assistant", "timestamp":ts, "effort":5,
+            "attributionAgent":{}, "message":{"id":"old-reader", "model":"claude-opus-5-5"}})
+        .to_string();
+        let parsed = entry(malformed.as_bytes(), true).unwrap();
+        let meta = parsed.subagent.as_deref().unwrap();
+        assert!(meta.effort.is_none() && meta.attribution_agent.is_none());
+        assert_eq!(parsed.model.as_deref(), Some("claude-opus-5-5"));
+        assert!(first[0].subagent.is_some());
+        let main = home.write(".claude/projects/-w/subagents-like/a.jsonl", &line);
+        assert!(entries(&main)[0].subagent.is_none());
+        // 조상 폴더 이름이 subagents여도 기록 파일 바로 위가 아니면 메인 기록이다.
+        let nested = home.write(".claude/projects/-w/subagents/x/main.jsonl", &line);
+        assert!(entries(&nested)[0].subagent.is_none());
+        let since = unix_secs(OffsetDateTime::now_utc()) - DAY_SECS;
+        assert_eq!(model_requests(home.path(), since).0.len(), 3);
+        assert_eq!(recent_requests(home.path(), since).2.len(), 1);
+        assert_eq!(PARSE_COUNTS.lock().unwrap().get(&file), Some(&1));
+        std::fs::write(&file, format!("{line}\n{line}")).unwrap();
+        assert_eq!(recent_requests(home.path(), since).2.len(), 2);
+        assert_eq!(PARSE_COUNTS.lock().unwrap().get(&file), Some(&2));
     }
 
     #[test]

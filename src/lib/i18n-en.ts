@@ -465,6 +465,19 @@ export const en: Messages = {
       remove: "Delete the old setting",
       saveCurrent: (model, value) => `Also save ${value} for ${model}`,
     },
+    subagentEffort: {
+      title: "Subagents have requests at xhigh or above",
+      short: "Default thinking depth for subagents",
+      headline: (days, total, heavy) =>
+        `In the last ${days} days, ${heavy} of ${total} subagent requests ran at xhigh or above.`,
+      note: "Applies from new sessions.",
+      what: "Saves high as the default only when a subagent has not chosen its own effort. The effort in agent files stays unchanged.",
+      mine: "Subagents using this default may think less deeply. An explicit effort, spawning agent’s effort or turn-only effort can still take precedence.",
+      better: "Give subagents a separate default while thinking deeply in the main conversation.",
+      action: "Save high as the default",
+      agents: (names, rest) =>
+        `Agents with requests at xhigh or above: ${names}${rest > 0 ? ` and ${rest} more` : ""}`,
+    },
     thinking: {
       noneAffected: (days) =>
         `Nothing. Every model you used in the last ${n(days, "day")} was already ignoring this setting.`,

@@ -214,6 +214,15 @@ const THINKING_FACTS = {
   unknownModels: "required",
 } satisfies Fields<FactsOf<"alwaysThinking">>;
 const CHECK_FACTS: { [T in CheckFacts["type"]]: Fields<FactsOf<T>> } = {
+  subagentEffort: {
+    type: "required",
+    days: "required",
+    heavyRequests: "required",
+    subagentRequests: "required",
+    byEffort: "required",
+    agents: "required",
+    recommended: "required",
+  },
   effortLevel: {
     type: "required",
     value: "required",
@@ -362,7 +371,10 @@ describe("Rust IPC coach fixtures match ipc.ts types", () => {
   });
 
   it("coach checks and check preview have the keys and enum values of the check types", () => {
-    const checks = fixture("coach-checks") as CoachCheck[];
+    const checks = [
+      ...(fixture("coach-checks") as CoachCheck[]),
+      fixture("coach-subagent-effort") as CoachCheck,
+    ];
     checks.forEach((c) => {
       expectFields<CoachCheck>(c, COACH_CHECK, "CoachCheck");
       const fields = CHECK_FACTS[c.facts.type] as Fields<CheckFacts>;

@@ -466,6 +466,19 @@ export const ko = {
       remove: "옛 설정 지우기",
       saveCurrent: (model: string, value: Effort) => `${model}도 ${value} 값으로 저장하기`,
     },
+    subagentEffort: {
+      title: "서브에이전트가 xhigh 이상으로 생각한 기록이 있어요",
+      short: "서브에이전트 생각 깊이 기본값",
+      headline: (days: number, total: string, heavy: string) =>
+        `최근 ${days}일 서브에이전트 요청 ${total}건 중 ${heavy}건이 xhigh 이상이었어요.`,
+      note: "새 세션부터 적용돼요.",
+      what: "서브에이전트가 따로 정하지 않았을 때만 쓰는 기본값을 high로 저장해요. agent 파일의 effort는 그대로예요.",
+      mine: "기본값을 쓰는 서브에이전트는 덜 깊이 생각할 수 있어요. 직접 정한 effort나 부모·이번 턴의 effort가 우선하면 달라지지 않아요.",
+      better: "메인 대화에서 깊이 생각할 때도 서브에이전트의 기본값을 따로 둘 수 있어요.",
+      action: "기본값 high로 저장하기",
+      agents: (names: string, rest: number) =>
+        `xhigh 이상으로 요청한 에이전트: ${names}${rest > 0 ? ` 외 ${rest}개` : ""}`,
+    },
     thinking: {
       noneAffected: (days: number) =>
         `없어요. 최근 ${days}일에 쓴 모델은 모두 이 설정을 무시하고 있었어요.`,

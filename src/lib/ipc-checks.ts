@@ -7,6 +7,9 @@ import type { Agent, AppliedSwitch } from "@/lib/ipc";
 /** Rust `coach::checks::models::Effort`. 깊이 순. */
 export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
 
+/** Rust `coach::checks::models::EffortCount`. */
+export type EffortCount = { effort: Effort; requests: number };
+
 /** Rust `coach::checks::CheckKind`(docs/decisions/0017 처방 유형). */
 export type CheckKind = "A" | "D" | "C" | "B";
 
@@ -46,6 +49,15 @@ export type RuleFact = {
 
 /** Rust `coach::checks::CheckFacts`. 문구는 `src/lib/check-copy.ts`가 이 사실로 만든다. */
 export type CheckFacts =
+  | {
+      type: "subagentEffort";
+      days: number;
+      heavyRequests: number;
+      subagentRequests: number;
+      byEffort: EffortCount[];
+      agents: string[];
+      recommended: Effort;
+    }
   | {
       type: "savedAdvice";
       topic:

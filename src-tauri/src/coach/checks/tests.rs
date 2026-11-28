@@ -11,6 +11,7 @@ const NOW: OffsetDateTime = datetime!(2026-11-07 12:00:00.000 UTC);
 pub(super) fn records(models: &[(&str, u64)]) -> RecentRecords {
     RecentRecords {
         days: 30,
+        subagent_effort: Default::default(),
         known: models
             .iter()
             .map(|(id, n)| {
@@ -574,3 +575,156 @@ fn real_checks_records_timing_on_this_mac() {
 
 #[path = "saved_advice_tests.rs"]
 mod saved_advice_tests;
+
+fn subagent_line(id: &str, effort: Option<&str>, agent: &str, timestamp: &str) -> String {
+    serde_json::json!({"type":"assistant", "timestamp": timestamp,
+        "effort": effort, "attributionAgent": agent, "isSidechain": true,
+        "message":{"id":id,"model":"claude-opus-5-5","usage":{"input_tokens":1}}})
+    .to_string()
+}
+
+fn heavy_subagent_home() -> TempDir {
+    let home = home_with("subagent-effort", "{\"env\":{\"OTHER\":\"kept\"}}\n");
+    let ts = "2026-11-07T11:00:00Z";
+    let mut lines = vec![
+        subagent_line("dup", Some("xhigh"), "zebra", ts),
+        subagent_line("dup", Some("xhigh"), "zebra", ts),
+        subagent_line("high", Some("high"), "not-heavy", ts),
+        subagent_line("missing", None, "unknown", ts),
+        subagent_line("old", Some("max"), "too-old", "2026-09-01T00:00:00Z"),
+    ];
+    for name in ["a", "b", "c", "d", "e", "f"] {
+        lines.push(subagent_line(name, Some("max"), name, ts));
+    }
+    home.write(
+        ".claude/projects/-w/session/subagents/agent.jsonl",
+        &lines.join("\n"),
+    );
+    home.write(
+        ".claude/projects/-w/main.jsonl",
+        &subagent_line("main", Some("max"), "main", ts),
+    );
+    home.write(
+        ".claude/projects/-w/subagents-like/main.jsonl",
+        &subagent_line("near", Some("max"), "near", ts),
+    );
+    home.write(
+        ".claude/projects/-w/session/subagents/duplicate.jsonl",
+        &subagent_line("dup", Some("xhigh"), "zebra", ts),
+    );
+    home
+}
+
+#[test]
+fn subagent_effort_counts_recent_subagent_files_dedupes_and_round_trips() {
+    let home = heavy_subagent_home();
+    let recent = read_records(
+        home.path(),
+        &Tuning::default(),
+        crate::metrics::unix_secs(NOW),
+    );
+    let all = checks(&home, &recent);
+    let card = find_check(&all, "D-claude-subagent-effort").unwrap();
+    let CheckFacts::SubagentEffort {
+        days,
+        heavy_requests,
+        subagent_requests,
+        by_effort,
+        agents,
+        recommended,
+    } = &card.facts
+    else {
+        panic!()
+    };
+    assert_eq!((*days, *heavy_requests, *subagent_requests), (30, 7, 9));
+    assert_eq!(*recommended, Effort::High);
+    assert_eq!(
+        by_effort
+            .iter()
+            .map(|c| (c.effort, c.requests))
+            .collect::<Vec<_>>(),
+        [(Effort::High, 1), (Effort::Xhigh, 1), (Effort::Max, 6)]
+    );
+    assert_eq!(agents, &["a", "b", "c", "d", "e", "f", "zebra"]);
+    assert_eq!(
+        option_ids(card),
+        [("set-high", true, true), ("keep", false, false)]
+    );
+    assert_eq!(card.file, settings_file(&home).to_string_lossy());
+    assert_eq!(card.options[0].changes.len(), 1);
+    assert_eq!(
+        card.options[0].changes[0].location,
+        "env.CLAUDE_CODE_SUBAGENT_EFFORT"
+    );
+    assert_eq!(
+        card.options[0].changes[0].after.as_deref(),
+        Some("\"high\"")
+    );
+    let after = round_trip(&home, &recent, &card.id, "set-high");
+    assert_eq!(
+        after,
+        serde_json::json!({"env":{"OTHER":"kept","CLAUDE_CODE_SUBAGENT_EFFORT":"high"}})
+    );
+}
+
+#[test]
+fn subagent_effort_is_hidden_for_nonheavy_records_or_either_env_key() {
+    let home = home_with("subagent-hidden", "{}");
+    let path = ".claude/projects/-w/subagents/a.jsonl";
+    let ts = "2026-11-07T11:00:00Z";
+    home.write(
+        path,
+        &[
+            subagent_line("m", Some("medium"), "a", ts),
+            subagent_line("h", Some("high"), "a", ts),
+        ]
+        .join("\n"),
+    );
+    let tuning = Tuning::default();
+    let recent = read_records(home.path(), &tuning, crate::metrics::unix_secs(NOW));
+    assert_eq!(recent.subagent_effort.subagent_requests, 2);
+    assert!(find_check(&checks(&home, &recent), "D-claude-subagent-effort").is_none());
+    home.write(path, &subagent_line("heavy", Some("xhigh"), "a", ts));
+    let recent = read_records(home.path(), &tuning, crate::metrics::unix_secs(NOW));
+    for key in ["CLAUDE_CODE_SUBAGENT_EFFORT", "CLAUDE_CODE_EFFORT_LEVEL"] {
+        // Presence, including null/empty values, means the user has already set the key.
+        for value in [
+            serde_json::json!("medium"),
+            serde_json::json!(""),
+            Value::Null,
+        ] {
+            home.write(
+                ".claude/settings.json",
+                &serde_json::json!({"env":{key:value}}).to_string(),
+            );
+            assert!(
+                find_check(&checks(&home, &recent), "D-claude-subagent-effort").is_none(),
+                "{key}"
+            );
+        }
+    }
+}
+
+#[test]
+#[ignore = "실제 HOME의 Claude 기록을 읽기만 한다"]
+fn real_home_subagent_effort_has_no_heavy_requests() {
+    let home = std::env::home_dir().unwrap();
+    let tuning = Tuning {
+        check_model_days: 14,
+        ..Tuning::default()
+    };
+    let recent = read_records(&home, &tuning, now_secs());
+    println!(
+        "days={} subagentRequests={} heavyRequests={} byEffort={:?}",
+        recent.days,
+        recent.subagent_effort.subagent_requests,
+        recent.subagent_effort.heavy_requests,
+        recent.subagent_effort.by_effort
+    );
+    assert_eq!(recent.subagent_effort.heavy_requests, 0);
+    assert!(
+        !list(&home, &recent, &tuning)
+            .iter()
+            .any(|c| c.id == "D-claude-subagent-effort")
+    );
+}

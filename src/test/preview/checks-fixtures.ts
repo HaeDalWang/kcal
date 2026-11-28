@@ -66,6 +66,42 @@ export const EFFORT_CHECK: CoachCheck = {
   isDismissed: false,
 };
 
+export const SUBAGENT_EFFORT_CHECK: CoachCheck = {
+  id: "D-claude-subagent-effort",
+  kind: "D",
+  agent: "claude",
+  facts: {
+    type: "subagentEffort",
+    days: 14,
+    heavyRequests: 3,
+    subagentRequests: 12,
+    byEffort: [
+      { effort: "high", requests: 9 },
+      { effort: "xhigh", requests: 2 },
+      { effort: "max", requests: 1 },
+    ],
+    agents: ["Explore", "researcher"],
+    recommended: "high",
+  },
+  options: [
+    {
+      id: "set-high",
+      isRecommended: true,
+      isWritable: true,
+      instruction: null,
+      changes: [{ location: "env.CLAUDE_CODE_SUBAGENT_EFFORT", before: null, after: '"high"' }],
+    },
+    { id: "keep", isRecommended: false, isWritable: false, instruction: null, changes: [] },
+  ],
+  file: SETTINGS,
+  docs: [
+    "https://code.claude.com/docs/en/sub-agents#choose-an-effort-level",
+    "https://code.claude.com/docs/en/env-vars",
+  ],
+  tokens: null,
+  isDismissed: false,
+};
+
 export const GIT_CHECK: CoachCheck = {
   id: "C-claude-git-instructions",
   kind: "C",
@@ -454,7 +490,15 @@ export const SKILL_DIFF_HIDDEN: CoachCheck = {
 };
 
 /** 대시보드 점검 탭: 이 Mac의 D·C + 숨긴 카드 하나. 알림은 D 하나. */
-export const DASHBOARD_CHECKS = [EFFORT_CHECK, GIT_CHECK, SKILL_DIFF_HIDDEN];
+// dashboard.html?tab=checks&subagent-effort로 새 카드를 미리 본다.
+export const DASHBOARD_CHECKS = [
+  EFFORT_CHECK,
+  GIT_CHECK,
+  SKILL_DIFF_HIDDEN,
+  ...(typeof location !== "undefined" && new URLSearchParams(location.search).has("subagent-effort")
+    ? [SUBAGENT_EFFORT_CHECK]
+    : []),
+];
 
 const sw = (
   target: string,
